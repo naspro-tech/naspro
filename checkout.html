@@ -170,14 +170,11 @@
   </div>
 
   <script>
-    // Service and prices mapping
+    // Service and prices mapping matching your original index service keys
     const services = {
-      webapp: { name: 'Web & App Development', price: 'PKR 30,000' },
-      domainhosting: { name: 'Domain & Hosting', price: 'Starting from PKR 3,500/year' },
-      branding: { name: 'Branding & Logo Design', price: 'PKR 5,000' },
-      ecommerce: { name: 'E-Commerce & Payment Solutions', price: 'PKR 50,000' },
-      cloudit: { name: 'Cloud & IT Infrastructure', price: 'Custom Pricing' },
-      digitalmarketing: { name: 'Digital Marketing', price: 'Starting at PKR 15,000/month' },
+      webdev: { name: 'Web Development', price: 'PKR 30,000' },
+      logo: { name: 'Logo Design', price: 'PKR 5,000' },
+      ecommerce: { name: 'E-Commerce Store', price: 'PKR 50,000' }
     };
 
     // Get query param 'service'
@@ -224,7 +221,7 @@
         valid = false;
       }
 
-      // Validate phone (simple pattern, can be adjusted)
+      // Validate phone (simple pattern)
       const phone = document.getElementById('phone').value.trim();
       if (phone.length < 10) {
         document.getElementById('phoneError').textContent = 'Please enter a valid phone number.';

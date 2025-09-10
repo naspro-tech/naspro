@@ -78,13 +78,9 @@
       opacity: 0.6;
       flex: 1 1 45%;
       max-width: 200px;
-      transition: background-color 0.3s ease;
       position: relative;
     }
-    button.payment-btn:hover {
-      background: #e65c00;
-    }
-    button.payment-btn[title]:hover::after {
+    button.payment-btn:hover::after {
       content: attr(title);
       position: absolute;
       bottom: -30px;
@@ -160,4 +156,116 @@
       <div id="phoneError" class="error" aria-live="polite"></div>
 
       <label for="description">Describe your requirements <span aria-hidden="true">*</span></label>
-      <textarea id="description" name="description" placeholder="Please tell us what you
+      <textarea id="description" name="description" placeholder="Please tell us what you need" required></textarea>
+      <div id="descError" class="error" aria-live="polite"></div>
+
+      <div class="payment-options">
+        <button type="button" class="payment-btn" disabled title="EasyPaisa payment gateway coming soon">Easypaisa</button>
+        <button type="button" class="payment-btn" disabled title="JazzCash payment gateway coming soon">JazzCash</button>
+      </div>
+      <div class="note">* Easypaisa and JazzCash payment gateways will be available soon.</div>
+
+      <button type="submit" class="btn-submit">Submit Order</button>
+    </form>
+  </div>
+
+  <script>
+    // Service and prices mapping
+    const services = {
+      webapp: { name: 'Web & App Development', price: 'PKR 30,000' },
+      domainhosting: { name: 'Domain & Hosting', price: 'Starting from PKR 3,500/year' },
+      branding: { name: 'Branding & Logo Design', price: 'PKR 5,000' },
+      ecommerce: { name: 'E-Commerce & Payment Solutions', price: 'PKR 50,000' },
+      cloudit: { name: 'Cloud & IT Infrastructure', price: 'Custom Pricing' },
+      digitalmarketing: { name: 'Digital Marketing', price: 'Starting at PKR 15,000/month' },
+    };
+
+    // Get query param 'service'
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    function setServiceDetails() {
+      const serviceKey = getQueryParam('service');
+      const serviceInput = document.getElementById('service');
+      const priceDisplay = document.getElementById('priceDisplay');
+
+      if (serviceKey && services[serviceKey]) {
+        serviceInput.value = services[serviceKey].name;
+        priceDisplay.textContent = 'Price: ' + services[serviceKey].price;
+      } else {
+        serviceInput.value = 'Unknown service';
+        priceDisplay.textContent = 'Price: -';
+      }
+    }
+
+    // Basic form validation
+    function validateForm() {
+      let valid = true;
+
+      // Clear all error messages
+      ['nameError', 'emailError', 'phoneError', 'descError'].forEach(id => {
+        document.getElementById(id).textContent = '';
+      });
+
+      // Validate name
+      const name = document.getElementById('name').value.trim();
+      if (name.length < 3) {
+        document.getElementById('nameError').textContent = 'Please enter your full name.';
+        valid = false;
+      }
+
+      // Validate email (simple regex)
+      const email = document.getElementById('email').value.trim();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(email)) {
+        document.getElementById('emailError').textContent = 'Please enter a valid email address.';
+        valid = false;
+      }
+
+      // Validate phone (simple pattern, can be adjusted)
+      const phone = document.getElementById('phone').value.trim();
+      if (phone.length < 10) {
+        document.getElementById('phoneError').textContent = 'Please enter a valid phone number.';
+        valid = false;
+      }
+
+      // Validate description
+      const desc = document.getElementById('description').value.trim();
+      if (desc.length < 10) {
+        document.getElementById('descError').textContent = 'Please describe your requirements in detail.';
+        valid = false;
+      }
+
+      return valid;
+    }
+
+    // On DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      setServiceDetails();
+
+      const form = document.getElementById('checkoutForm');
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+
+        if (!validateForm()) {
+          return;
+        }
+
+        // Disable submit button and show loading
+        const submitBtn = form.querySelector('.btn-submit');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        // For demo: Simulate sending form & then redirect to thank you page after 1.5s
+        setTimeout(() => {
+          // Collect form data as URL params to pass to thankyou page
+          const params = new URLSearchParams(new FormData(form));
+          window.location.href = `thankyou.html?${params.toString()}`;
+        }, 1500);
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout - NASPRO</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    .checkout-box { max-width: 500px; margin: auto; padding: 25px; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+    h2 { text-align: center; color: #e91e63; }
+    p.desc { font-size: 14px; color: #555; margin-bottom: 20px; text-align: center; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 20px; width: 100%; padding: 12px; background: #e91e63; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #c2185b; }
+    .contact { text-align: center; margin-top: 20px; font-size: 14px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="checkout-box">
+    <h2>NASPRO Checkout</h2>
+    <p class="desc" id="serviceDesc">Please review your service and complete the payment securely with JazzCash.</p>
+
+    <form method="GET" action="/api/pay">
+      <label>Service</label>
+      <input type="text" id="service" name="service" readonly />
+
+      <label>Price (PKR)</label>
+      <input type="text" id="price" readonly />
+
+      <label>JazzCash Mobile No</label>
+      <input type="text" name="mobile" placeholder="03XXXXXXXXX" required />
+
+      <label>CNIC Number</label>
+      <input type="text" name="cnic" placeholder="35202XXXXXXXXX" required />
+
+      <button type="submit">Pay with JazzCash</button>
+    </form>
+
+    <div class="contact">
+      <p><strong>Need Help?</strong></p>
+      <p>Email: support@naspro.com | Phone: +92-300-1234567</p>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const service = urlParams.get("service");
+
+    const services = {
+      webdev: { name: "Web Development", price: 30000, desc: "Custom responsive website with modern UI/UX design." },
+      logo: { name: "Logo Design", price: 5000, desc: "Professional brand logo with unlimited revisions." },
+      ecommerce: { name: "E-Commerce Store", price: 50000, desc: "Full-featured online store with secure payment setup." }
+    };
+
+    if (service && services[service]) {
+      document.getElementById("service").value = services[service].name;
+      document.getElementById("price").value = services[service].price;
+      document.getElementById("serviceDesc").innerText = services[service].desc;
+    } else {
+      document.querySelector(".checkout-box").innerHTML = "<p>Invalid service selected.</p>";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - NASPRO</title>
+</head>
+<body>
+  <h1>Checkout</h1>
+  <div id="checkout-info"></div>
+
+  <form action="/api/jazzcash" method="POST">
+    <input type="hidden" name="service" id="service">
+    <input type="hidden" name="amount" id="amount">
+    <label>Mobile Number:</label><br>
+    <input type="text" name="mobile" required><br><br>
+    <label>CNIC:</label><br>
+    <input type="text" name="cnic" required><br><br>
+    <button type="submit">Pay with JazzCash</button>
+  </form>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const service = params.get("service");
+    let info = document.getElementById("checkout-info");
+    let serviceField = document.getElementById("service");
+    let amountField = document.getElementById("amount");
+
+    const services = {
+      webdev: { name: "Web Development", price: 30000, desc: "Custom responsive website with modern UI/UX design." },
+      logo: { name: "Logo Design", price: 5000, desc: "Professional brand logo with unlimited revisions." },
+      ecommerce: { name: "E-Commerce Store", price: 50000, desc: "Full-featured online store with secure payment setup." }
+    };
+
+    if (services[service]) {
+      info.innerHTML = `<h2>${services[service].name}</h2><p>${services[service].desc}</p><p><b>Price: PKR ${services[service].price}</b></p>`;
+      serviceField.value = services[service].name;
+      amountField.value = services[service].price;
+    } else {
+      info.innerHTML = "<p>Invalid service selected.</p>";
+    }
+  </script>
+</body>
+</html>

@@ -1,34 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkout - Naspro Technologies</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Checkout - NASPRO IT Services</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0; padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      background: #fff;
+      margin: 40px auto;
+      padding: 30px 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #ff6600;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+    .contact-info {
+      background: #fffae6;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #665500;
+    }
+    .payment-options {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 15px;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    button.payment-btn {
+      background: #ff6600;
+      color: #fff;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: not-allowed;
+      opacity: 0.6;
+      flex: 1 1 45%;
+      max-width: 200px;
+      transition: background-color 0.3s ease;
+    }
+    button.payment-btn:hover {
+      background: #e65c00;
+    }
+    .note {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: -10px;
+    }
+    .btn-submit {
+      display: block;
+      background: #222;
+      color: #fff;
+      border: none;
+      padding: 12px 0;
+      width: 100%;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+    }
+    .btn-submit:hover {
+      background: #444;
+    }
+  </style>
 </head>
 <body>
-  <header class="hero small">
+  <div class="container">
     <h1>Checkout</h1>
-  </header>
 
-  <section class="checkout">
-    <form action="thankyou.html" method="GET">
-      <label for="service">Selected Service</label>
-      <select id="service" name="service">
-        <option value="Web Development">Web Development</option>
-        <option value="Logo Design">Logo Design</option>
-        <option value="E-Commerce Store">E-Commerce Store</option>
-      </select>
+    <div class="contact-info">
+      <p><strong>Contact us:</strong></p>
+      <p>📍 Karachi, Pakistan</p>
+      <p>📧 Email: <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a></p>
+      <p>📞 Phone: <a href="tel:+923033792494">+92 303 3792494</a></p>
+    </div>
 
-      <label for="requirements">Your Requirements</label>
-      <textarea id="requirements" name="requirements" placeholder="Describe what you need..." required></textarea>
+    <form id="checkoutForm" action="thankyou.html" method="GET">
+      <label for="service">Selected Service:</label>
+      <input type="text" id="service" name="service" readonly style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc; margin-bottom: 20px; font-weight:600; background:#f4f4f4;" />
 
-      <h3>Payment Options</h3>
-      <p>Easypaisa (Coming Soon)</p>
-      <p>JazzCash (Coming Soon)</p>
+      <label for="description">Describe your requirements:</label>
+      <textarea id="description" name="description" placeholder="Please tell us what you need..."></textarea>
 
-      <button type="submit" class="btn">Submit</button>
+      <label>Payment Options:</label>
+      <div class="payment-options">
+        <button type="button" class="payment-btn" disabled>Easypaisa (Coming Soon)</button>
+        <button type="button" class="payment-btn" disabled>JazzCash (Coming Soon)</button>
+      </div>
+      <p class="note">Note: Easypaisa and JazzCash payment gateways will be available soon.</p>
+
+      <button type="submit" class="btn-submit">Submit Order</button>
     </form>
-  </section>
+  </div>
+
+  <script>
+    // Parse service from URL query string and fill input field
+    const params = new URLSearchParams(window.location.search);
+    const service = params.get('service') || 'N/A';
+
+    // Simple map to show friendly service names
+    const serviceNames = {
+      webdev: 'Web Development',
+      logo: 'Logo Design',
+      ecommerce: 'E-Commerce Store',
+      webapp: 'Web & App Development',
+      domainhosting: 'Domain & Hosting',
+      branding: 'Branding & Logo Design',
+      cloudit: 'Cloud & IT Infrastructure',
+      digitalmarketing: 'Digital Marketing'
+    };
+
+    const serviceDisplayName = serviceNames[service.toLowerCase()] || service;
+    document.getElementById('service').value = serviceDisplayName;
+
+    // Prevent form submission if description empty (optional)
+    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+      const desc = document.getElementById('description').value.trim();
+      if (!desc) {
+        e.preventDefault();
+        alert('Please describe your requirements before submitting.');
+        document.getElementById('description').focus();
+      }
+    });
+  </script>
 </body>
 </html>

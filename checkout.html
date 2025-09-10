@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout - NASPRO</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .checkout-box { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 15px; width: 100%; padding: 10px; background: #e91e63; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #c2185b; }
+  </style>
+</head>
+<body>
+  <div class="checkout-box">
+    <h2>Checkout</h2>
+    <form method="GET" action="/api/pay">
+      <label>Service</label>
+      <input type="text" name="service" value="webdev" readonly />
+
+      <label>Price (PKR)</label>
+      <input type="text" value="30000" readonly />
+
+      <label>JazzCash Mobile No</label>
+      <input type="text" name="mobile" placeholder="03XXXXXXXXX" required />
+
+      <label>CNIC Number</label>
+      <input type="text" name="cnic" placeholder="35202XXXXXXXXX" required />
+
+      <button type="submit">Pay with JazzCash</button>
+    </form>
+  </div>
+</body>
+</html>

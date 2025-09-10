@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - Naspro Technologies</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero small">
+    <h1>Checkout</h1>
+  </header>
+
+  <section class="checkout">
+    <form action="thankyou.html" method="GET">
+      <label for="service">Selected Service</label>
+      <select id="service" name="service">
+        <option value="Web Development">Web Development</option>
+        <option value="Logo Design">Logo Design</option>
+        <option value="E-Commerce Store">E-Commerce Store</option>
+      </select>
+
+      <label for="requirements">Your Requirements</label>
+      <textarea id="requirements" name="requirements" placeholder="Describe what you need..." required></textarea>
+
+      <h3>Payment Options</h3>
+      <p>Easypaisa (Coming Soon)</p>
+      <p>JazzCash (Coming Soon)</p>
+
+      <button type="submit" class="btn">Submit</button>
+    </form>
+  </section>
+</body>
+</html>

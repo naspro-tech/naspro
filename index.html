@@ -27,27 +27,6 @@
       font-size: 1.1rem;
       font-weight: 300;
     }
-    nav {
-      background: #ff6600;
-      display: flex;
-      justify-content: center;
-      padding: 15px 10px;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1rem;
-      padding: 5px 12px;
-      border-radius: 5px;
-      transition: background-color 0.3s;
-      white-space: nowrap;
-    }
-    nav a:hover {
-      background: #e65c00;
-    }
     .services {
       max-width: 1200px;
       margin: 40px auto;
@@ -171,99 +150,138 @@
       color: #ff6600;
       text-decoration: none;
     }
+
+    /* New top-right menu styles */
+    .top-right-menu {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      text-align: right;
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+      user-select: none;
+    }
+
+    .hamburger {
+      font-size: 28px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    .menu-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .menu-items a {
+      color: #222;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .menu-items a:hover {
+      color: #ff6600;
+    }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>NASPRO IT Services</h1>
-  <p>Your partner in digital growth</p>
-</header>
-
-<nav>
-  <a href="#services">Services</a>
-  <a href="#why-choose-us">Why Choose Us?</a>
-  <a href="#faq">FAQ</a>
-</nav>
-
-<section id="services" class="services">
-  <div class="card">
-    <h3>Web & App Development</h3>
-    <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
-    <p class="price">PKR 30,000</p>
-    <a href="checkout.html?service=webapp" class="buy-btn">Buy Now</a>
-  </div>
-  <div class="card">
-    <h3>Domain & Hosting</h3>
-    <p>Fast, secure, and reliable hosting with premium domain registration services.</p>
-    <p class="price">Starting from PKR 3,500/year</p>
-    <a href="checkout.html?service=domainhosting" class="buy-btn">Buy Now</a>
-  </div>
-  <div class="card">
-    <h3>Branding & Logo Design</h3>
-    <p>Memorable brand identities and creative designs that leave a lasting impression.</p>
-    <p class="price">PKR 5,000</p>
-    <a href="checkout.html?service=branding" class="buy-btn">Buy Now</a>
-  </div>
-  <div class="card">
-    <h3>E-Commerce & Payment Solutions</h3>
-    <p>Fully functional online stores with seamless payment gateway integration.</p>
-    <p class="price">PKR 50,000</p>
-    <a href="checkout.html?service=ecommerce" class="buy-btn">Buy Now</a>
-  </div>
-  <div class="card">
-    <h3>Cloud & IT Infrastructure</h3>
-    <p>Secure cloud hosting, data backups, and IT infrastructure management.</p>
-    <p class="price">Custom Pricing</p>
-    <a href="checkout.html?service=cloudit" class="buy-btn">Buy Now</a>
-  </div>
-  <div class="card">
-    <h3>Digital Marketing</h3>
-    <p>Grow your online presence with SEO, social media, and targeted ad campaigns.</p>
-    <p class="price">Starting at PKR 15,000/month</p>
-    <a href="checkout.html?service=digitalmarketing" class="buy-btn">Buy Now</a>
-  </div>
-</section>
-
-<section class="details" id="why-choose-us">
-  <h2>Why Choose NASPRO?</h2>
-  <ul>
-    <li>✅ Expert team with years of experience</li>
-    <li>✅ Customized solutions tailored to your needs</li>
-    <li>✅ Transparent pricing and no hidden fees</li>
-    <li>✅ Timely delivery & excellent support</li>
-    <li>✅ Cutting-edge technology & latest industry standards</li>
-  </ul>
-</section>
-
-<section class="faq" id="faq">
-  <h2>Frequently Asked Questions</h2>
-
-  <div class="faq-item">
-    <strong>Q: How long does a typical website project take?</strong>
-    <p>A: Usually between 2-6 weeks depending on complexity and client feedback.</p>
+  <!-- Top right hamburger + vertical menu -->
+  <div class="top-right-menu">
+    <div class="hamburger">☰</div>
+    <div class="menu-items">
+      <a href="#services">Services</a>
+      <a href="#why-choose-us">Why Choose Us?</a>
+      <a href="#faq">FAQ</a>
+    </div>
   </div>
 
-  <div class="faq-item">
-    <strong>Q: Do you offer support after project completion?</strong>
-    <p>A: Yes! We offer maintenance packages to keep your site/app up-to-date and secure.</p>
-  </div>
+  <header>
+    <h1>NASPRO IT Services</h1>
+    <p>Your partner in digital growth</p>
+  </header>
 
-  <div class="faq-item">
-    <strong>Q: Can I upgrade my plan later?</strong>
-    <p>A: Absolutely. We design scalable solutions that grow with your business.</p>
-  </div>
+  <section id="services" class="services">
+    <div class="card">
+      <h3>Web & App Development</h3>
+      <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
+      <p class="price">PKR 30,000</p>
+      <a href="checkout.html?service=webapp" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Domain & Hosting</h3>
+      <p>Fast, secure, and reliable hosting with premium domain registration services.</p>
+      <p class="price">Starting from PKR 3,500/year</p>
+      <a href="checkout.html?service=domainhosting" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Branding & Logo Design</h3>
+      <p>Memorable brand identities and creative designs that leave a lasting impression.</p>
+      <p class="price">PKR 5,000</p>
+      <a href="checkout.html?service=branding" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>E-Commerce & Payment Solutions</h3>
+      <p>Fully functional online stores with seamless payment gateway integration.</p>
+      <p class="price">PKR 50,000</p>
+      <a href="checkout.html?service=ecommerce" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Cloud & IT Infrastructure</h3>
+      <p>Secure cloud hosting, data backups, and IT infrastructure management.</p>
+      <p class="price">Custom Pricing</p>
+      <a href="checkout.html?service=cloudit" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Digital Marketing</h3>
+      <p>Grow your online presence with SEO, social media, and targeted ad campaigns.</p>
+      <p class="price">Starting at PKR 15,000/month</p>
+      <a href="checkout.html?service=digitalmarketing" class="buy-btn">Buy Now</a>
+    </div>
+  </section>
 
-  <div class="faq-item">
-    <strong>Q: What payment methods do you accept?</strong>
-    <p>A: Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options.</p>
-  </div>
+  <section class="details" id="why-choose-us">
+    <h2>Why Choose NASPRO?</h2>
+    <ul>
+      <li>✅ Expert team with years of experience</li>
+      <li>✅ Customized solutions tailored to your needs</li>
+      <li>✅ Transparent pricing and no hidden fees</li>
+      <li>✅ Timely delivery & excellent support</li>
+      <li>✅ Cutting-edge technology & latest industry standards</li>
+    </ul>
+  </section>
 
-</section>
+  <section class="faq" id="faq">
+    <h2>Frequently Asked Questions</h2>
 
-<footer>
-  <p>📍 Karachi, Pakistan | 📧 <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a> | 📞 <a href="tel:+923033792494">+92 303 3792494</a></p>
-</footer>
+    <div class="faq-item">
+      <strong>Q: How long does a typical website project take?</strong>
+      <p>A: Usually between 2-6 weeks depending on complexity and client feedback.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>Q: Do you offer support after project completion?</strong>
+      <p>A: Yes! We offer maintenance packages to keep your site/app up-to-date and secure.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>Q: Can I upgrade my plan later?</strong>
+      <p>A: Absolutely. We design scalable solutions that grow with your business.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>Q: What payment methods do you accept?</strong>
+      <p>A: Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options.</p>
+    </div>
+
+  </section>
+
+  <footer>
+    <p>📍 Karachi, Pakistan | 📧 <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a> | 📞 <a href="tel:+923033792494">+92 303 3792494</a></p>
+  </footer>
 
 </body>
 </html>

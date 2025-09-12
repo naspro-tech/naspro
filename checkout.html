@@ -253,4 +253,17 @@
         const data = {
           orderId: 'TX-' + Date.now(),
           mobileAccountNo: document.getElementById('phone').value.trim().replace(/\D/g, ''),
-          msisdn: document.getElementById('phone').value.trim
+          msisdn: document.getElementById('phone').value.trim().replace(/\D/g, ''),
+          transactionAmount: price.toFixed(2),
+          emailAddress: document.getElementById('email').value.trim(),
+          name: document.getElementById('name').value.trim(),
+          service: document.getElementById('service').value,
+          description: document.getElementById('description').value.trim()
+        };
+
+        initiateEasypaisaPayment(data);
+      });
+    });
+  </script>
+</body>
+</html>

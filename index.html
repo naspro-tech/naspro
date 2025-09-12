@@ -27,9 +27,136 @@
       font-size: 1.1rem;
       font-weight: 300;
     }
-    /* Your other styles ... */
 
-    /* Top right menu container */
+    /* Your existing nav removed, replaced by hamburger menu */
+
+    .services {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+    }
+    .card {
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #ff6600;
+    }
+    .price {
+      font-size: 18px;
+      margin: 10px 0 18px;
+      color: #444;
+      font-weight: 600;
+    }
+    .buy-btn {
+      background: #ff6600;
+      color: #fff;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    .buy-btn:hover {
+      background: #e65c00;
+    }
+    section.details {
+      max-width: 900px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+      line-height: 1.5;
+    }
+    section.details h2 {
+      color: #ff6600;
+      margin-bottom: 20px;
+    }
+    section.details ul {
+      list-style: disc inside;
+      margin: 20px 0;
+      padding-left: 10px;
+    }
+    section.why-choose {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 25px 30px;
+      background: #fffae6;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    }
+    section.why-choose h2 {
+      color: #ff6600;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    section.why-choose ul {
+      list-style-type: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      color: #665500;
+    }
+    section.why-choose ul li {
+      background: #fff3c7;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    section.faq {
+      max-width: 900px;
+      margin: 40px auto 80px;
+      padding: 25px 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    }
+    section.faq h2 {
+      color: #ff6600;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+    .faq-item {
+      margin-bottom: 18px;
+    }
+    .faq-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    footer {
+      background: #222;
+      color: #fff;
+      text-align: center;
+      padding: 25px 15px;
+      font-size: 0.95rem;
+    }
+    footer a {
+      color: #ff6600;
+      text-decoration: none;
+    }
+
+    /* =============== New Hamburger Menu =============== */
+
+    /* Container fixed top right */
     .top-right-menu {
       position: fixed;
       top: 15px;
@@ -40,7 +167,7 @@
       user-select: none;
     }
 
-    /* Hamburger icon with 3 white lines */
+    /* Hamburger icon */
     .hamburger {
       width: 28px;
       height: 22px;
@@ -61,7 +188,7 @@
       transition: background-color 0.3s;
     }
 
-    /* Menu items hidden by default */
+    /* Menu hidden by default */
     .menu-items {
       display: none;
       flex-direction: column;
@@ -70,14 +197,14 @@
       padding: 12px 15px;
       border-radius: 6px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-      position: fixed; /* fixed position */
+      position: fixed; /* fixed */
       top: 50px; /* below hamburger */
-      right: 60px; /* open to left side of hamburger */
+      right: 60px; /* open to left side */
       min-width: 140px;
       z-index: 10000;
     }
 
-    /* Show menu items when active */
+    /* Show menu */
     .menu-items.active {
       display: flex;
     }
@@ -94,23 +221,22 @@
     .menu-items a:hover {
       color: #ff6600;
     }
-
   </style>
 </head>
 <body>
 
-  <!-- Top right hamburger + vertical menu -->
+  <!-- Hamburger menu fixed top right -->
   <div class="top-right-menu">
     <div class="hamburger" id="hamburger" aria-label="Menu toggle" role="button" tabindex="0">
       <span></span>
       <span></span>
       <span></span>
     </div>
-    <div class="menu-items" id="menuItems" role="menu" aria-hidden="true">
+    <nav class="menu-items" id="menuItems" role="menu" aria-hidden="true">
       <a href="#services" role="menuitem">Services</a>
       <a href="#why-choose-us" role="menuitem">Why Choose Us?</a>
       <a href="#faq" role="menuitem">FAQ</a>
-    </div>
+    </nav>
   </div>
 
   <header>
@@ -119,14 +245,42 @@
   </header>
 
   <section id="services" class="services">
-    <!-- Your service cards here -->
     <div class="card">
       <h3>Web & App Development</h3>
       <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
       <p class="price">PKR 30,000</p>
       <a href="checkout.html?service=webapp" class="buy-btn">Buy Now</a>
     </div>
-    <!-- Add other cards here as before -->
+    <div class="card">
+      <h3>Domain & Hosting</h3>
+      <p>Fast, secure, and reliable hosting with premium domain registration services.</p>
+      <p class="price">Starting from PKR 3,500/year</p>
+      <a href="checkout.html?service=domainhosting" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Branding & Logo Design</h3>
+      <p>Memorable brand identities and creative designs that leave a lasting impression.</p>
+      <p class="price">PKR 5,000</p>
+      <a href="checkout.html?service=branding" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>E-Commerce & Payment Solutions</h3>
+      <p>Fully functional online stores with seamless payment gateway integration.</p>
+      <p class="price">PKR 50,000</p>
+      <a href="checkout.html?service=ecommerce" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Cloud & IT Infrastructure</h3>
+      <p>Secure cloud hosting, data backups, and IT infrastructure management.</p>
+      <p class="price">Custom Pricing</p>
+      <a href="checkout.html?service=cloudit" class="buy-btn">Buy Now</a>
+    </div>
+    <div class="card">
+      <h3>Digital Marketing</h3>
+      <p>Grow your online presence with SEO, social media, and targeted ad campaigns.</p>
+      <p class="price">Starting at PKR 15,000/month</p>
+      <a href="checkout.html?service=digitalmarketing" class="buy-btn">Buy Now</a>
+    </div>
   </section>
 
   <section class="details" id="why-choose-us">
@@ -142,7 +296,27 @@
 
   <section class="faq" id="faq">
     <h2>Frequently Asked Questions</h2>
-    <!-- FAQ items here -->
+
+    <div class="faq-item">
+      <strong>Q: How long does a typical website project take?</strong>
+      <p>A: Usually between 2-6 weeks depending on complexity and client feedback.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>Q: Do you offer support after project completion?</strong>
+      <p>A: Yes! We offer maintenance packages to keep your site/app up-to-date and secure.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>Q: Can I upgrade my plan later?</strong>
+      <p>A: Absolutely. We design scalable solutions that grow with your business.</p>
+    </div>
+
+    <div class="faq-item">
+      <strong>Q: What payment methods do you accept?</strong>
+      <p>A: Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options.</p>
+    </div>
+
   </section>
 
   <footer>
@@ -151,25 +325,21 @@
 
   <script>
     const hamburger = document.getElementById('hamburger');
-    const menuItems = document.getElementById('menuItems');
+    const menu = document.getElementById('menuItems');
 
     hamburger.addEventListener('click', () => {
-      menuItems.classList.toggle('active');
-      // For accessibility, update aria-hidden attribute
-      if(menuItems.classList.contains('active')) {
-        menuItems.setAttribute('aria-hidden', 'false');
-      } else {
-        menuItems.setAttribute('aria-hidden', 'true');
-      }
+      const isActive = menu.classList.toggle('active');
+      menu.setAttribute('aria-hidden', !isActive);
     });
 
-    // Optional: close menu if clicking outside
-    document.addEventListener('click', (e) => {
-      if(!hamburger.contains(e.target) && !menuItems.contains(e.target)) {
-        menuItems.classList.remove('active');
-        menuItems.setAttribute('aria-hidden', 'true');
+    // Optional: keyboard accessibility
+    hamburger.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        hamburger.click();
       }
     });
   </script>
+
 </body>
 </html>

@@ -88,7 +88,7 @@
       margin-bottom: 25px;
     }
     .btn-submit {
-      display: none; /* hide original submit button */
+      display: none;
     }
     .error {
       color: red;
@@ -113,7 +113,7 @@
   <div class="container">
     <h1>Checkout</h1>
 
-    <div class="contact-info" aria-label="Contact information">
+    <div class="contact-info">
       <p><strong>Contact us:</strong></p>
       <p>📍 Karachi, Pakistan</p>
       <p>📧 Email: <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a></p>
@@ -122,32 +122,32 @@
 
     <form id="checkoutForm" novalidate>
       <label for="service">Selected Service:</label>
-      <input type="text" id="service" name="service" readonly aria-readonly="true" style="background:#f4f4f4; font-weight:600;" />
+      <input type="text" id="service" name="service" readonly style="background:#f4f4f4; font-weight:600;" />
 
       <div class="price-display" id="priceDisplay">Price: -</div>
 
-      <label for="name">Your Name <span aria-hidden="true">*</span></label>
-      <input type="text" id="name" name="name" placeholder="Full name" required />
-      <div id="nameError" class="error" aria-live="polite"></div>
+      <label for="name">Your Name *</label>
+      <input type="text" id="name" required />
+      <div id="nameError" class="error"></div>
 
-      <label for="email">Your Email <span aria-hidden="true">*</span></label>
-      <input type="email" id="email" name="email" placeholder="example@mail.com" required />
-      <div id="emailError" class="error" aria-live="polite"></div>
+      <label for="email">Your Email *</label>
+      <input type="email" id="email" required />
+      <div id="emailError" class="error"></div>
 
-      <label for="phone">Your Phone Number <span aria-hidden="true">*</span></label>
-      <input type="tel" id="phone" name="phone" placeholder="+92 3XX XXXXXXX" required />
-      <div id="phoneError" class="error" aria-live="polite"></div>
+      <label for="phone">Your Phone Number *</label>
+      <input type="tel" id="phone" required />
+      <div id="phoneError" class="error"></div>
 
-      <label for="description">Describe your requirements <span aria-hidden="true">*</span></label>
-      <textarea id="description" name="description" placeholder="Please tell us what you need" required></textarea>
-      <div id="descError" class="error" aria-live="polite"></div>
+      <label for="description">Describe your requirements *</label>
+      <textarea id="description" required></textarea>
+      <div id="descError" class="error"></div>
 
       <div class="payment-options">
-        <button type="button" id="easypaisaBtn" class="payment-btn" title="Pay with Easypaisa">Easypaisa</button>
-        <button type="button" disabled class="payment-btn" title="JazzCash payment gateway coming soon">JazzCash</button>
+        <button type="button" id="easypaisaBtn" class="payment-btn">Easypaisa</button>
+        <button type="button" disabled class="payment-btn">JazzCash (Coming Soon)</button>
       </div>
 
-      <div class="message" id="paymentMessage" role="alert" aria-live="assertive"></div>
+      <div class="message" id="paymentMessage"></div>
     </form>
   </div>
 
@@ -159,8 +159,7 @@
     };
 
     function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
+      return new URLSearchParams(window.location.search).get(param);
     }
 
     function setServiceDetails() {
@@ -168,44 +167,44 @@
       const serviceInput = document.getElementById('service');
       const priceDisplay = document.getElementById('priceDisplay');
 
-      if (serviceKey && services[serviceKey]) {
+      if (services[serviceKey]) {
         serviceInput.value = services[serviceKey].name;
         priceDisplay.textContent = 'Price: PKR ' + services[serviceKey].price.toLocaleString();
       } else {
-        serviceInput.value = 'Unknown service';
+        serviceInput.value = 'Unknown';
         priceDisplay.textContent = 'Price: -';
       }
     }
 
     function validateForm() {
       let valid = true;
-
       ['nameError', 'emailError', 'phoneError', 'descError'].forEach(id => {
         document.getElementById(id).textContent = '';
       });
 
       const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const desc = document.getElementById('description').value.trim();
+
       if (name.length < 3) {
-        document.getElementById('nameError').textContent = 'Please enter your full name.';
+        document.getElementById('nameError').textContent = 'Enter full name.';
         valid = false;
       }
 
-      const email = document.getElementById('email').value.trim();
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(email)) {
-        document.getElementById('emailError').textContent = 'Please enter a valid email address.';
+        document.getElementById('emailError').textContent = 'Enter valid email.';
         valid = false;
       }
 
-      const phone = document.getElementById('phone').value.trim();
       if (phone.length < 10) {
-        document.getElementById('phoneError').textContent = 'Please enter a valid phone number.';
+        document.getElementById('phoneError').textContent = 'Enter valid phone.';
         valid = false;
       }
 
-      const desc = document.getElementById('description').value.trim();
       if (desc.length < 10) {
-        document.getElementById('descError').textContent = 'Please describe your requirements in detail.';
+        document.getElementById('descError').textContent = 'Description too short.';
         valid = false;
       }
 
@@ -214,66 +213,44 @@
 
     async function initiateEasypaisaPayment(data) {
       const messageEl = document.getElementById('paymentMessage');
-      messageEl.textContent = '';
+      messageEl.textContent = 'Processing...';
       messageEl.className = 'message';
 
       try {
-        const response = await fetch('https://your-backend.onrender.com/pay', { // <-- CHANGE this URL to your deployed backend URL
+        const res = await fetch('/api/pay', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Payment request failed.');
-        }
+        const result = await res.json();
 
-        const result = await response.json();
-
-        if (result.status === 'SUCCESS' && result.transactionUrl) {
-          // Redirect user to Easypaisa payment page (usually returned by gateway)
-          window.location.href = result.transactionUrl;
+        if (result.paymentUrl) {
+          window.location.href = result.paymentUrl;
         } else {
-          throw new Error(result.message || 'Payment initiation failed.');
+          messageEl.textContent = 'Error: ' + (result.message || 'No payment URL.');
+          messageEl.classList.add('error');
         }
-      } catch (error) {
-        messageEl.textContent = 'Error: ' + error.message;
+      } catch (err) {
+        messageEl.textContent = 'Payment failed. Try again.';
         messageEl.classList.add('error');
-        document.getElementById('easypaisaBtn').disabled = false;
       }
+
+      document.getElementById('easypaisaBtn').disabled = false;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       setServiceDetails();
 
-      const easypaisaBtn = document.getElementById('easypaisaBtn');
-
-      easypaisaBtn.addEventListener('click', () => {
+      const btn = document.getElementById('easypaisaBtn');
+      btn.addEventListener('click', () => {
         if (!validateForm()) return;
 
-        easypaisaBtn.disabled = true;
-        document.getElementById('paymentMessage').textContent = 'Processing payment...';
-
+        btn.disabled = true;
         const serviceKey = getQueryParam('service');
-        const amount = services[serviceKey]?.price || 0;
+        const price = services[serviceKey]?.price || 0;
 
-        const paymentData = {
+        const data = {
           orderId: 'TX-' + Date.now(),
-          mobileAccountNo: document.getElementById('phone').value.trim().replace(/\D/g, ''), // numeric only
-          msisdn: document.getElementById('phone').value.trim().replace(/\D/g, ''),
-          transactionAmount: amount.toFixed(2),
-          emailAddress: document.getElementById('email').value.trim(),
-          name: document.getElementById('name').value.trim(),
-          service: document.getElementById('service').value,
-          description: document.getElementById('description').value.trim()
-        };
-
-        initiateEasypaisaPayment(paymentData);
-      });
-    });
-  </script>
-</body>
-</html>
+          mobileAccountNo: document.getElementById('phone').value.trim().replace(/\D/g, ''),
+          msisdn: document.getElementById('phone').value.trim

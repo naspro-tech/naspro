@@ -178,12 +178,19 @@
       height: 3px;
       background: white;
       border-radius: 2px;
+      transition: background-color 0.3s;
     }
 
+    /* Menu items hidden by default */
     .menu-items {
-      display: flex;
+      display: none;
       flex-direction: column;
       gap: 8px;
+    }
+
+    /* Show menu items when active */
+    .menu-items.active {
+      display: flex;
     }
 
     .menu-items a {
@@ -197,18 +204,19 @@
     .menu-items a:hover {
       color: #ff6600;
     }
+
   </style>
 </head>
 <body>
 
   <!-- Top right hamburger + vertical menu -->
   <div class="top-right-menu">
-    <div class="hamburger">
+    <div class="hamburger" id="hamburger">
       <span></span>
       <span></span>
       <span></span>
     </div>
-    <div class="menu-items">
+    <div class="menu-items" id="menuItems">
       <a href="#services">Services</a>
       <a href="#why-choose-us">Why Choose Us?</a>
       <a href="#faq">FAQ</a>
@@ -221,6 +229,7 @@
   </header>
 
   <section id="services" class="services">
+    <!-- your cards here -->
     <div class="card">
       <h3>Web & App Development</h3>
       <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
@@ -272,32 +281,35 @@
 
   <section class="faq" id="faq">
     <h2>Frequently Asked Questions</h2>
-
     <div class="faq-item">
       <strong>Q: How long does a typical website project take?</strong>
       <p>A: Usually between 2-6 weeks depending on complexity and client feedback.</p>
     </div>
-
     <div class="faq-item">
       <strong>Q: Do you offer support after project completion?</strong>
       <p>A: Yes! We offer maintenance packages to keep your site/app up-to-date and secure.</p>
     </div>
-
     <div class="faq-item">
       <strong>Q: Can I upgrade my plan later?</strong>
       <p>A: Absolutely. We design scalable solutions that grow with your business.</p>
     </div>
-
     <div class="faq-item">
       <strong>Q: What payment methods do you accept?</strong>
       <p>A: Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options.</p>
     </div>
-
   </section>
 
   <footer>
     <p>📍 Karachi, Pakistan | 📧 <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a> | 📞 <a href="tel:+923033792494">+92 303 3792494</a></p>
   </footer>
 
+  <script>
+    const hamburger = document.getElementById('hamburger');
+    const menuItems = document.getElementById('menuItems');
+
+    hamburger.addEventListener('click', () => {
+      menuItems.classList.toggle('active');
+    });
+  </script>
 </body>
 </html>

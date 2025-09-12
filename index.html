@@ -31,8 +31,9 @@
       background: #ff6600;
       display: flex;
       justify-content: center;
-      padding: 15px 0;
-      gap: 25px;
+      padding: 15px 10px;
+      gap: 20px;
+      flex-wrap: wrap;
     }
     nav a {
       color: white;
@@ -42,6 +43,7 @@
       padding: 5px 12px;
       border-radius: 5px;
       transition: background-color 0.3s;
+      white-space: nowrap;
     }
     nav a:hover {
       background: #e65c00;
@@ -108,31 +110,6 @@
       list-style: disc inside;
       margin: 20px 0;
       padding-left: 10px;
-    }
-    section.testimonials {
-      background: #fff;
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 30px 25px;
-      border-radius: 10px;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    section.testimonials h2 {
-      color: #ff6600;
-      margin-bottom: 30px;
-    }
-    .testimonial {
-      margin-bottom: 25px;
-      font-style: italic;
-      font-size: 1.1rem;
-      color: #555;
-    }
-    .testimonial strong {
-      display: block;
-      margin-top: 8px;
-      font-weight: 700;
-      color: #222;
     }
     section.why-choose {
       max-width: 900px;
@@ -206,7 +183,6 @@
 <nav>
   <a href="#services">Services</a>
   <a href="#why-choose-us">Why Choose Us?</a>
-  <a href="#testimonials">Testimonials</a>
   <a href="#faq">FAQ</a>
 </nav>
 
@@ -258,22 +234,6 @@
     <li>✅ Timely delivery & excellent support</li>
     <li>✅ Cutting-edge technology & latest industry standards</li>
   </ul>
-</section>
-
-<section class="testimonials" id="testimonials">
-  <h2>What Our Clients Say</h2>
-  <div class="testimonial">
-    <p>"NASPRO transformed our website and app. Highly professional and responsive team."</p>
-    <strong>- Ayesha K.</strong>
-  </div>
-  <div class="testimonial">
-    <p>"Their branding and marketing services helped us boost sales significantly."</p>
-    <strong>- Bilal M.</strong>
-  </div>
-  <div class="testimonial">
-    <p>"Reliable and affordable hosting services. Highly recommend NASPRO."</p>
-    <strong>- Sarah T.</strong>
-  </div>
 </section>
 
 <section class="faq" id="faq">

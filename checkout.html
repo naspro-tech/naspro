@@ -74,26 +74,11 @@
       padding: 12px 25px;
       border-radius: 6px;
       font-size: 1rem;
-      cursor: not-allowed;
-      opacity: 0.6;
+      cursor: pointer;
       flex: 1 1 45%;
       max-width: 200px;
       position: relative;
-    }
-    button.payment-btn:hover::after {
-      content: attr(title);
-      position: absolute;
-      bottom: -30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #222;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 10;
+      opacity: 1;
     }
     .note {
       text-align: center;
@@ -103,26 +88,24 @@
       margin-bottom: 25px;
     }
     .btn-submit {
-      display: block;
-      background: #222;
-      color: #fff;
-      border: none;
-      padding: 14px 0;
-      width: 100%;
-      border-radius: 6px;
-      font-size: 1.1rem;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background-color 0.3s ease;
-    }
-    .btn-submit:hover {
-      background: #444;
+      display: none; /* hide original submit button */
     }
     .error {
       color: red;
       font-size: 0.85rem;
       margin-top: -12px;
       margin-bottom: 12px;
+    }
+    .message {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+    .message.success {
+      color: green;
+    }
+    .message.error {
+      color: red;
     }
   </style>
 </head>
@@ -137,7 +120,7 @@
       <p>📞 Phone: <a href="tel:+923033792494">+92 303 3792494</a></p>
     </div>
 
-    <form id="checkoutForm" action="thankyou.html" method="GET" novalidate>
+    <form id="checkoutForm" novalidate>
       <label for="service">Selected Service:</label>
       <input type="text" id="service" name="service" readonly aria-readonly="true" style="background:#f4f4f4; font-weight:600;" />
 
@@ -160,24 +143,21 @@
       <div id="descError" class="error" aria-live="polite"></div>
 
       <div class="payment-options">
-        <button type="button" class="payment-btn" disabled title="EasyPaisa payment gateway coming soon">Easypaisa</button>
-        <button type="button" class="payment-btn" disabled title="JazzCash payment gateway coming soon">JazzCash</button>
+        <button type="button" id="easypaisaBtn" class="payment-btn" title="Pay with Easypaisa">Easypaisa</button>
+        <button type="button" disabled class="payment-btn" title="JazzCash payment gateway coming soon">JazzCash</button>
       </div>
-      <div class="note">* Easypaisa and JazzCash payment gateways will be available soon.</div>
 
-      <button type="submit" class="btn-submit">Submit Order</button>
+      <div class="message" id="paymentMessage" role="alert" aria-live="assertive"></div>
     </form>
   </div>
 
   <script>
-    // Service and prices mapping matching your original index service keys
     const services = {
-      webdev: { name: 'Web Development', price: 'PKR 30,000' },
-      logo: { name: 'Logo Design', price: 'PKR 5,000' },
-      ecommerce: { name: 'E-Commerce Store', price: 'PKR 50,000' }
+      webdev: { name: 'Web Development', price: 30000 },
+      logo: { name: 'Logo Design', price: 5000 },
+      ecommerce: { name: 'E-Commerce Store', price: 50000 }
     };
 
-    // Get query param 'service'
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -190,30 +170,26 @@
 
       if (serviceKey && services[serviceKey]) {
         serviceInput.value = services[serviceKey].name;
-        priceDisplay.textContent = 'Price: ' + services[serviceKey].price;
+        priceDisplay.textContent = 'Price: PKR ' + services[serviceKey].price.toLocaleString();
       } else {
         serviceInput.value = 'Unknown service';
         priceDisplay.textContent = 'Price: -';
       }
     }
 
-    // Basic form validation
     function validateForm() {
       let valid = true;
 
-      // Clear all error messages
       ['nameError', 'emailError', 'phoneError', 'descError'].forEach(id => {
         document.getElementById(id).textContent = '';
       });
 
-      // Validate name
       const name = document.getElementById('name').value.trim();
       if (name.length < 3) {
         document.getElementById('nameError').textContent = 'Please enter your full name.';
         valid = false;
       }
 
-      // Validate email (simple regex)
       const email = document.getElementById('email').value.trim();
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailPattern.test(email)) {
@@ -221,14 +197,12 @@
         valid = false;
       }
 
-      // Validate phone (simple pattern)
       const phone = document.getElementById('phone').value.trim();
       if (phone.length < 10) {
         document.getElementById('phoneError').textContent = 'Please enter a valid phone number.';
         valid = false;
       }
 
-      // Validate description
       const desc = document.getElementById('description').value.trim();
       if (desc.length < 10) {
         document.getElementById('descError').textContent = 'Please describe your requirements in detail.';
@@ -238,29 +212,66 @@
       return valid;
     }
 
-    // On DOM ready
+    async function initiateEasypaisaPayment(data) {
+      const messageEl = document.getElementById('paymentMessage');
+      messageEl.textContent = '';
+      messageEl.className = 'message';
+
+      try {
+        const response = await fetch('https://your-backend.onrender.com/pay', { // <-- CHANGE this URL to your deployed backend URL
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Payment request failed.');
+        }
+
+        const result = await response.json();
+
+        if (result.status === 'SUCCESS' && result.transactionUrl) {
+          // Redirect user to Easypaisa payment page (usually returned by gateway)
+          window.location.href = result.transactionUrl;
+        } else {
+          throw new Error(result.message || 'Payment initiation failed.');
+        }
+      } catch (error) {
+        messageEl.textContent = 'Error: ' + error.message;
+        messageEl.classList.add('error');
+        document.getElementById('easypaisaBtn').disabled = false;
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       setServiceDetails();
 
-      const form = document.getElementById('checkoutForm');
-      form.addEventListener('submit', e => {
-        e.preventDefault();
+      const easypaisaBtn = document.getElementById('easypaisaBtn');
 
-        if (!validateForm()) {
-          return;
-        }
+      easypaisaBtn.addEventListener('click', () => {
+        if (!validateForm()) return;
 
-        // Disable submit button and show loading
-        const submitBtn = form.querySelector('.btn-submit');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Processing...';
+        easypaisaBtn.disabled = true;
+        document.getElementById('paymentMessage').textContent = 'Processing payment...';
 
-        // For demo: Simulate sending form & then redirect to thank you page after 1.5s
-        setTimeout(() => {
-          // Collect form data as URL params to pass to thankyou page
-          const params = new URLSearchParams(new FormData(form));
-          window.location.href = `thankyou.html?${params.toString()}`;
-        }, 1500);
+        const serviceKey = getQueryParam('service');
+        const amount = services[serviceKey]?.price || 0;
+
+        const paymentData = {
+          orderId: 'TX-' + Date.now(),
+          mobileAccountNo: document.getElementById('phone').value.trim().replace(/\D/g, ''), // numeric only
+          msisdn: document.getElementById('phone').value.trim().replace(/\D/g, ''),
+          transactionAmount: amount.toFixed(2),
+          emailAddress: document.getElementById('email').value.trim(),
+          name: document.getElementById('name').value.trim(),
+          service: document.getElementById('service').value,
+          description: document.getElementById('description').value.trim()
+        };
+
+        initiateEasypaisaPayment(paymentData);
       });
     });
   </script>

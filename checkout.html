@@ -170,14 +170,16 @@
   </div>
 
   <script>
-    // Service and prices mapping matching your original index service keys
+    // Map your service keys exactly as in index.html and their names & prices
     const services = {
-      webdev: { name: 'Web Development', price: 'PKR 30,000' },
-      logo: { name: 'Logo Design', price: 'PKR 5,000' },
-      ecommerce: { name: 'E-Commerce Store', price: 'PKR 50,000' }
+      webapp: { name: 'Web & App Development', price: 'PKR 30,000' },
+      domainhosting: { name: 'Domain & Hosting', price: 'Starting from PKR 3,500/year' },
+      branding: { name: 'Branding & Logo Design', price: 'PKR 5,000' },
+      ecommerce: { name: 'E-Commerce & Payment Solutions', price: 'PKR 50,000' },
+      cloudit: { name: 'Cloud & IT Infrastructure', price: 'Custom Pricing' },
+      digitalmarketing: { name: 'Digital Marketing', price: 'Starting at PKR 15,000/month' }
     };
 
-    // Get query param 'service'
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -238,7 +240,6 @@
       return valid;
     }
 
-    // On DOM ready
     document.addEventListener('DOMContentLoaded', () => {
       setServiceDetails();
 
@@ -250,14 +251,11 @@
           return;
         }
 
-        // Disable submit button and show loading
         const submitBtn = form.querySelector('.btn-submit');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Processing...';
 
-        // For demo: Simulate sending form & then redirect to thank you page after 1.5s
         setTimeout(() => {
-          // Collect form data as URL params to pass to thankyou page
           const params = new URLSearchParams(new FormData(form));
           window.location.href = `thankyou.html?${params.toString()}`;
         }, 1500);

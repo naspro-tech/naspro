@@ -1,60 +1,74 @@
-import crypto from "crypto";
+const express = require('express');
+const router = express.Router();
+const fetch = require('node-fetch');
+const xml2js = require('xml2js');
 
-export default function handler(req, res) {
-  const { service } = req.query;
+router.post('/pay', async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      service,
+      amount,
+      description,
+      orderId
+    } = req.body;
 
-  const services = {
-    webdev: { name: "Web Development", price: 30000 },
-    logo: { name: "Logo Design", price: 5000 },
-    ecommerce: { name: "E-Commerce Store", price: 50000 }
-  };
+    // Build SOAP XML request body
+    const soapRequest = `
+    <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:dto="http://dto.transaction.partner.pg.systems.com/" xmlns:dto1="http://dto.common.pg.systems.com/">
+      <soapenv:Header/>
+      <soapenv:Body>
+        <dto:initiateTransactionRequestType>
+          <dto1:username>YourEasyPaisaUsername</dto1:username>
+          <dto1:password>YourEasyPaisaPasswordHash</dto1:password>
+          <channel>Internet</channel>
+          <orderId>${orderId}</orderId>
+          <storeId>YourStoreID</storeId>
+          <transactionAmount>${amount}</transactionAmount>
+          <transactionType>MA</transactionType>
+          <mobileAccountNo>${phone}</mobileAccountNo>
+          <msisdn>${phone}</msisdn>
+          <emailAddress>${email}</emailAddress>
+        </dto:initiateTransactionRequestType>
+      </soapenv:Body>
+    </soapenv:Envelope>`;
 
-  if (!services[service]) {
-    res.status(400).send("Invalid service");
-    return;
+    // Call Easypaisa SOAP endpoint
+    const response = await fetch('https://easypay.easypaisa.com.pk:443/easypay-service/PartnerBusinessService', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml;charset=UTF-8',
+        'SOAPAction': ''
+      },
+      body: soapRequest
+    });
+
+    const responseText = await response.text();
+
+    // Parse XML response
+    xml2js.parseString(responseText, { explicitArray: false }, (err, result) => {
+      if (err) {
+        console.error('XML Parse Error:', err);
+        return res.status(500).json({ error: 'Failed to parse Easypaisa response' });
+      }
+
+      // Navigate to the payment URL (adjust this path if Easypaisa response differs)
+      const paymentUrl = result['soapenv:Envelope']?.['soapenv:Body']?.['dto:initiateTransactionResponseType']?.paymentURL;
+
+      if (!paymentUrl) {
+        return res.status(400).json({ error: 'Payment URL not found in Easypaisa response' });
+      }
+
+      // Send payment URL back to frontend
+      res.json({ paymentUrl });
+    });
+
+  } catch (error) {
+    console.error('Error in /pay:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
+});
 
-  const merchantID = "MC152724";
-  const password = "00v8sc695t";
-  const integritySalt = "221sb04w9x";
-  const item = services[service];
-
-  const amount = item.price * 100; // JazzCash expects paisa
-  const datetime = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0,14);
-  const expiry = new Date(Date.now() + 60*60*1000).toISOString().replace(/[-:T.Z]/g, "").slice(0,14);
-  const txnRef = "T" + Date.now();
-
-  const payload = {
-    pp_Version: "1.1",
-    pp_TxnType: "MWALLET",
-    pp_Language: "EN",
-    pp_MerchantID: merchantID,
-    pp_Password: password,
-    pp_TxnRefNo: txnRef,
-    pp_Amount: amount.toString(),
-    pp_TxnCurrency: "PKR",
-    pp_TxnDateTime: datetime,
-    pp_BillReference: service,
-    pp_Description: "Payment for " + item.name,
-    pp_TxnExpiryDateTime: expiry,
-    pp_ReturnURL: "https://naspro-payments.vercel.app/api/thankyou",
-  };
-
-  const order = Object.keys(payload);
-  let hashString = integritySalt;
-  for (const key of order) {
-    const val = payload[key];
-    if (val !== "") hashString += "&" + val;
-  }
-  const hash = crypto.createHmac("sha256", integritySalt).update(hashString).digest("hex");
-  payload.pp_SecureHash = hash;
-
-  let form = `<form id="payForm" method="post" action="https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform">`;
-  for (const [key, value] of Object.entries(payload)) {
-    form += `<input type="hidden" name="${key}" value="${value}" />`;
-  }
-  form += `</form><script>document.getElementById('payForm').submit();</script>`;
-
-  res.setHeader("Content-Type", "text/html");
-  res.send(form);
-}
+module.exports = router;

@@ -151,7 +151,7 @@
       text-decoration: none;
     }
 
-    /* New top-right menu styles */
+    /* Top right menu styles */
     .top-right-menu {
       position: fixed;
       top: 15px;
@@ -162,10 +162,22 @@
       user-select: none;
     }
 
+    /* Hamburger icon with 3 white lines */
     .hamburger {
-      font-size: 28px;
+      width: 28px;
+      height: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       cursor: pointer;
       margin-bottom: 8px;
+    }
+
+    .hamburger span {
+      display: block;
+      height: 3px;
+      background: white;
+      border-radius: 2px;
     }
 
     .menu-items {
@@ -191,7 +203,11 @@
 
   <!-- Top right hamburger + vertical menu -->
   <div class="top-right-menu">
-    <div class="hamburger">☰</div>
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
     <div class="menu-items">
       <a href="#services">Services</a>
       <a href="#why-choose-us">Why Choose Us?</a>

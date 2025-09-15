@@ -1,106 +1,105 @@
-// /api/checkout.js
-
 import crypto from 'crypto';
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
-  const { service_key, name, email, phone, description } = req.body;
+  const {
+    service_key,
+    name,
+    email,
+    phone,
+    description
+  } = req.body;
 
   if (!service_key || !name || !email || !phone || !description) {
-    return res.status(400).json({ error: 'Missing required form data' });
+    res.status(400).json({ error: 'Missing required fields' });
+    return;
   }
 
+  // Map service keys to amounts (PKR)
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
     branding: 5000,
     ecommerce: 50000,
-    cloudit: 0,           // custom pricing case
-    digitalmarketing: 15000
+    cloudit: 0, // Custom Pricing
+    digitalmarketing: 15000,
   };
 
-  const amountPKR = servicePrices[service_key];
-  if (amountPKR === undefined || amountPKR === 0) {
-    return res.status(400).json({ error: 'Invalid or zero‑price service selected' });
-  }
-
-  // Convert to paisa (amount * 100)
-  const amount = (amountPKR * 100).toString();
-
-  // Load from environment variables
-  const merchantId = process.env.JAZZCASH_MERCHANT_ID;     // set this in Vercel
-  const password   = process.env.JAZZCASH_PASSWORD;        // your integrity salt / password
-  const returnUrl  = process.env.JAZZCASH_RETURN_URL;      // e.g. https://yourdomain.com/thankyou
+  // JazzCash config from environment variables
+  const merchantId = process.env.JAZZCASH_MERCHANT_ID;
+  const password = process.env.JAZZCASH_PASSWORD;
+  const returnUrl = process.env.JAZZCASH_RETURN_URL;
 
   if (!merchantId || !password || !returnUrl) {
-    return res.status(500).json({ error: 'Merchant credentials not configured' });
+    res.status(500).json({ error: 'Missing payment gateway configuration' });
+    return;
   }
 
-  const txnRefNo   = 'T' + Date.now();
-  const txnDateTime = new Date().toISOString().slice(0,19).replace('T',' ');
+  // Transaction date/time in YYYYMMDDHHmmss
+  const txnDateTime = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 
+  // Generate a unique order ID (e.g., timestamp + random)
+  const orderId = `NASPRO${Date.now()}`;
+
+  // Get amount for the service or fallback
+  let amount = servicePrices[service_key];
+  if (amount === undefined) amount = 1000; // fallback minimal amount
+
+  // Convert PKR to Paisa (JazzCash uses paisa)
+  const txnAmount = amount * 100;
+
+  // Prepare parameters for JazzCash
   const postData = {
-    pp_Version: "1.1",
-    pp_TxnType: "MPAY",
-    pp_Language: "EN",
+    pp_Version: '1.1',
+    pp_TxnType: 'MWALLET', // Mobile Wallet transaction type
+    pp_Language: 'EN',
     pp_MerchantID: merchantId,
-    pp_SubMerchantID: "",
     pp_Password: password,
-    pp_BankID: "",
-    pp_ProductID: "",
-    pp_TxnRefNo: txnRefNo,
-    pp_Amount: amount,
-    pp_TxnCurrency: "PKR",
+    pp_TxnRefNo: orderId,
+    pp_Amount: txnAmount.toString(),
+    pp_TxnCurrency: 'PKR',
     pp_TxnDateTime: txnDateTime,
-    pp_BillReference: "BillRef" + txnRefNo,
-    pp_Description: "Payment for " + service_key,
+    pp_BillReference: 'ref001',
+    pp_Description: `Payment for ${service_key}`,
     pp_ReturnURL: returnUrl,
+    pp_SecureHash: '', // placeholder
     ppmpf_1: name,
     ppmpf_2: email,
     ppmpf_3: phone,
-    ppmpf_4: service_key,
-    ppmpf_5: description
+    ppmpf_4: description,
+    ppmpf_5: service_key,
   };
 
-  // Generate secure hash
-  const sortedKeys = Object.keys(postData).sort();
-  let hashString = password;
-  sortedKeys.forEach(key => {
-    const val = postData[key];
-    if (val !== "" && key !== 'pp_SecureHash') {
-      hashString += '&' + val;
-    }
-  });
+  // Generate secure hash (SHA256) — note the exact concatenation order is crucial
+  // Concatenate parameters in alphabetical order of keys (excluding pp_SecureHash)
+  const hashData = Object.keys(postData)
+    .filter(key => key !== 'pp_SecureHash')
+    .sort()
+    .map(key => postData[key])
+    .join('');
 
-  const secureHash = crypto
-    .createHmac('sha256', password)
-    .update(hashString)
-    .digest('hex')
-    .toUpperCase();
+  const hash = crypto.createHash('sha256').update(hashData).digest('hex');
 
-  postData.pp_SecureHash = secureHash;
+  postData.pp_SecureHash = hash;
 
-  const jazzCashLiveUrl = "https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/";
-
-  const inputs = Object.entries(postData).map(([k, v]) =>
-    `<input type="hidden" name="${k}" value="${v}" />`
-  ).join('\n');
-
-  const html = `<!DOCTYPE html>
-<html>
-  <head><title>Redirecting to JazzCash...</title></head>
-  <body onload="document.forms[0].submit()">
-    <p>Redirecting to payment, please wait...</p>
-    <form method="POST" action="${jazzCashLiveUrl}">
-      ${inputs}
-      <noscript><button type="submit">Click here if not redirected</button></noscript>
-    </form>
-  </body>
-</html>`;
-
+  // Return an HTML form that auto-submits to JazzCash gateway
   res.setHeader('Content-Type', 'text/html');
-  res.status(200).send(html);
+  res.send(`
+    <html>
+      <body>
+        <form id="jazzcashForm" method="post" action="https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Payment/DoMWalletTransaction">
+          ${Object.entries(postData).map(([key, val]) =>
+            `<input type="hidden" name="${key}" value="${val}" />`
+          ).join('')}
+        </form>
+        <script>
+          document.getElementById('jazzcashForm').submit();
+        </script>
+      </body>
+    </html>
+  `);
 }

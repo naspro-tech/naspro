@@ -1,44 +1,18 @@
-import { useState } from "react";
-import Link from "next/link";
+import Head from 'next/head';
+import Link from 'next/link';
 
 export default function Home() {
-  const [menuActive, setMenuActive] = useState(false);
-
-  const toggleMenu = () => {
-    setMenuActive(!menuActive);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggleMenu();
-    }
-  };
-
   return (
     <>
+      <Head>
+        <title>NASPRO IT Services</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="/style.css" />
+      </Head>
+
+      {/* Hamburger menu */}
       <div className="top-right-menu">
-        <div
-          className="hamburger"
-          role="button"
-          tabIndex={0}
-          aria-label="Menu toggle"
-          onClick={toggleMenu}
-          onKeyDown={handleKeyDown}
-        >
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <nav
-          className={`menu-items ${menuActive ? "active" : ""}`}
-          role="menu"
-          aria-hidden={!menuActive}
-        >
-          <a href="#services" role="menuitem" onClick={() => setMenuActive(false)}>Services</a>
-          <a href="#why-choose-us" role="menuitem" onClick={() => setMenuActive(false)}>Why Choose Us?</a>
-          <a href="#faq" role="menuitem" onClick={() => setMenuActive(false)}>FAQ</a>
-        </nav>
+        <HamburgerMenu />
       </div>
 
       <header>
@@ -47,54 +21,42 @@ export default function Home() {
       </header>
 
       <section id="services" className="services">
-        <div className="card">
-          <h3>Web & App Development</h3>
-          <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
-          <p className="price">PKR 30,000</p>
-          <Link href="/checkout?service=webapp" passHref>
-            <a className="buy-btn">Buy Now</a>
-          </Link>
-        </div>
-        <div className="card">
-          <h3>Domain & Hosting</h3>
-          <p>Fast, secure, and reliable hosting with premium domain registration services.</p>
-          <p className="price">Starting from PKR 3,500/year</p>
-          <Link href="/checkout?service=domainhosting" passHref>
-            <a className="buy-btn">Buy Now</a>
-          </Link>
-        </div>
-        <div className="card">
-          <h3>Branding & Logo Design</h3>
-          <p>Memorable brand identities and creative designs that leave a lasting impression.</p>
-          <p className="price">PKR 5,000</p>
-          <Link href="/checkout?service=branding" passHref>
-            <a className="buy-btn">Buy Now</a>
-          </Link>
-        </div>
-        <div className="card">
-          <h3>E-Commerce & Payment Solutions</h3>
-          <p>Fully functional online stores with seamless payment gateway integration.</p>
-          <p className="price">PKR 50,000</p>
-          <Link href="/checkout?service=ecommerce" passHref>
-            <a className="buy-btn">Buy Now</a>
-          </Link>
-        </div>
-        <div className="card">
-          <h3>Cloud & IT Infrastructure</h3>
-          <p>Secure cloud hosting, data backups, and IT infrastructure management.</p>
-          <p className="price">Custom Pricing</p>
-          <Link href="/checkout?service=cloudit" passHref>
-            <a className="buy-btn">Buy Now</a>
-          </Link>
-        </div>
-        <div className="card">
-          <h3>Digital Marketing</h3>
-          <p>Grow your online presence with SEO, social media, and targeted ad campaigns.</p>
-          <p className="price">Starting at PKR 15,000/month</p>
-          <Link href="/checkout?service=digitalmarketing" passHref>
-            <a className="buy-btn">Buy Now</a>
-          </Link>
-        </div>
+        <ServiceCard
+          title="Web & App Development"
+          description="Custom-built, scalable, and high-performance websites and mobile apps for every industry."
+          price="PKR 30,000"
+          serviceKey="webapp"
+        />
+        <ServiceCard
+          title="Domain & Hosting"
+          description="Fast, secure, and reliable hosting with premium domain registration services."
+          price="Starting from PKR 3,500/year"
+          serviceKey="domainhosting"
+        />
+        <ServiceCard
+          title="Branding & Logo Design"
+          description="Memorable brand identities and creative designs that leave a lasting impression."
+          price="PKR 5,000"
+          serviceKey="branding"
+        />
+        <ServiceCard
+          title="E-Commerce & Payment Solutions"
+          description="Fully functional online stores with seamless payment gateway integration."
+          price="PKR 50,000"
+          serviceKey="ecommerce"
+        />
+        <ServiceCard
+          title="Cloud & IT Infrastructure"
+          description="Secure cloud hosting, data backups, and IT infrastructure management."
+          price="Custom Pricing"
+          serviceKey="cloudit"
+        />
+        <ServiceCard
+          title="Digital Marketing"
+          description="Grow your online presence with SEO, social media, and targeted ad campaigns."
+          price="Starting at PKR 15,000/month"
+          serviceKey="digitalmarketing"
+        />
       </section>
 
       <section className="details" id="why-choose-us">
@@ -111,239 +73,106 @@ export default function Home() {
       <section className="faq" id="faq">
         <h2>Frequently Asked Questions</h2>
 
-        <div className="faq-item">
-          <strong>Q: How long does a typical website project take?</strong>
-          <p>A: Usually between 2-6 weeks depending on complexity and client feedback.</p>
-        </div>
-
-        <div className="faq-item">
-          <strong>Q: Do you offer support after project completion?</strong>
-          <p>A: Yes! We offer maintenance packages to keep your site/app up-to-date and secure.</p>
-        </div>
-
-        <div className="faq-item">
-          <strong>Q: Can I upgrade my plan later?</strong>
-          <p>A: Absolutely. We design scalable solutions that grow with your business.</p>
-        </div>
-
-        <div className="faq-item">
-          <strong>Q: What payment methods do you accept?</strong>
-          <p>A: Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options.</p>
-        </div>
+        <FaqItem
+          question="How long does a typical website project take?"
+          answer="Usually between 2-6 weeks depending on complexity and client feedback."
+        />
+        <FaqItem
+          question="Do you offer support after project completion?"
+          answer="Yes! We offer maintenance packages to keep your site/app up-to-date and secure."
+        />
+        <FaqItem
+          question="Can I upgrade my plan later?"
+          answer="Absolutely. We design scalable solutions that grow with your business."
+        />
+        <FaqItem
+          question="What payment methods do you accept?"
+          answer="Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options."
+        />
       </section>
 
       <footer>
         <p>
-          📍 Karachi, Pakistan | 📧{" "}
-          <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a> | 📞{" "}
+          📍 Karachi, Pakistan | 📧{' '}
+          <a href="mailto:naspropvt@gmail.com">naspropvt@gmail.com</a> | 📞{' '}
           <a href="tel:+923033792494">+92 303 3792494</a>
         </p>
       </footer>
-
-      <style jsx>{`
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 0;
-          background: #f9f9f9;
-          color: #333;
-          line-height: 1.6;
-        }
-        header {
-          background: #222;
-          color: #fff;
-          padding: 25px 20px;
-          text-align: center;
-        }
-        header h1 {
-          margin: 0;
-          font-size: 2.5rem;
-        }
-        header p {
-          margin-top: 8px;
-          font-size: 1.1rem;
-          font-weight: 300;
-        }
-        .services {
-          max-width: 1200px;
-          margin: 40px auto;
-          padding: 0 20px;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 30px;
-        }
-        .card {
-          background: #fff;
-          padding: 25px;
-          border-radius: 10px;
-          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-          transition: transform 0.3s ease;
-        }
-        .card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
-        .card h3 {
-          margin-top: 0;
-          color: #ff6600;
-        }
-        .price {
-          font-size: 18px;
-          margin: 10px 0 18px;
-          color: #444;
-          font-weight: 600;
-        }
-        .buy-btn {
-          background: #ff6600;
-          color: #fff;
-          padding: 12px 22px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          text-decoration: none;
-          display: inline-block;
-          font-weight: 600;
-          font-size: 1rem;
-          transition: background-color 0.3s ease;
-        }
-        .buy-btn:hover {
-          background: #e65c00;
-        }
-        section.details {
-          max-width: 900px;
-          margin: 40px auto;
-          background: #fff;
-          padding: 25px 30px;
-          border-radius: 10px;
-          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-          line-height: 1.5;
-        }
-        section.details h2 {
-          color: #ff6600;
-          margin-bottom: 20px;
-        }
-        section.details ul {
-          list-style: disc inside;
-          margin: 20px 0;
-          padding-left: 10px;
-        }
-        section.why-choose {
-          max-width: 900px;
-          margin: 40px auto;
-          padding: 25px 30px;
-          background: #fffae6;
-          border-radius: 10px;
-          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-        }
-        section.why-choose h2 {
-          color: #ff6600;
-          margin-bottom: 20px;
-          text-align: center;
-        }
-        section.why-choose ul {
-          list-style-type: none;
-          padding: 0;
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 20px;
-          color: #665500;
-        }
-        section.why-choose ul li {
-          background: #fff3c7;
-          padding: 15px 20px;
-          border-radius: 8px;
-          font-weight: 600;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        section.faq {
-          max-width: 900px;
-          margin: 40px auto 80px;
-          padding: 25px 30px;
-          background: #fff;
-          border-radius: 10px;
-          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-        }
-        section.faq h2 {
-          color: #ff6600;
-          margin-bottom: 25px;
-          text-align: center;
-        }
-        .faq-item {
-          margin-bottom: 18px;
-        }
-        .faq-item strong {
-          display: block;
-          margin-bottom: 6px;
-          font-weight: 700;
-        }
-        footer {
-          background: #222;
-          color: #fff;
-          text-align: center;
-          padding: 25px 15px;
-          font-size: 0.95rem;
-        }
-        footer a {
-          color: #ff6600;
-          text-decoration: none;
-        }
-
-        .top-right-menu {
-          position: fixed;
-          top: 15px;
-          right: 15px;
-          text-align: right;
-          font-family: Arial, sans-serif;
-          z-index: 10000;
-          user-select: none;
-        }
-        .hamburger {
-          width: 28px;
-          height: 22px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          cursor: pointer;
-          margin-bottom: 8px;
-          z-index: 10001;
-          position: relative;
-        }
-        .hamburger span {
-          display: block;
-          height: 3px;
-          background: white;
-          border-radius: 2px;
-          transition: background-color 0.3s;
-        }
-        .menu-items {
-          display: none;
-          flex-direction: column;
-          gap: 12px;
-          background: #222;
-          padding: 12px 15px;
-          border-radius: 6px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-          position: fixed;
-          top: 50px;
-          right: 60px;
-          min-width: 140px;
-          z-index: 10000;
-        }
-        .menu-items.active {
-          display: flex;
-        }
-        .menu-items a {
-          color: white;
-          font-weight: 600;
-          font-size: 16px;
-          text-decoration: none;
-          white-space: nowrap;
-          transition: color 0.3s;
-        }
-        .menu-items a:hover {
-          color: #ff6600;
-        }
-      `}</style>
     </>
+  );
+}
+
+// Hamburger menu component
+function HamburgerMenu() {
+  const toggleMenu = () => {
+    const menu = document.getElementById('menuItems');
+    if (menu) {
+      menu.classList.toggle('active');
+      const ariaHidden = menu.getAttribute('aria-hidden') === 'true';
+      menu.setAttribute('aria-hidden', !ariaHidden);
+    }
+  };
+
+  return (
+    <>
+      <div
+        className="hamburger"
+        id="hamburger"
+        aria-label="Menu toggle"
+        role="button"
+        tabIndex={0}
+        onClick={toggleMenu}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleMenu();
+          }
+        }}
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <nav
+        className="menu-items"
+        id="menuItems"
+        role="menu"
+        aria-hidden="true"
+      >
+        <a href="#services" role="menuitem">
+          Services
+        </a>
+        <a href="#why-choose-us" role="menuitem">
+          Why Choose Us?
+        </a>
+        <a href="#faq" role="menuitem">
+          FAQ
+        </a>
+      </nav>
+    </>
+  );
+}
+
+// Service card component
+function ServiceCard({ title, description, price, serviceKey }) {
+  return (
+    <div className="card">
+      <h3>{title}</h3>
+      <p>{description}</p>
+      <p className="price">{price}</p>
+      <Link href={`/checkout?service=${serviceKey}`}>
+        <a className="buy-btn">Buy Now</a>
+      </Link>
+    </div>
+  );
+}
+
+// FAQ item component
+function FaqItem({ question, answer }) {
+  return (
+    <div className="faq-item">
+      <strong>Q: {question}</strong>
+      <p>A: {answer}</p>
+    </div>
   );
 }

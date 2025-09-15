@@ -1,105 +1,112 @@
+// /api/checkout.js
+
 import crypto from 'crypto';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const {
-    service_key,
-    name,
-    email,
-    phone,
-    description
-  } = req.body;
+  const { service_key, name, email, phone, description } = req.body;
 
   if (!service_key || !name || !email || !phone || !description) {
-    res.status(400).json({ error: 'Missing required fields' });
-    return;
+    return res.status(400).json({ error: 'Missing required form data' });
   }
 
-  // Map service keys to amounts (PKR)
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
     branding: 5000,
     ecommerce: 50000,
-    cloudit: 0, // Custom Pricing
-    digitalmarketing: 15000,
+    cloudit: 0,           // custom pricing case
+    digitalmarketing: 15000
   };
 
-  // JazzCash config from environment variables
-  const merchantId = process.env.JAZZCASH_MERCHANT_ID;
-  const password = process.env.JAZZCASH_PASSWORD;
-  const returnUrl = process.env.JAZZCASH_RETURN_URL;
-
-  if (!merchantId || !password || !returnUrl) {
-    res.status(500).json({ error: 'Missing payment gateway configuration' });
-    return;
+  const amountPKR = servicePrices[service_key];
+  if (amountPKR === undefined || amountPKR === 0) {
+    return res.status(400).json({ error: 'Invalid or zero-price service selected' });
   }
 
-  // Transaction date/time in YYYYMMDDHHmmss
-  const txnDateTime = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+  // Convert to paisa (amount * 100)
+  const amount = (amountPKR * 100).toString();
 
-  // Generate a unique order ID (e.g., timestamp + random)
-  const orderId = `NASPRO${Date.now()}`;
+  // JazzCash live credentials (replace process.env with your actual values or keep env vars)
+  const merchantId = 'MC302132'; // Your Merchant ID
+  const password   = '53v2z2u302'; // Your Integrity Salt / Password
+  const returnUrl  = 'https://naspropvt.vercel.app/api/thankyou'; // Your return URL
 
-  // Get amount for the service or fallback
-  let amount = servicePrices[service_key];
-  if (amount === undefined) amount = 1000; // fallback minimal amount
+  if (!merchantId || !password || !returnUrl) {
+    return res.status(500).json({ error: 'Merchant credentials not configured' });
+  }
 
-  // Convert PKR to Paisa (JazzCash uses paisa)
-  const txnAmount = amount * 100;
+  const txnRefNo   = 'T' + Date.now();
+  const txnDateTime = new Date().toISOString().slice(0,19).replace('T',' ');
 
-  // Prepare parameters for JazzCash
   const postData = {
-    pp_Version: '1.1',
-    pp_TxnType: 'MWALLET', // Mobile Wallet transaction type
-    pp_Language: 'EN',
+    pp_Version: "1.1",
+    pp_TxnType: "MPAY",
+    pp_Language: "EN",
     pp_MerchantID: merchantId,
+    pp_SubMerchantID: "",
     pp_Password: password,
-    pp_TxnRefNo: orderId,
-    pp_Amount: txnAmount.toString(),
-    pp_TxnCurrency: 'PKR',
+    pp_BankID: "",
+    pp_ProductID: "",
+    pp_TxnRefNo: txnRefNo,
+    pp_Amount: amount,
+    pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
-    pp_BillReference: 'ref001',
-    pp_Description: `Payment for ${service_key}`,
+    pp_BillReference: "BillRef" + txnRefNo,
+    pp_Description: "Payment for " + service_key,
     pp_ReturnURL: returnUrl,
-    pp_SecureHash: '', // placeholder
     ppmpf_1: name,
     ppmpf_2: email,
     ppmpf_3: phone,
-    ppmpf_4: description,
-    ppmpf_5: service_key,
+    ppmpf_4: service_key,
+    ppmpf_5: description
   };
 
-  // Generate secure hash (SHA256) — note the exact concatenation order is crucial
-  // Concatenate parameters in alphabetical order of keys (excluding pp_SecureHash)
-  const hashData = Object.keys(postData)
-    .filter(key => key !== 'pp_SecureHash')
-    .sort()
-    .map(key => postData[key])
-    .join('');
+  // Generate secure hash string
+  // As per JazzCash docs, hash is: Password&Amount&BankID&... all params sorted by key except pp_SecureHash
+  // Here, we'll use your method but ensure password at start and join with '&'
 
-  const hash = crypto.createHash('sha256').update(hashData).digest('hex');
+  const sortedKeys = Object.keys(postData).sort();
 
-  postData.pp_SecureHash = hash;
+  let hashString = password;
+  sortedKeys.forEach(key => {
+    if (key !== 'pp_SecureHash' && postData[key] !== "") {
+      hashString += '&' + postData[key];
+    }
+  });
 
-  // Return an HTML form that auto-submits to JazzCash gateway
+  // HMAC SHA256 hash and uppercase
+  const secureHash = crypto
+    .createHmac('sha256', password)
+    .update(hashString)
+    .digest('hex')
+    .toUpperCase();
+
+  postData.pp_SecureHash = secureHash;
+
+  // JazzCash live payment URL
+  const jazzCashLiveUrl = "https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/";
+
+  // Build hidden input form to auto-submit
+  const inputs = Object.entries(postData).map(([k, v]) =>
+    `<input type="hidden" name="${k}" value="${v}" />`
+  ).join('\n');
+
+  const html = `<!DOCTYPE html>
+<html>
+  <head><title>Redirecting to JazzCash...</title></head>
+  <body onload="document.forms[0].submit()">
+    <p>Redirecting to payment, please wait...</p>
+    <form method="POST" action="${jazzCashLiveUrl}">
+      ${inputs}
+      <noscript><button type="submit">Click here if not redirected</button></noscript>
+    </form>
+  </body>
+</html>`;
+
   res.setHeader('Content-Type', 'text/html');
-  res.send(`
-    <html>
-      <body>
-        <form id="jazzcashForm" method="post" action="https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Payment/DoMWalletTransaction">
-          ${Object.entries(postData).map(([key, val]) =>
-            `<input type="hidden" name="${key}" value="${val}" />`
-          ).join('')}
-        </form>
-        <script>
-          document.getElementById('jazzcashForm').submit();
-        </script>
-      </body>
-    </html>
-  `);
+  res.status(200).send(html);
 }

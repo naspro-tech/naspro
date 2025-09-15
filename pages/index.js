@@ -1,9 +1,14 @@
 import Head from 'next/head';
-import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 export default function Home() {
   const [menuActive, setMenuActive] = useState(false);
+  const router = useRouter();
+
+  const handleBuyNowClick = (service) => {
+    router.push(`/checkout?service=${service}`);
+  };
 
   const toggleMenu = () => setMenuActive(!menuActive);
 
@@ -21,7 +26,7 @@ export default function Home() {
           onClick={toggleMenu}
           role="button"
           tabIndex={0}
-          onKeyDown={e => {
+          onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               toggleMenu();
@@ -51,37 +56,37 @@ export default function Home() {
           <h3>Web &amp; App Development</h3>
           <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
           <p className="price">PKR 30,000</p>
-          <Link href="/checkout?service=webapp"><a className="buy-btn">Buy Now</a></Link>
+          <button className="buy-btn" onClick={() => handleBuyNowClick('webapp')}>Buy Now</button>
         </div>
         <div className="card">
           <h3>Domain &amp; Hosting</h3>
           <p>Fast, secure, and reliable hosting with premium domain registration services.</p>
           <p className="price">Starting from PKR 3,500/year</p>
-          <Link href="/checkout?service=domainhosting"><a className="buy-btn">Buy Now</a></Link>
+          <button className="buy-btn" onClick={() => handleBuyNowClick('domainhosting')}>Buy Now</button>
         </div>
         <div className="card">
           <h3>Branding &amp; Logo Design</h3>
           <p>Memorable brand identities and creative designs that leave a lasting impression.</p>
           <p className="price">PKR 5,000</p>
-          <Link href="/checkout?service=branding"><a className="buy-btn">Buy Now</a></Link>
+          <button className="buy-btn" onClick={() => handleBuyNowClick('branding')}>Buy Now</button>
         </div>
         <div className="card">
           <h3>E-Commerce &amp; Payment Solutions</h3>
           <p>Fully functional online stores with seamless payment gateway integration.</p>
           <p className="price">PKR 50,000</p>
-          <Link href="/checkout?service=ecommerce"><a className="buy-btn">Buy Now</a></Link>
+          <button className="buy-btn" onClick={() => handleBuyNowClick('ecommerce')}>Buy Now</button>
         </div>
         <div className="card">
           <h3>Cloud &amp; IT Infrastructure</h3>
           <p>Secure cloud hosting, data backups, and IT infrastructure management.</p>
           <p className="price">Custom Pricing</p>
-          <Link href="/checkout?service=cloudit"><a className="buy-btn">Buy Now</a></Link>
+          <button className="buy-btn" onClick={() => handleBuyNowClick('cloudit')}>Buy Now</button>
         </div>
         <div className="card">
           <h3>Digital Marketing</h3>
           <p>Grow your online presence with SEO, social media, and targeted ad campaigns.</p>
           <p className="price">Starting at PKR 15,000/month</p>
-          <Link href="/checkout?service=digitalmarketing"><a className="buy-btn">Buy Now</a></Link>
+          <button className="buy-btn" onClick={() => handleBuyNowClick('digitalmarketing')}>Buy Now</button>
         </div>
       </section>
 

@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 
-const serviceNames = {
+const SERVICE_PRICES = {
+  webapp: 30000,
+  domainhosting: 3500,
+  branding: 5000,
+  ecommerce: 50000,
+  cloudit: 0,  // Custom pricing
+  digitalmarketing: 15000,
+};
+
+const SERVICE_LABELS = {
   webapp: 'Web & App Development',
   domainhosting: 'Domain & Hosting',
   branding: 'Branding & Logo Design',
@@ -14,153 +23,161 @@ export default function Checkout() {
   const router = useRouter();
   const { service } = router.query;
 
-  const [form, setForm] = useState({
-    service_key: service || '',
+  const [price, setPrice] = useState('');
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     description: '',
   });
-
-  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    if (service && serviceNames[service]) {
-      setForm((f) => ({ ...f, service_key: service }));
+    if (service && SERVICE_PRICES.hasOwnProperty(service)) {
+      const p = SERVICE_PRICES[service];
+      setPrice(p === 0 ? 'Custom Pricing - Please contact us' : `PKR ${p.toLocaleString()}`);
     }
   }, [service]);
 
-  const validate = () => {
-    const errs = {};
-    if (!form.service_key || !serviceNames[form.service_key]) errs.service_key = 'Please select a valid service';
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Valid email is required';
-    if (!form.phone.trim() || !/^\+?\d{7,15}$/.test(form.phone)) errs.phone = 'Valid phone number is required';
-    if (!form.description.trim()) errs.description = 'Description is required';
-    return errs;
-  };
+  if (!service) {
+    return <p style={{ padding: 20, textAlign: 'center' }}>Loading service details...</p>;
+  }
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: null });
-    setSubmitError(null);
-  };
+  if (!SERVICE_PRICES.hasOwnProperty(service)) {
+    return <p style={{ padding: 20, textAlign: 'center', color: 'red' }}>Invalid service selected.</p>;
+  }
 
-  const handleSubmit = async (e) => {
+  function handleChange(e) {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  }
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
+
+    setErrorMsg('');
+
+    // Basic validation
+    if (!formData.name || !formData.email || !formData.phone) {
+      setErrorMsg('Please fill in all required fields.');
       return;
     }
+
+    // Optional: check for cloudit custom pricing service, prevent checkout
+    if (service === 'cloudit') {
+      setErrorMsg('Please contact us for custom pricing on Cloud & IT Infrastructure.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          service_key: service,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          description: formData.description || '',
+        }),
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to initiate payment');
+        const data = await res.json();
+        setErrorMsg(data.error || 'Something went wrong.');
+        setLoading(false);
+        return;
       }
 
-      // The API returns HTML form that auto-submits to JazzCash; replace page content:
+      // The API returns HTML form for redirect, so we can get the text and replace the page with it
       const html = await res.text();
+
+      // Replace current page with redirect form HTML
       document.open();
       document.write(html);
       document.close();
 
-    } catch (error) {
-      setSubmitError(error.message);
+    } catch (err) {
+      setErrorMsg('Network error. Please try again.');
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: 500, margin: '40px auto', padding: '20px', background: '#fff', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-      <h1 style={{ color: '#ff6600', marginBottom: 20 }}>Checkout</h1>
+    <div style={{ maxWidth: 600, margin: '40px auto', padding: '30px', background: '#fff', borderRadius: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+      <h1>Checkout - {SERVICE_LABELS[service]}</h1>
+      <p><strong>Price:</strong> {price}</p>
 
-      <form onSubmit={handleSubmit} noValidate>
-        <label htmlFor="service_key">Select Service</label>
-        <select
-          id="service_key"
-          name="service_key"
-          value={form.service_key}
-          onChange={handleChange}
-          disabled={!!service} // disable if preset via query
-          style={{ width: '100%', padding: '8px', marginBottom: errors.service_key ? 5 : 15 }}
+      <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>
+        <label>
+          Name*:<br />
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
+
+        <label>
+          Email*:<br />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
+
+        <label>
+          Phone*:<br />
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
+
+        <label>
+          Description (optional):<br />
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={4}
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
+
+        {errorMsg && <p style={{ color: 'red', marginBottom: 15 }}>{errorMsg}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            backgroundColor: '#ff6600',
+            color: '#fff',
+            padding: '12px 25px',
+            fontSize: '1rem',
+            borderRadius: 6,
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: '600',
+          }}
         >
-          <option value="">-- Select a Service --</option>
-          {Object.entries(serviceNames).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
-        {errors.service_key && <small style={{ color: 'red' }}>{errors.service_key}</small>}
-
-        <label htmlFor="name">Full Name</label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          value={form.name}
-          onChange={handleChange}
-          style={{ width: '100%', padding: '8px', marginBottom: errors.name ? 5 : 15 }}
-        />
-        {errors.name && <small style={{ color: 'red' }}>{errors.name}</small>}
-
-        <label htmlFor="email">Email Address</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          value={form.email}
-          onChange={handleChange}
-          style={{ width: '100%', padding: '8px', marginBottom: errors.email ? 5 : 15 }}
-        />
-        {errors.email && <small style={{ color: 'red' }}>{errors.email}</small>}
-
-        <label htmlFor="phone">Phone Number</label>
-        <input
-          id="phone"
-          name="phone"
-          type="tel"
-          placeholder="+923001234567"
-          value={form.phone}
-          onChange={handleChange}
-          style={{ width: '100%', padding: '8px', marginBottom: errors.phone ? 5 : 15 }}
-        />
-        {errors.phone && <small style={{ color: 'red' }}>{errors.phone}</small>}
-
-        <label htmlFor="description">Description / Notes</label>
-        <textarea
-          id="description"
-          name="description"
-          rows="4"
-          value={form.description}
-          onChange={handleChange}
-          style={{ width: '100%', padding: '8px', marginBottom: errors.description ? 5 : 15 }}
-        />
-        {errors.description && <small style={{ color: 'red' }}>{errors.description}</small>}
-
-        {submitError && <p style={{ color: 'red' }}>{submitError}</p>}
-
-        <button type="submit" disabled={loading} style={{
-          backgroundColor: '#ff6600',
-          color: 'white',
-          padding: '12px 20px',
-          border: 'none',
-          borderRadius: 6,
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontWeight: '600',
-          width: '100%',
-          fontSize: '1rem',
-        }}>
-          {loading ? 'Processing...' : 'Pay with JazzCash'}
+          {loading ? 'Processing...' : 'Pay Now'}
         </button>
       </form>
     </div>

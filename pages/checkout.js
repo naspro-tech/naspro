@@ -1,77 +1,85 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-
-const serviceMap = {
-  webapp: { name: 'Web & App Development', price: 'PKR 30,000' },
-  domainhosting: { name: 'Domain & Hosting', price: 'PKR 3,500/year' },
-  branding: { name: 'Branding & Logo Design', price: 'PKR 5,000' },
-  ecommerce: { name: 'E-Commerce & Payment Solutions', price: 'PKR 50,000' },
-  cloudit: { name: 'Cloud & IT Infrastructure', price: 'Custom Pricing' },
-  digitalmarketing: { name: 'Digital Marketing', price: 'PKR 15,000/month' }
-};
+import { useState } from 'react';
 
 export default function CheckoutPage() {
-  const [serviceKey, setServiceKey] = useState('');
-  const [service, setService] = useState({ name: '', price: '' });
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
+    service_key: '',
     name: '',
     email: '',
     phone: '',
     description: ''
   });
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const key = params.get('service');
-    setServiceKey(key);
-    if (serviceMap[key]) {
-      setService(serviceMap[key]);
-    }
-  }, []);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!form.service_key) errs.service_key = 'Service is required';
+    if (!form.name || form.name.length < 3) errs.name = 'Full name is required';
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Valid email required';
+    if (!form.phone || form.phone.length < 10) errs.phone = 'Valid phone required';
+    if (!form.description || form.description.length < 10) errs.description = 'Description required';
+    return errs;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const form = new FormData();
-    form.append('service_key', serviceKey);
-    form.append('name', formData.name);
-    form.append('email', formData.email);
-    form.append('phone', formData.phone);
-    form.append('description', formData.description);
-
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      body: form
-    });
-
-    const html = await res.text();
-    document.open();
-    document.write(html);
-    document.close();
+    const errs = validate();
+    setErrors(errs);
+    if (Object.keys(errs).length === 0) {
+      setSubmitting(true);
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(form)
+      });
+      if (response.ok) {
+        const text = await response.text();
+        // The API returns HTML form to redirect to JazzCash
+        document.open();
+        document.write(text);
+        document.close();
+      } else {
+        // Handle error
+        const msg = await response.text();
+        alert('Error: ' + msg);
+        setSubmitting(false);
+      }
+    }
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '40px auto', padding: '20px', background: '#fff', borderRadius: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-      <h1 style={{ color: '#ff6600', textAlign: 'center' }}>Checkout</h1>
-      <p style={{ textAlign: 'center' }}><strong>Service:</strong> {service.name || 'Unknown'}</p>
-      <p style={{ textAlign: 'center', marginBottom: '20px' }}><strong>Price:</strong> {service.price || '-'}</p>
-
+    <div className="checkout-container">
+      <h1>Checkout</h1>
       <form onSubmit={handleSubmit}>
+        <label>Service Key</label>
+        <input name="service_key" value={form.service_key} onChange={handleChange} required />
+        {errors.service_key && <p className="error">{errors.service_key}</p>}
+
         <label>Name</label>
-        <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+        <input name="name" value={form.name} onChange={handleChange} required />
+        {errors.name && <p className="error">{errors.name}</p>}
 
         <label>Email</label>
-        <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+        <input name="email" type="email" value={form.email} onChange={handleChange} required />
+        {errors.email && <p className="error">{errors.email}</p>}
 
         <label>Phone</label>
-        <input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+        <input name="phone" value={form.phone} onChange={handleChange} required />
+        {errors.phone && <p className="error">{errors.phone}</p>}
 
         <label>Description</label>
-        <textarea required value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
+        <textarea name="description" value={form.description} onChange={handleChange} required />
+        {errors.description && <p className="error">{errors.description}</p>}
 
-        <button type="submit" style={{ marginTop: '20px', background: '#ff6600', color: '#fff', padding: '12px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
-          Pay with JazzCash
+        <button type="submit" disabled={submitting}>
+          {submitting ? 'Redirecting...' : 'Pay with JazzCash'}
         </button>
       </form>
     </div>

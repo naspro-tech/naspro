@@ -12,41 +12,17 @@ function formatDateTime(date = new Date()) {
   );
 }
 
-function generateJazzCashHash(params, password) {
-  const hashString = [
-    password,
-    params.pp_Amount,
-    params.pp_BillReference,
-    params.pp_Description,
-    params.pp_Language,
-    params.pp_MerchantID,
-    password,
-    params.pp_ReturnURL,
-    params.pp_SubMerchantID || '',
-    params.pp_TxnCurrency,
-    params.pp_TxnDateTime,
-    params.pp_TxnRefNo,
-    params.pp_TxnType,
-  ].join('&');
-
-  return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
-}
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  // example form data from frontend or mock for testing:
   const {
     service_key = 'webapp',
-    name = 'Test User',
-    email = 'test@example.com',
+    name = 'John Doe',
+    email = 'john@example.com',
     phone = '03001234567',
-    description = 'Test payment',
+    description = 'Order payment'
   } = req.body;
 
-  // Price mapping for services
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
@@ -56,12 +32,11 @@ export default async function handler(req, res) {
     digitalmarketing: 15000,
   };
 
-  const amountPKR = servicePrices[service_key] || 30000; // fallback to 30,000 PKR for test
-  const amount = (amountPKR * 100).toString();
+  const amountPKR = servicePrices[service_key] || 30000;
+  const amount = (amountPKR * 100).toString(); // convert to paisa
 
-  // Test credentials provided by JazzCash
   const merchantId = 'MC302132';
-  const password = '53v2z2u302';
+  const password = '53v2z2u302'; // Integrity Salt - DO NOT send in POST
   const returnUrl = 'https://naspropvt.vercel.app/api/thankyou';
 
   const txnRefNo = 'T' + Date.now();
@@ -89,26 +64,43 @@ export default async function handler(req, res) {
     ppmpf_5: description,
   };
 
-  postData.pp_SecureHash = generateJazzCashHash(postData, password);
+  // Generate hash string
+  const hashString = [
+    password,
+    postData.pp_Amount,
+    postData.pp_BillReference,
+    postData.pp_Description,
+    postData.pp_Language,
+    postData.pp_MerchantID,
+    password,
+    postData.pp_ReturnURL,
+    postData.pp_SubMerchantID,
+    postData.pp_TxnCurrency,
+    postData.pp_TxnDateTime,
+    postData.pp_TxnRefNo,
+    postData.pp_TxnType,
+  ].join('&');
 
-  const jazzCashLiveUrl =
-    'https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/';
+  postData.pp_SecureHash = crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 
+  const jazzCashUrl = 'https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/';
+
+  // Build hidden inputs for POST form
   const inputs = Object.entries(postData)
-    .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}" />`)
+    .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}"/>`)
     .join('\n');
 
   const html = `<!DOCTYPE html>
-<html>
+  <html>
   <head><title>Redirecting to JazzCash...</title></head>
   <body onload="document.forms[0].submit()">
-    <p>Redirecting to payment, please wait...</p>
-    <form method="POST" action="${jazzCashLiveUrl}">
+    <p>Redirecting to payment gateway...</p>
+    <form method="POST" action="${jazzCashUrl}">
       ${inputs}
       <noscript><button type="submit">Click here if not redirected</button></noscript>
     </form>
   </body>
-</html>`;
+  </html>`;
 
   res.setHeader('Content-Type', 'text/html');
   res.status(200).send(html);

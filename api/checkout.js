@@ -9,11 +9,11 @@ export default async function handler(req, res) {
 
   const { service_key, name, email, phone, description, cnic } = req.body;
 
-  // Basic validation
-  if (!service_key || !name || !email || !phone || !cnic) {
+  if (!service_key || !name || !email || !phone || !description || !cnic) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // Pricing
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
@@ -28,14 +28,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid or zero-price service selected' });
   }
 
-  const merchantId    = "MC302132";
-  const password      = "53v2z2u302";
-  const integritySalt = "z60gb5u008";  // Also used as the key in HMAC
-  const txnRefNo      = 'T' + Date.now();
-  const now           = new Date();
-  const txnDateTime   = formatDate(now);
+  const merchantId     = "MC302132";          // Your test Merchant ID
+  const password       = "53v2z2u302";        // Password from JazzCash Sandbox
+  const integritySalt  = "z60gb5u008";        // Integrity Salt = HASH KEY
+  const returnUrl      = "https://naspropvt.vercel.app/api/thankyou"; // Not used in REST, but keep for record
+
+  // Timestamps
+  const txnRefNo       = 'T' + Date.now();
+  const now            = new Date();
+  const txnDateTime    = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
+  // Prepare data payload
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -47,55 +51,52 @@ export default async function handler(req, res) {
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
-    pp_BillReference: txnRefNo,  // Keep it simple and short
-    pp_Description: description || "No description provided",
+    pp_BillReference: "BillRef" + txnRefNo,
+    pp_Description: description,
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
-    ppmpf_1: "",
-    ppmpf_2: "",
-    ppmpf_3: "",
+    ppmpf_1: name,
+    ppmpf_2: email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ''), // email username only, alphanumeric
+    ppmpf_3: service_key,
     ppmpf_4: "",
     ppmpf_5: ""
   };
 
-  const secureHash = generateSecureHash(payload, integritySalt);
-  payload.pp_SecureHash = secureHash;
+  // Generate secure hash
+  const hash = generateSecureHash(payload, integritySalt);
+  payload.pp_SecureHash = hash;
 
   try {
+    // Send POST request to JazzCash REST API
     const response = await fetch('https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
 
-    return res.status(200).json(result);
-  } catch (err) {
-    console.error('JazzCash Request Error:', err);
-    return res.status(500).json({ error: 'Request to JazzCash failed.' });
+    // Return result to frontend
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('JazzCash API call failed:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
-// Format: YYYYMMDDHHMMSS
+// Format date in YYYYMMDDHHMMSS
 function formatDate(date) {
-  const yyyy = date.getFullYear();
-  const MM = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const HH = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  const ss = String(date.getSeconds()).padStart(2, '0');
-  return `${yyyy}${MM}${dd}${HH}${mm}${ss}`;
+  return date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 }
 
-// Generate HMAC-SHA256 Hash
-function generateSecureHash(payload, integritySalt) {
-  const sorted = Object.entries(payload)
-    .filter(([key, val]) => key.startsWith("pp_") && val !== "")
+// Generate JazzCash secure hash (HMAC-SHA256)
+function generateSecureHash(data, salt) {
+  const filtered = Object.entries(data)
+    .filter(([k, v]) => k.startsWith('pp_') && v !== '')
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, val]) => val)
-    .join("&");
+    .map(([, v]) => v)
+    .join('&');
 
-  const stringToHash = `${integritySalt}&${sorted}`;
-  return crypto.createHmac("sha256", integritySalt).update(stringToHash).digest("hex").toUpperCase();
+  const stringToHash = `${salt}&${filtered}`;
+  return crypto.createHmac('sha256', salt).update(stringToHash).digest('hex').toUpperCase();
 }

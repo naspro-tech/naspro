@@ -74,7 +74,7 @@ export default async function handler(req, res) {
   };
 
   // Generate Secure Hash
-  const { hash } = generateSecureHash(payload, integritySalt);
+  const { hashString, hash } = generateSecureHash(payload, integritySalt);
   payload.pp_SecureHash = hash;
 
   try {
@@ -89,7 +89,11 @@ export default async function handler(req, res) {
     );
 
     const result = await response.json();
-    return res.status(200).json(result);
+    return res.status(200).json({
+      debugHashString: hashString, // for debugging
+      sentPayload: payload,        // see exactly what was sent
+      apiResponse: result,         // JazzCash reply
+    });
   } catch (err) {
     console.error("JazzCash API Error:", err);
     return res
@@ -116,11 +120,17 @@ function sanitizeDescription(desc) {
   return desc.replace(/[<>\*=%\/:'"|{}]/g, " ").slice(0, 100);
 }
 
-// Secure Hash function
+// ✅ Correct Secure Hash function (per JazzCash PDF)
 function generateSecureHash(data, salt) {
-  const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash").sort();
-  const hashString =
-    salt + "&" + keys.map((k) => `${k}=${data[k] ?? ""}`).join("&");
+  const keys = Object.keys(data)
+    .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
+    .sort();
+
+  // Concatenate VALUES only
+  const valuesString = keys.map((k) => data[k]).join("&");
+
+  // Prepend salt
+  const hashString = salt + "&" + valuesString;
 
   const hash = crypto
     .createHmac("sha256", salt)

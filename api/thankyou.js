@@ -12,23 +12,25 @@ export default async function handler(req, res) {
   }
 
   const params = req.body;
-
   const receivedHash = params.pp_SecureHash;
+
   if (!receivedHash) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // Build hash string with PHP-style ksort
-  const keys = Object.keys(params).filter((k) => k !== "pp_SecureHash").sort();
+  // Build hash string from response
+  const keys = Object.keys(params)
+    .filter((k) => k !== "pp_SecureHash")
+    .sort();
+
   let hashString = integritySalt;
   keys.forEach((key) => {
     const value = params[key];
     if (value !== "") {
-      hashString += "&" + value;
+      hashString += "&" + key + "=" + value;
     }
   });
 
-  // Compute hash
   const computedHash = crypto
     .createHmac("sha256", integritySalt)
     .update(hashString)
@@ -38,7 +40,7 @@ export default async function handler(req, res) {
   const isValid = computedHash === receivedHash;
   const success = isValid && params.pp_ResponseCode === "000";
 
-  // Build response HTML
+  // Build HTML thankyou page
   const html = `<!DOCTYPE html>
   <html>
     <head>
@@ -52,9 +54,9 @@ export default async function handler(req, res) {
     </head>
     <body>
       <div class="container">
-        <h1 class="${success ? "success" : "fail"}">
-          Payment ${success ? "Successful!" : "Failed"}
-        </h1>
+        <h1 class="${success ? "success" : "fail"}">Payment ${
+    success ? "Successful!" : "Failed"
+  }</h1>
         <p>Transaction Ref: ${params.pp_TxnRefNo || "N/A"}</p>
         <p>Response Code: ${params.pp_ResponseCode || "N/A"}</p>
         <p>Message: ${params.pp_ResponseMessage || ""}</p>

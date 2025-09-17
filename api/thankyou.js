@@ -6,35 +6,40 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
-  const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
-  if (!integritySalt) {
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  if (!INTEGRITY_SALT) {
     return res.status(500).send("Payment credentials not configured");
   }
 
   const params = req.body;
+
+  // Check if secure hash exists
   const receivedHash = params.pp_SecureHash;
   if (!receivedHash) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // Build string
+  // Build hash string in alphabetical order of keys (excluding pp_SecureHash)
   const keys = Object.keys(params).filter((k) => k !== "pp_SecureHash").sort();
-  let hashString = integritySalt;
+  let hashString = INTEGRITY_SALT;
   keys.forEach((key) => {
     if (params[key] !== "") {
       hashString += "&" + key + "=" + params[key];
     }
   });
 
+  // Compute hash
   const computedHash = crypto
-    .createHmac("sha256", integritySalt)
+    .createHmac("sha256", INTEGRITY_SALT)
     .update(hashString)
     .digest("hex")
     .toUpperCase();
 
-  const isValid = computedHash === receivedHash;
+  // Validate hash
+  const isValid = computedHash === receivedHash.toUpperCase();
   const success = isValid && params.pp_ResponseCode === "000";
 
+  // HTML response
   const html = `<!DOCTYPE html>
   <html>
     <head>
@@ -53,7 +58,8 @@ export default async function handler(req, res) {
         </h1>
         <p>Transaction Ref: ${params.pp_TxnRefNo || "N/A"}</p>
         <p>Response Code: ${params.pp_ResponseCode || "N/A"}</p>
-        <p>Message: ${params.pp_ResponseMessage || ""}</p>
+        <p>Message: ${params.pp_ResponseMessage || "N/A"}</p>
+        <p>CNIC (Last 6): ${params.pp_CNIC || "N/A"}</p>
         <p><a href="/">Go back to Home</a></p>
       </div>
     </body>

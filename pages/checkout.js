@@ -28,6 +28,7 @@ export default function Checkout() {
     name: '',
     email: '',
     phone: '',
+    cnic: '',
     description: '',
   });
   const [loading, setLoading] = useState(false);
@@ -49,9 +50,18 @@ export default function Checkout() {
   }
 
   function handleChange(e) {
+    const { name, value } = e.target;
+    // Allow only digits for phone and cnic
+    if (name === 'phone' || name === 'cnic') {
+      if (!/^\d*$/.test(value)) return; // block non-digit input
+    }
+
+    // Limit CNIC to 6 digits max
+    if (name === 'cnic' && value.length > 6) return;
+
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   }
 
@@ -61,8 +71,14 @@ export default function Checkout() {
     setErrorMsg('');
 
     // Basic validation
-    if (!formData.name || !formData.email || !formData.phone) {
-      setErrorMsg('Please fill in all required fields.');
+    if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
+      setErrorMsg('Please fill in all required fields, including CNIC last 6 digits.');
+      return;
+    }
+
+    // Validate CNIC length
+    if (formData.cnic.length !== 6) {
+      setErrorMsg('CNIC last 6 digits must be exactly 6 digits.');
       return;
     }
 
@@ -83,6 +99,7 @@ export default function Checkout() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
+          cnic: formData.cnic,
           description: formData.description || '',
         }),
       });
@@ -146,6 +163,22 @@ export default function Checkout() {
             value={formData.phone}
             onChange={handleChange}
             required
+            maxLength={11}
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
+
+        <label>
+          CNIC Last 6 digits*:<br />
+          <input
+            type="text"
+            name="cnic"
+            value={formData.cnic}
+            onChange={handleChange}
+            required
+            maxLength={6}
+            pattern="\d{6}"
+            title="Please enter exactly 6 digits"
             style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
           />
         </label>

@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     pp_TxnCurrency: 'PKR',
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
-    pp_BillReference: 'billRef3781'
+    pp_BillReference: 'billRef'
     pp_Description: description || 'Service Payment',
     pp_CNIC: cnic,
     pp_MobileNumber: phone,

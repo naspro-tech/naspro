@@ -1,8 +1,6 @@
-// /api/checkout.js
 import crypto from 'crypto';
 
 function formatDateTime(date = new Date()) {
-  // Format date as YYYYMMDDHHMMSS (no separators)
   const pad = (n) => n.toString().padStart(2, '0');
   return (
     date.getFullYear().toString() +
@@ -15,7 +13,6 @@ function formatDateTime(date = new Date()) {
 }
 
 function generateJazzCashHash(params, password) {
-  // As per JazzCash wallet payment hash string spec
   const hashString = [
     password,
     params.pp_Amount,
@@ -40,12 +37,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { service_key, name, email, phone, description } = req.body;
+  // example form data from frontend or mock for testing:
+  const {
+    service_key = 'webapp',
+    name = 'Test User',
+    email = 'test@example.com',
+    phone = '03001234567',
+    description = 'Test payment',
+  } = req.body;
 
-  if (!service_key || !name || !email || !phone || !description) {
-    return res.status(400).json({ error: 'Missing required form data' });
-  }
-
+  // Price mapping for services
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
@@ -55,31 +56,20 @@ export default async function handler(req, res) {
     digitalmarketing: 15000,
   };
 
-  const amountPKR = servicePrices[service_key];
-  if (amountPKR === undefined || amountPKR === 0) {
-    return res.status(400).json({ error: 'Invalid or zero-price service selected' });
-  }
-
-  // Convert to paisa (amount * 100)
+  const amountPKR = servicePrices[service_key] || 30000; // fallback to 30,000 PKR for test
   const amount = (amountPKR * 100).toString();
 
-  const merchantId = 'MC302132'; // Your Merchant ID
-  const password = '53v2z2u302'; // Your Integrity Salt / Password
-  const returnUrl = 'https://naspropvt.vercel.app/api/thankyou'; // Your return URL
-
-  if (!merchantId || !password || !returnUrl) {
-    return res.status(500).json({ error: 'Merchant credentials not configured' });
-  }
+  // Test credentials provided by JazzCash
+  const merchantId = 'MC302132';
+  const password = '53v2z2u302';
+  const returnUrl = 'https://naspropvt.vercel.app/api/thankyou';
 
   const txnRefNo = 'T' + Date.now();
   const txnDateTime = formatDateTime();
 
-  // Optional expiry: 3 days later (not mandatory but recommended)
-  const expiryDateTime = formatDateTime(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
-
   const postData = {
     pp_Version: '1.1',
-    pp_TxnType: 'MWALLET',  // <-- Wallet payment
+    pp_TxnType: 'MWALLET',
     pp_Language: 'EN',
     pp_MerchantID: merchantId,
     pp_SubMerchantID: '',
@@ -91,7 +81,6 @@ export default async function handler(req, res) {
     pp_TxnDateTime: txnDateTime,
     pp_BillReference: 'BillRef' + txnRefNo,
     pp_Description: `Payment for ${service_key}`,
-    pp_TxnExpiryDateTime: expiryDateTime,
     pp_ReturnURL: returnUrl,
     ppmpf_1: name,
     ppmpf_2: email,
@@ -106,7 +95,7 @@ export default async function handler(req, res) {
     'https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/';
 
   const inputs = Object.entries(postData)
-    .map(([key, val]) => `<input type="hidden" name="${key}" value="${val}" />`)
+    .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}" />`)
     .join('\n');
 
   const html = `<!DOCTYPE html>

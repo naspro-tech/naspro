@@ -67,7 +67,7 @@ export default function handler(req, res) {
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
-    pp_BillReference: BillReference,
+    pp_BillReference: "BillRef",
     pp_Description: safeDescription,
     pp_CNIC: cnic,
     pp_MobileNumber: phone,

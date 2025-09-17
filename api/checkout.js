@@ -1,3 +1,5 @@
+// /api/checkout.js
+
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
@@ -5,92 +7,91 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { service_key, name, email, phone, description } = req.body;
+  const { service_key, name, email, phone, description, cnic } = req.body;
 
-  if (!service_key || !name || !email || !phone) {
-    return res.status(400).json({ error: 'Missing required form data' });
+  if (!service_key || !name || !email || !phone || !description || !cnic) {
+    return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // Pricing
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
     branding: 5000,
     ecommerce: 50000,
+    cloudit: 0,
     digitalmarketing: 15000
   };
 
   const amountPKR = servicePrices[service_key];
-  if (amountPKR === undefined || amountPKR === 0) {
+  if (!amountPKR || amountPKR === 0) {
     return res.status(400).json({ error: 'Invalid or zero-price service selected' });
   }
 
-  const amount = (amountPKR * 100).toString();
+  const merchantId     = "MC302132";          // Your test Merchant ID
+  const password       = "53v2z2u302";        // Password from JazzCash Sandbox
+  const integritySalt  = "z60gb5u008";        // Integrity Salt = HASH KEY
+  const returnUrl      = "https://naspropvt.vercel.app/api/thankyou"; // Not used in REST, but keep for record
 
-  // ✅ JazzCash Test Credentials
-  const merchantId = 'MC302132';
-  const password = '53v2z2u302'; // MPIN / password field
-  const integritySalt = 'z60gb5u008'; // ✅ provided HASH is actually the integrity salt
-  const returnUrl = 'https://naspropvt.vercel.app/api/thankyou'; // must be HTTPS
+  // Timestamps
+  const txnRefNo       = 'T' + Date.now();
+  const now            = new Date();
+  const txnDateTime    = formatDate(now);
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
-  const txnRefNo = 'T' + Date.now();
-  const txnDateTime = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-  const expiryDateTime = new Date(Date.now() + 60 * 60 * 1000).toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
-
-  const postData = {
-    pp_Version: '1.1',
-    pp_TxnType: 'MWALLET',
-    pp_Language: 'EN',
+  // Prepare data payload
+  const payload = {
+    pp_Version: "2.0",
+    pp_TxnType: "MWALLET",
+    pp_Language: "EN",
     pp_MerchantID: merchantId,
     pp_Password: password,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: amount,
-    pp_TxnCurrency: 'PKR',
+    pp_Amount: String(amountPKR * 100),
+    pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
-    pp_BillReference: 'billRef123',
-    pp_Description: 'Payment for ' + service_key,
-    pp_ReturnURL: returnUrl,
-    ppmpf_1: phone,
+    pp_BillReference: "BillRef" + txnRefNo,
+    pp_Description: description,
+    pp_CNIC: cnic,
+    pp_MobileNumber: phone,
+    ppmpf_1: name,
     ppmpf_2: email,
-    ppmpf_3: name,
-    ppmpf_4: service_key,
-    ppmpf_5: description || 'N/A',
+    ppmpf_3: service_key,
+    ppmpf_4: "",
+    ppmpf_5: ""
   };
 
-  // ✅ HMAC-SHA256 secure hash generation
-  const sortedKeys = Object.keys(postData)
-    .filter(key => postData[key] !== '')
-    .sort();
+  // Generate secure hash
+  const hash = generateSecureHash(payload, integritySalt);
+  payload.pp_SecureHash = hash;
 
-  const concatenatedValues = sortedKeys.map(key => postData[key]).join('&');
-  const hashString = `${integritySalt}&${concatenatedValues}`;
+  // Send POST request to JazzCash REST API
+  const response = await fetch('https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
 
-  const secureHash = crypto
-    .createHmac('sha256', integritySalt)
-    .update(hashString)
-    .digest('hex')
-    .toUpperCase();
+  const result = await response.json();
 
-  postData.pp_SecureHash = secureHash;
+  // Return result to frontend
+  res.status(200).json(result);
+}
 
-  const jazzCashUrl = 'https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/';
+// Format date in YYYYMMDDHHMMSS
+function formatDate(date) {
+  return date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+}
 
-  const formInputs = Object.entries(postData)
-    .map(([key, val]) => `<input type="hidden" name="${key}" value="${val}" />`)
-    .join('\n');
+// Generate JazzCash secure hash (HMAC-SHA256)
+function generateSecureHash(data, salt) {
+  const filtered = Object.entries(data)
+    .filter(([k, v]) => k.startsWith('pp_') && v !== '')
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, v]) => v)
+    .join('&');
 
-  const html = `<!DOCTYPE html>
-<html>
-  <head><title>Redirecting...</title></head>
-  <body onload="document.forms[0].submit()">
-    <p>Redirecting to JazzCash...</p>
-    <form method="POST" action="${jazzCashUrl}">
-      ${formInputs}
-      <noscript><button type="submit">Click here if not redirected</button></noscript>
-    </form>
-  </body>
-</html>`;
-
-  res.setHeader('Content-Type', 'text/html');
-  res.status(200).send(html);
+  const stringToHash = `${salt}&${filtered}`;
+  return crypto.createHmac('sha256', salt).update(stringToHash).digest('hex').toUpperCase();
 }

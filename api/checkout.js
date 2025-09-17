@@ -1,5 +1,3 @@
-// /api/checkout.js
-
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
@@ -27,10 +25,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid or zero-price service selected' });
   }
 
-  const amount = (amountPKR * 100).toString();
+  const amount = (amountPKR * 100).toString(); // amount in paisa
 
   const merchantId = 'MC302132';
-  const password = '53v2z2u302';
+  const password = '53v2z2u302';  // Integrity Salt
   const returnUrl = 'https://naspropvt.vercel.app/api/thankyou';
 
   if (!merchantId || !password || !returnUrl) {
@@ -40,9 +38,10 @@ export default async function handler(req, res) {
   const txnRefNo = 'T' + Date.now();
   const txnDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+  // Prepare post data WITHOUT pp_Password (do not send password to JazzCash)
   const postData = {
     pp_Version: "1.1",
-    pp_TxnType: "MWALLET",
+    pp_TxnType: "MWALLET",   // Or "MPAY" depending on your integration type
     pp_Language: "EN",
     pp_MerchantID: merchantId,
     pp_SubMerchantID: "",
@@ -62,12 +61,25 @@ export default async function handler(req, res) {
     ppmpf_5: description && description.trim() !== '' ? description : 'No description provided',
   };
 
-  const sortedKeys = Object.keys(postData).sort();
-
-  let hashString = password;
-  for (const key of sortedKeys) {
-    hashString += '&' + postData[key];
-  }
+  // Create hash string in exact order specified by JazzCash:
+  // Format: Password&pp_Amount&pp_BankID&pp_BillReference&pp_Description&pp_Language&pp_MerchantID&Password&pp_ProductID&pp_ReturnURL&pp_SubMerchantID&pp_TxnCurrency&pp_TxnDateTime&pp_TxnRefNo&pp_TxnType
+  const hashString = [
+    password,
+    postData.pp_Amount,
+    postData.pp_BankID,
+    postData.pp_BillReference,
+    postData.pp_Description,
+    postData.pp_Language,
+    postData.pp_MerchantID,
+    password,
+    postData.pp_ProductID,
+    postData.pp_ReturnURL,
+    postData.pp_SubMerchantID,
+    postData.pp_TxnCurrency,
+    postData.pp_TxnDateTime,
+    postData.pp_TxnRefNo,
+    postData.pp_TxnType
+  ].join('&');
 
   const secureHash = crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 

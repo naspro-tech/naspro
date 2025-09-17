@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "CNIC must be exactly 6 digits." });
   }
 
-  // Service prices (PKR)
+  // Prices in PKR (will be multiplied by 100)
   const SERVICE_PRICES = {
     webapp: 30000,
     domainhosting: 3500,
@@ -32,13 +32,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // JazzCash credentials from Vercel env
+  // JazzCash sandbox credentials (from env)
   const merchantId = process.env.JAZZCASH_MERCHANT_ID;
   const password = process.env.JAZZCASH_PASSWORD;
   const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
   const returnUrl = process.env.JAZZCASH_RETURN_URL;
 
-  // Timestamps
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
@@ -53,7 +52,7 @@ export default async function handler(req, res) {
     pp_SubMerchantID: "",
     pp_Password: password,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // in paisa
+    pp_Amount: String(amount * 100), // PKR -> paisa
     pp_DiscountedAmount: "",
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
@@ -70,10 +69,10 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // Secure Hash
+  // Compute secure hash
   payload.pp_SecureHash = generateSecureHash(payload, integritySalt);
 
-  // Debug logs
+  // Debugging log
   console.log("DEBUG HASH STRING:", buildHashString(payload, integritySalt));
   console.log("FINAL HASH:", payload.pp_SecureHash);
 
@@ -108,20 +107,22 @@ function formatDate(date) {
   );
 }
 
-// Build hash string like PHP ksort() + foreach
+// Build hash string: integritySalt&key=value&key=value...
 function buildHashString(data, salt) {
-  const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash").sort(); // PHP ksort
-  let str = "";
+  const keys = Object.keys(data)
+    .filter((k) => k !== "pp_SecureHash")
+    .sort();
+
+  let str = salt;
   for (const k of keys) {
     const value = data[k];
     if (value !== "") {
-      str += "&" + value;
+      str += "&" + k + "=" + value;
     }
   }
-  return salt + str;
+  return str;
 }
 
-// Generate HMAC-SHA256
 function generateSecureHash(data, salt) {
   const hashString = buildHashString(data, salt);
   return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();

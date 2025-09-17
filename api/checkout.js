@@ -12,12 +12,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Ensure CNIC is 13 digits
+  // CNIC must be 13 digits
   if (!/^\d{13}$/.test(cnic)) {
     return res.status(400).json({ error: "CNIC must be 13 digits" });
   }
-
-  const cnicLast6 = cnic.slice(-6); // only last 6 digits
+  const cnicLast6 = cnic.slice(-6); // Only last 6 digits
 
   const SERVICE_PRICES = {
     webapp: 30000,
@@ -44,7 +43,7 @@ export default async function handler(req, res) {
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +24h
 
-  // Payload with only required fields
+  // Payload with required fields only
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // paisa
+    pp_Amount: String(amount * 100), // in paisa
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
@@ -87,7 +86,7 @@ export default async function handler(req, res) {
   }
 }
 
-// Format date as YYYYMMDDHHMMSS
+// Format date YYYYMMDDHHMMSS
 function formatDate(date) {
   const pad = (n) => (n < 10 ? "0" + n : n);
   return (
@@ -100,18 +99,29 @@ function formatDate(date) {
   );
 }
 
-// Build hash string for debug purposes
+// Build hash string (alphabetical order) for debug
 function buildHashString(data, salt) {
-  const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash").sort();
-  let str = "";
-  keys.forEach((k) => {
-    str += k + "=" + data[k] + "&";
-  });
-  str += "pp_SecureHashSecret=" + salt;
+  const keys = [
+    "pp_Amount",
+    "pp_BillReference",
+    "pp_CNIC",
+    "pp_Description",
+    "pp_Language",
+    "pp_MerchantID",
+    "pp_Password",
+    "pp_ReturnURL",
+    "pp_TxnCurrency",
+    "pp_TxnDateTime",
+    "pp_TxnExpiryDateTime",
+    "pp_TxnRefNo",
+    "pp_Version"
+  ];
+  let str = keys.map(k => `${k}=${data[k]}`).join("&");
+  str += `&pp_SecureHashSecret=${salt}`;
   return str;
 }
 
-// Generate SHA256 hash (uppercase) - plain SHA256, not HMAC
+// Generate SHA256 secure hash
 function generateSecureHash(data, salt) {
   const hashString = buildHashString(data, salt);
   return crypto.createHash("sha256").update(hashString).digest("hex").toUpperCase();

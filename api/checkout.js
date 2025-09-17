@@ -1,25 +1,45 @@
+// /api/checkout.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
+  const { service_key, name, email, phone, description = "Test Payment", cnic } = req.body;
+
+  if (!service_key || !name || !email || !phone || !cnic) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (!/^\d{6}$/.test(cnic)) {
+    return res.status(400).json({ error: "CNIC must be exactly 6 digits." });
+  }
+
+  const SERVICE_PRICES = {
+    webapp: 30000,
+    domainhosting: 3500,
+    branding: 5000,
+    ecommerce: 50000,
+    cloudit: 0,
+    digitalmarketing: 15000,
+  };
+
+  const amount = SERVICE_PRICES[service_key];
+  if (!amount || amount === 0) {
+    return res.status(400).json({ error: "Invalid or zero-price service selected" });
+  }
+
+  // JazzCash credentials (from env)
   const merchantId = process.env.JAZZCASH_MERCHANT_ID;
   const password = process.env.JAZZCASH_PASSWORD;
+  const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
   const returnUrl = process.env.JAZZCASH_RETURN_URL;
 
-  const date = new Date();
-  const pp_TxnDateTime = date
-    .toISOString()
-    .replace(/[-:TZ.]/g, "")
-    .substring(0, 14);
-  const pp_TxnExpiryDateTime = new Date(date.getTime() + 60 * 60 * 1000) // +1h
-    .toISOString()
-    .replace(/[-:TZ.]/g, "")
-    .substring(0, 14);
-  const pp_TxnRefNo = "T" + Date.now();
+  const txnRefNo = "T" + Date.now();
+  const now = new Date();
+  const txnDateTime = formatDate(now);
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
   const payload = {
     pp_Version: "2.0",
@@ -28,16 +48,16 @@ export default async function handler(req, res) {
     pp_MerchantID: merchantId,
     pp_SubMerchantID: "",
     pp_Password: password,
-    pp_TxnRefNo,
-    pp_Amount: "3000000", // 3000 * 100
+    pp_TxnRefNo: txnRefNo,
+    pp_Amount: String(amount * 100), // paisa
     pp_DiscountedAmount: "",
     pp_TxnCurrency: "PKR",
-    pp_TxnDateTime,
-    pp_TxnExpiryDateTime,
+    pp_TxnDateTime: txnDateTime,
+    pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
-    pp_Description: "Test Payments",
-    pp_CNIC: "345678",
-    pp_MobileNumber: "03123456789",
+    pp_Description: description,
+    pp_CNIC: cnic,
+    pp_MobileNumber: phone,
     pp_ReturnURL: returnUrl,
     ppmpf_1: "",
     ppmpf_2: "",
@@ -46,28 +66,12 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // Build secure hash string
-  function buildHashString(data, salt) {
-    const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash").sort();
-    let str = salt;
-    for (const k of keys) {
-      if (data[k] !== "") {
-        str += "&" + data[k]; // append values only
-      }
-    }
-    return str;
-  }
+  // SecureHash
+  payload.pp_SecureHash = generateSecureHash(payload, integritySalt);
 
-  const hashString = buildHashString(payload, integritySalt);
-  const pp_SecureHash = crypto
-    .createHmac("sha256", integritySalt)
-    .update(hashString)
-    .digest("hex")
-    .toUpperCase();
+  console.log("DEBUG HASH STRING:", buildHashString(payload, integritySalt));
+  console.log("FINAL HASH:", payload.pp_SecureHash);
 
-  payload.pp_SecureHash = pp_SecureHash;
-
-  // Send to JazzCash sandbox
   try {
     const response = await fetch(
       "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
@@ -77,9 +81,39 @@ export default async function handler(req, res) {
         body: JSON.stringify(payload),
       }
     );
-    const data = await response.json();
-    return res.status(200).json({ sentPayload: payload, apiResponse: data });
+
+    const result = await response.json();
+    return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error("JazzCash API Error:", err);
+    return res.status(500).json({ error: "Payment request failed. Please try again later." });
   }
+}
+
+function formatDate(date) {
+  const pad = (n) => (n < 10 ? "0" + n : n);
+  return (
+    date.getFullYear().toString() +
+    pad(date.getMonth() + 1) +
+    pad(date.getDate()) +
+    pad(date.getHours()) +
+    pad(date.getMinutes()) +
+    pad(date.getSeconds())
+  );
+}
+
+function buildHashString(data, salt) {
+  const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash").sort();
+  let str = salt;
+  for (const k of keys) {
+    if (data[k] !== "") {
+      str += "&" + k + "=" + data[k]; // ✅ key=value format
+    }
+  }
+  return str;
+}
+
+function generateSecureHash(data, salt) {
+  const hashString = buildHashString(data, salt);
+  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
 }

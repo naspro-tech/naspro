@@ -1,25 +1,27 @@
-// /api/checkout.js
-
 import crypto from 'crypto';
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
-  const { service_key, name, email, phone, description, cnic } = req.body;
+  const {
+    service_key,
+    name,
+    email,
+    phone,
+    cnic,
+    description = '',
+  } = req.body;
 
-  // Validate required fields
-  if (!service_key || !name || !email || !phone || !description || !cnic) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  // Validate inputs
+  if (!service_key || !name || !email || !phone || !cnic) {
+    res.status(400).json({ error: 'Missing required fields' });
+    return;
   }
 
-  if (!/^\d{6}$/.test(cnic)) {
-    return res.status(400).json({ error: 'CNIC must be exactly 6 digits.' });
-  }
-
-  // Service pricing
-  const servicePrices = {
+  const SERVICE_PRICES = {
     webapp: 30000,
     domainhosting: 3500,
     branding: 5000,
@@ -28,86 +30,115 @@ export default async function handler(req, res) {
     digitalmarketing: 15000,
   };
 
-  const amountPKR = servicePrices[service_key];
-  if (!amountPKR || amountPKR === 0) {
-    return res.status(400).json({ error: 'Invalid or zero-price service selected' });
+  const amount = SERVICE_PRICES[service_key];
+  if (!amount || amount === 0) {
+    res.status(400).json({ error: 'Invalid or zero-price service selected' });
+    return;
   }
 
-  // JazzCash sandbox credentials
-  const merchantId    = "MC302132";
-  const password      = "53v2z2u302";
+  // JazzCash credentials - replace these with your actual values
+  const merchantId = "MC302132";
+  const password = "53v2z2u302";
   const integritySalt = "z60gb5u008";
-  const returnUrl     = "https://naspropvt.vercel.app/api/thankyou";
+  const paymentUrl = "https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
+  const returnUrl = "https://naspropvt.vercel.app/api/thankyou";
 
-  const txnRefNo       = 'T' + Date.now();
-  const now            = new Date();
-  const txnDateTime    = formatDate(now);
-  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
+  // Create unique txn ref number
+  const txnRefNo = 'T' + Date.now();
 
-  // Prepare payload (no ppmpf fields)
-  const payload = {
-    pp_Version: "2.0",
+  // Format dates in yyyyMMddHHmmss
+  const now = new Date();
+  const txnDateTime = formatDate(now);
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day expiry
+
+  // Clean description to remove invalid chars
+  const safeDescription = description.replace(/[<>\*=%\/:'"|{}]/g, ' ').slice(0, 100);
+
+  // Build params object (all required fields)
+  const params = {
+    pp_Version: "1.1",
     pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: merchantId,
+    pp_SubMerchantID: "",
     pp_Password: password,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amountPKR * 100), // in paisa
+    pp_Amount: String(amount * 100),  // Amount in paisa (no decimals)
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
-    pp_BillReference: "BillRef",
-    pp_Description: description,
+    pp_BillReference: "",
+    pp_Description: safeDescription,
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
-    pp_ReturnURL: returnUrl
+    pp_DiscountedAmount: "",
+    pp_ReturnURL: returnUrl,
+    ppmpf_1: "",
+    ppmpf_2: "",
+    ppmpf_3: "",
+    ppmpf_4: "",
+    ppmpf_5: "",
   };
 
-  // Generate secure hash
-  payload.pp_SecureHash = generateSecureHash(payload, integritySalt);
+  // Generate Secure Hash
+  params.pp_SecureHash = generateSecureHash(params, integritySalt);
 
-  try {
-    const formBody = new URLSearchParams(payload).toString();
-
-    const response = await fetch("https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: formBody
-    });
-
-    const result = await response.json();
-
-    if (result.pp_ResponseCode === '000' && result.pp_RedirectURL) {
-      return res.status(200).json({ redirectURL: result.pp_RedirectURL, txnRef: txnRefNo });
-    } else {
-      return res.status(400).json({
-        error: result.pp_ResponseMessage || 'JazzCash responded with an error.',
-        response: result
-      });
-    }
-
-  } catch (err) {
-    console.error("JazzCash API Error:", err);
-    return res.status(500).json({ error: 'Payment request failed. Please try again later.' });
-  }
+  // Return an HTML page with an auto-submitting form to JazzCash payment gateway
+  res.setHeader('Content-Type', 'text/html');
+  res.send(generateAutoSubmitForm(paymentUrl, params));
 }
 
-// Format date to YYYYMMDDHHMMSS
+// Format date to yyyyMMddHHmmss (JazzCash requires this)
 function formatDate(date) {
-  return date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+  const pad = n => (n < 10 ? '0' + n : n);
+  return (
+    date.getFullYear().toString() +
+    pad(date.getMonth() + 1) +
+    pad(date.getDate()) +
+    pad(date.getHours()) +
+    pad(date.getMinutes()) +
+    pad(date.getSeconds())
+  );
 }
 
-// Generate secure hash using HMAC-SHA256
+// Generate secure hash per JazzCash spec
 function generateSecureHash(data, salt) {
-  const filtered = Object.entries(data)
-    .filter(([k, v]) => k.startsWith('pp_') && v !== '')
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, v]) => v)
-    .join('&');
+  // Sort keys alphabetically, include only keys starting with "pp_" and with non-empty value except SecureHash itself
+  const keys = Object.keys(data).filter(k => k.startsWith('pp_') && k !== 'pp_SecureHash' && data[k] !== '').sort();
 
-  const stringToHash = `${salt}&${filtered}`;
+  const hashString = [salt, ...keys.map(k => data[k])].join('&');
 
-  return crypto.createHmac('sha256', salt).update(stringToHash).digest('hex').toUpperCase();
+  return crypto.createHmac('sha256', salt).update(hashString).digest('hex').toUpperCase();
+}
+
+// Generate auto-submitting HTML form
+function generateAutoSubmitForm(actionUrl, params) {
+  const inputs = Object.entries(params)
+    .map(([key, value]) => `<input type="hidden" name="${key}" value="${escapeHtml(value)}" />`)
+    .join('\n');
+
+  return `
+    <html>
+      <head>
+        <title>Redirecting to JazzCash...</title>
+      </head>
+      <body onload="document.forms[0].submit()" style="font-family: Arial, sans-serif; text-align: center; padding-top: 100px;">
+        <p>Redirecting you to secure payment gateway...</p>
+        <form method="POST" action="${actionUrl}">
+          ${inputs}
+        </form>
+        <p>If you are not redirected automatically, <button onclick="document.forms[0].submit()">click here</button>.</p>
+      </body>
+    </html>
+  `;
+}
+
+// Simple escape function for HTML attribute values
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }

@@ -33,12 +33,13 @@ export default async function handler(req, res) {
     const merchantId = 'MC152724';
     const password = '00v8sc695t';
     const integritySalt = '221sb04w9x';  // Salt / shared key
-
+    const returnurl = "https://naspro.vercel.app/api/thankyou";  // Public callback URL
+    
     const txnRefNo = 'TX' + Date.now();  // prefix to ensure it starts with letter
     const now = new Date();
     const txnDateTime = formatPktDate(now);
     const expiryDateTime = formatPktDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
-
+    
     // Build bill reference: prefix + unique timestamp / microseconds
     const billReference = `BR${txnRefNo.slice(-12)}`;  // e.g. BR + last 12 digits
 
@@ -57,6 +58,7 @@ export default async function handler(req, res) {
       pp_Description: description,
       pp_CNIC: cnic,
       pp_MobileNumber: phone,
+      pp_ReturnURL: returnUrl, // Include Return URL
       ppmpf_1: name,
       ppmpf_2: email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ''),  // safe alphanumeric
       ppmpf_3: service_key,

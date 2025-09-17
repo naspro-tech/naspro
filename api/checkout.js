@@ -78,7 +78,7 @@ export default async function handler(req, res) {
   // Send JSON request to JazzCash API
   try {
     const response = await fetch(
-      "https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

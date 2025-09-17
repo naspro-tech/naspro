@@ -56,7 +56,7 @@ export default function handler(req, res) {
 
   // Build params object (all required fields)
   const params = {
-    pp_Version: "1.1",
+    pp_Version: "2.0",
     pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: merchantId,

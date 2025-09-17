@@ -34,7 +34,8 @@ export default async function handler(req, res) {
 
   // JazzCash credentials
   const merchantId = "MC302132";
-  const integritySalt = "z60gb5u008"; // your provided integrity salt
+  const password = "53v2z2u302";       // ✅ API password (required for MWALLET)
+  const integritySalt = "z60gb5u008";  // ✅ Integrity Salt
 
   const txnRefNo = 'T' + Date.now();
   const now = new Date();
@@ -42,13 +43,14 @@ export default async function handler(req, res) {
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
   const returnUrl = "https://naspropvt.vercel.app/api/thankyou";
 
-  // Prepare full payload (exclude password!)
+  // Prepare full payload
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: merchantId,
     pp_SubMerchantID: "",
+    pp_Password: password,   // ✅ must be included
     pp_TxnRefNo: txnRefNo,
     pp_Amount: String(amount * 100), // in paisa
     pp_DiscountedAmount: "",
@@ -67,7 +69,7 @@ export default async function handler(req, res) {
     ppmpf_5: ""
   };
 
-  // Generate Secure Hash
+  // Generate Secure Hash (includes pp_Password too)
   payload.pp_SecureHash = generateSecureHash(payload, integritySalt);
 
   // Send JSON request to JazzCash API

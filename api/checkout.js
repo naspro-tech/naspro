@@ -12,11 +12,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Only last 6 digits of CNIC
+  // Ensure CNIC is 13 digits
   if (!/^\d{13}$/.test(cnic)) {
     return res.status(400).json({ error: "CNIC must be 13 digits" });
   }
-  const cnicLast6 = cnic.slice(-6);
+
+  const cnicLast6 = cnic.slice(-6); // only last 6 digits
 
   const SERVICE_PRICES = {
     webapp: 30000,
@@ -43,33 +44,26 @@ export default async function handler(req, res) {
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +24h
 
-  // Payload for JazzCash
+  // Payload with only required fields
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: MERCHANT_ID,
-    pp_SubMerchantID: "",
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
     pp_Amount: String(amount * 100), // paisa
-    pp_DiscountedAmount: "",
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
     pp_Description: description,
-    pp_CNIC: cnicLast6, // last 6 digits
+    pp_CNIC: cnicLast6,
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
-    ppmpf_1: "",
-    ppmpf_2: "",
-    ppmpf_3: "",
-    ppmpf_4: "",
-    ppmpf_5: "",
   };
 
-  // Generate Secure Hash
+  // Generate secure hash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   console.log("DEBUG HASH STRING:", buildHashString(payload, INTEGRITY_SALT));
@@ -106,20 +100,19 @@ function formatDate(date) {
   );
 }
 
-// Build hash string in alphabetical order of keys
+// Build hash string for debug purposes
 function buildHashString(data, salt) {
   const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash").sort();
-  let str = salt;
-  for (const k of keys) {
-    if (data[k] !== "") {
-      str += "&" + k + "=" + data[k];
-    }
-  }
+  let str = "";
+  keys.forEach((k) => {
+    str += k + "=" + data[k] + "&";
+  });
+  str += "pp_SecureHashSecret=" + salt;
   return str;
 }
 
-// Generate HMAC-SHA256 hash (uppercase)
+// Generate SHA256 hash (uppercase) - plain SHA256, not HMAC
 function generateSecureHash(data, salt) {
   const hashString = buildHashString(data, salt);
-  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
+  return crypto.createHash("sha256").update(hashString).digest("hex").toUpperCase();
 }

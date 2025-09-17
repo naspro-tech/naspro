@@ -28,8 +28,8 @@ export default function Checkout() {
     name: '',
     email: '',
     phone: '',
-    description: '',
     cnic: '',
+    description: '',
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -63,7 +63,7 @@ export default function Checkout() {
 
     // Basic validation
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
-      setErrorMsg('Please fill in all required fields, including CNIC.');
+      setErrorMsg('Please fill in all required fields.');
       return;
     }
 
@@ -89,8 +89,8 @@ export default function Checkout() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          description: formData.description || '',
           cnic: formData.cnic,
+          description: formData.description || '',
         }),
       });
 
@@ -101,20 +101,11 @@ export default function Checkout() {
         return;
       }
 
-      const data = await res.json();
+      const html = await res.text();
 
-      if (data.redirectUrl) {
-        // If your backend returns a redirect URL, redirect the user
-        window.location.href = data.redirectUrl;
-      } else if (data.htmlForm) {
-        // If backend returns HTML form for redirection
-        document.open();
-        document.write(data.htmlForm);
-        document.close();
-      } else {
-        setErrorMsg('Unexpected response from server.');
-        setLoading(false);
-      }
+      document.open();
+      document.write(html);
+      document.close();
 
     } catch (err) {
       setErrorMsg('Network error. Please try again.');

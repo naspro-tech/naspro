@@ -28,8 +28,8 @@ export default function Checkout() {
     name: '',
     email: '',
     phone: '',
-    cnic: '',
     description: '',
+    cnic: '',
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -50,18 +50,9 @@ export default function Checkout() {
   }
 
   function handleChange(e) {
-    const { name, value } = e.target;
-    // Allow only digits for phone and cnic
-    if (name === 'phone' || name === 'cnic') {
-      if (!/^\d*$/.test(value)) return; // block non-digit input
-    }
-
-    // Limit CNIC to 6 digits max
-    if (name === 'cnic' && value.length > 6) return;
-
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [e.target.name]: e.target.value,
     }));
   }
 
@@ -72,13 +63,12 @@ export default function Checkout() {
 
     // Basic validation
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
-      setErrorMsg('Please fill in all required fields, including CNIC last 6 digits.');
+      setErrorMsg('Please fill in all required fields, including CNIC.');
       return;
     }
 
-    // Validate CNIC length
-    if (formData.cnic.length !== 6) {
-      setErrorMsg('CNIC last 6 digits must be exactly 6 digits.');
+    if (!/^\d{6}$/.test(formData.cnic)) {
+      setErrorMsg('CNIC must be exactly 6 digits.');
       return;
     }
 
@@ -99,8 +89,8 @@ export default function Checkout() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          cnic: formData.cnic,
           description: formData.description || '',
+          cnic: formData.cnic,
         }),
       });
 
@@ -111,13 +101,20 @@ export default function Checkout() {
         return;
       }
 
-      // The API returns HTML form for redirect, so we can get the text and replace the page with it
-      const html = await res.text();
+      const data = await res.json();
 
-      // Replace current page with redirect form HTML
-      document.open();
-      document.write(html);
-      document.close();
+      if (data.redirectUrl) {
+        // If your backend returns a redirect URL, redirect the user
+        window.location.href = data.redirectUrl;
+      } else if (data.htmlForm) {
+        // If backend returns HTML form for redirection
+        document.open();
+        document.write(data.htmlForm);
+        document.close();
+      } else {
+        setErrorMsg('Unexpected response from server.');
+        setLoading(false);
+      }
 
     } catch (err) {
       setErrorMsg('Network error. Please try again.');
@@ -163,13 +160,12 @@ export default function Checkout() {
             value={formData.phone}
             onChange={handleChange}
             required
-            maxLength={11}
             style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
           />
         </label>
 
         <label>
-          CNIC Last 6 digits*:<br />
+          CNIC (last 6 digits)*:<br />
           <input
             type="text"
             name="cnic"
@@ -178,7 +174,7 @@ export default function Checkout() {
             required
             maxLength={6}
             pattern="\d{6}"
-            title="Please enter exactly 6 digits"
+            placeholder="Enter last 6 digits of CNIC"
             style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
           />
         </label>

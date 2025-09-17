@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     pp_SubMerchantID: "",
     pp_Password: password,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // convert to paisa
+    pp_Amount: String(amount * 100), // in paisa
     pp_DiscountedAmount: "",
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
@@ -73,8 +73,11 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // Generate Secure Hash
-  const { hashString, hash } = generateSecureHash(payload, integritySalt);
+  // ✅ Generate Secure Hash
+  const { hashString, hash, fieldOrder } = generateSecureHash(
+    payload,
+    integritySalt
+  );
   payload.pp_SecureHash = hash;
 
   try {
@@ -90,9 +93,11 @@ export default async function handler(req, res) {
 
     const result = await response.json();
     return res.status(200).json({
-      debugHashString: hashString, // for debugging
-      sentPayload: payload,        // see exactly what was sent
-      apiResponse: result,         // JazzCash reply
+      fieldOrder, // ✅ see order of fields used
+      debugHashString: hashString, // ✅ see the exact string hashed
+      finalSecureHash: hash, // ✅ see the final hash sent
+      sentPayload: payload, // what you actually sent
+      apiResponse: result, // JazzCash reply
     });
   } catch (err) {
     console.error("JazzCash API Error:", err);
@@ -124,12 +129,10 @@ function sanitizeDescription(desc) {
 function generateSecureHash(data, salt) {
   const keys = Object.keys(data)
     .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
-    .sort();
+    .sort(); // sort by FIELD NAME (ASCII order)
 
-  // Concatenate VALUES only
+  const fieldOrder = [...keys]; // save order for debugging
   const valuesString = keys.map((k) => data[k]).join("&");
-
-  // Prepend salt
   const hashString = salt + "&" + valuesString;
 
   const hash = crypto
@@ -138,5 +141,5 @@ function generateSecureHash(data, salt) {
     .digest("hex")
     .toUpperCase();
 
-  return { hashString, hash };
+  return { hashString, hash, fieldOrder };
 }

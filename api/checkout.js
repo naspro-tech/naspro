@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   const { service_key, name, email, phone, description = "", cnic } = req.body;
 
-  // Validate required fields
+  // Validate
   if (!service_key || !name || !email || !phone || !cnic) {
     return res.status(400).json({ error: "Missing required fields" });
   }
@@ -17,7 +17,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "CNIC must be exactly 6 digits." });
   }
 
-  // Services price list
   const SERVICE_PRICES = {
     webapp: 30000,
     domainhosting: 3500,
@@ -29,9 +28,7 @@ export default async function handler(req, res) {
 
   const amount = SERVICE_PRICES[service_key];
   if (!amount || amount === 0) {
-    return res
-      .status(400)
-      .json({ error: "Invalid or zero-price service selected" });
+    return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
   // JazzCash credentials
@@ -42,12 +39,10 @@ export default async function handler(req, res) {
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
-  const expiryDateTime = formatDate(
-    new Date(now.getTime() + 24 * 60 * 60 * 1000)
-  ); // +1 day
+  const expiryDateTime = formatDate(new Date(now.getTime() + 60 * 60 * 1000)); // +1 hour
   const returnUrl = "https://naspropvt.vercel.app/api/thankyou";
 
-  // Prepare payload
+  // Prepare full payload
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -73,17 +68,17 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // ✅ Generate Secure Hash
-  const { hashString, hash, fieldOrder } = generateSecureHash(
-    payload,
-    integritySalt
-  );
+  // Generate Secure Hash (PHP-equivalent logic)
+  const { hashString, hash } = generateSecureHash(payload, integritySalt);
   payload.pp_SecureHash = hash;
 
+  console.log("DEBUG JazzCash Hash String:", hashString);
+  console.log("DEBUG JazzCash Final Hash:", hash);
+
+  // Send JSON request to JazzCash API
   try {
-    // Use Sandbox API for testing
     const response = await fetch(
-      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      "https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,18 +87,10 @@ export default async function handler(req, res) {
     );
 
     const result = await response.json();
-    return res.status(200).json({
-      fieldOrder, // ✅ see order of fields used
-      debugHashString: hashString, // ✅ see the exact string hashed
-      finalSecureHash: hash, // ✅ see the final hash sent
-      sentPayload: payload, // what you actually sent
-      apiResponse: result, // JazzCash reply
-    });
+    return res.status(200).json(result);
   } catch (err) {
     console.error("JazzCash API Error:", err);
-    return res
-      .status(500)
-      .json({ error: "Payment request failed. Please try again later." });
+    return res.status(500).json({ error: "Payment request failed. Please try again later." });
   }
 }
 
@@ -120,26 +107,33 @@ function formatDate(date) {
   );
 }
 
-// Sanitize description
+// Sanitize description from illegal characters
 function sanitizeDescription(desc) {
   return desc.replace(/[<>\*=%\/:'"|{}]/g, " ").slice(0, 100);
 }
 
-// ✅ Correct Secure Hash function (per JazzCash PDF)
+// Generate secure hash (translation of PHP version)
 function generateSecureHash(data, salt) {
-  const keys = Object.keys(data)
-    .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
-    .sort(); // sort by FIELD NAME (ASCII order)
+  // 1. Sort keys alphabetically
+  const keys = Object.keys(data).sort();
 
-  const fieldOrder = [...keys]; // save order for debugging
-  const valuesString = keys.map((k) => data[k]).join("&");
-  const hashString = salt + "&" + valuesString;
+  // 2. Collect only NON-empty values
+  const values = [];
+  for (const k of keys) {
+    if (data[k] !== undefined && data[k] !== null && data[k] !== "") {
+      values.push(data[k]);
+    }
+  }
 
+  // 3. Prepend salt
+  const hashString = salt + "&" + values.join("&");
+
+  // 4. HMAC-SHA256
   const hash = crypto
     .createHmac("sha256", salt)
     .update(hashString)
     .digest("hex")
     .toUpperCase();
 
-  return { hashString, hash, fieldOrder };
+  return { hashString, hash };
 }

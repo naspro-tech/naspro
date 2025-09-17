@@ -34,8 +34,7 @@ export default async function handler(req, res) {
 
   // JazzCash credentials
   const merchantId = "MC302132";
-  const password = "53v2z2u302";
-  const integritySalt = "z60gb5u008";
+  const integritySalt = "z60gb5u008"; // your provided integrity salt
 
   const txnRefNo = 'T' + Date.now();
   const now = new Date();
@@ -43,14 +42,13 @@ export default async function handler(req, res) {
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
   const returnUrl = "https://naspropvt.vercel.app/api/thankyou";
 
-  // Prepare full payload
+  // Prepare full payload (exclude password!)
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: merchantId,
     pp_SubMerchantID: "",
-    pp_Password: password,
     pp_TxnRefNo: txnRefNo,
     pp_Amount: String(amount * 100), // in paisa
     pp_DiscountedAmount: "",
@@ -74,7 +72,7 @@ export default async function handler(req, res) {
 
   // Send JSON request to JazzCash API
   try {
-    const response = await fetch("https://payments.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
+    const response = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -105,13 +103,11 @@ function sanitizeDescription(desc) {
   return desc.replace(/[<>\*=%\/:'"|{}]/g, ' ').slice(0, 100);
 }
 
-// Generate secure hash
+// Generate secure hash (JazzCash requires key=value format)
 function generateSecureHash(data, salt) {
-  const sortedKeys = Object.keys(data)
-    .filter(k => k !== 'pp_SecureHash')
-    .sort();
+  const keys = Object.keys(data).filter(k => k !== 'pp_SecureHash').sort();
 
-  const hashString = salt + '&' + sortedKeys.map(k => data[k] || '').join('&');
+  const hashString = salt + '&' + keys.map(k => `${k}=${data[k]}`).join('&');
 
   return crypto
     .createHmac('sha256', salt)

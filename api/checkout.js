@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const { service_key, name, email, phone, description } = req.body;
 
-  if (!service_key || !name || !email || !phone || !description) {
+  if (!service_key || !name || !email || !phone) {
     return res.status(400).json({ error: 'Missing required form data' });
   }
 
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   // Convert to paisa (amount * 100)
   const amount = (amountPKR * 100).toString();
 
-  // JazzCash live credentials (replace process.env with your actual values or keep env vars)
+  // JazzCash live credentials
   const merchantId = 'MC302132'; // Your Merchant ID
   const password   = '53v2z2u302'; // Your Integrity Salt / Password
   const returnUrl  = 'https://naspropvt.vercel.app/api/thankyou'; // Your return URL
@@ -44,11 +44,11 @@ export default async function handler(req, res) {
 
   const postData = {
     pp_Version: "1.1",
-    pp_TxnType: "MPAY",
+    pp_TxnType: "MWALLET",            // Adjust this based on JazzCash docs
     pp_Language: "EN",
     pp_MerchantID: merchantId,
     pp_SubMerchantID: "",
-    pp_Password: password,
+    // pp_Password removed intentionally
     pp_BankID: "",
     pp_ProductID: "",
     pp_TxnRefNo: txnRefNo,
@@ -62,28 +62,20 @@ export default async function handler(req, res) {
     ppmpf_2: email,
     ppmpf_3: phone,
     ppmpf_4: service_key,
-    ppmpf_5: description
+    ppmpf_5: description || ''
   };
 
-  // Generate secure hash string
-  // As per JazzCash docs, hash is: Password&Amount&BankID&... all params sorted by key except pp_SecureHash
-  // Here, we'll use your method but ensure password at start and join with '&'
-
+  // Sort keys alphabetically
   const sortedKeys = Object.keys(postData).sort();
 
+  // Concatenate values including empty strings with '&', starting with password
   let hashString = password;
-  sortedKeys.forEach(key => {
-    if (key !== 'pp_SecureHash' && postData[key] !== "") {
-      hashString += '&' + postData[key];
-    }
-  });
+  for (const key of sortedKeys) {
+    hashString += '&' + postData[key];
+  }
 
-  // HMAC SHA256 hash and uppercase
-  const secureHash = crypto
-    .createHmac('sha256', password)
-    .update(hashString)
-    .digest('hex')
-    .toUpperCase();
+  // Generate SHA256 hash (no HMAC), uppercase
+  const secureHash = crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 
   postData.pp_SecureHash = secureHash;
 

@@ -1,5 +1,3 @@
-// /api/thankyou.js
-
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
@@ -7,9 +5,10 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const password = process.env.JAZZCASH_PASSWORD;  // the same integrity salt
-  if (!password) {
-    return res.status(500).send('Payment credentials not configured');
+  // Use integrity salt (NOT password) for hash verification
+  const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT; 
+  if (!integritySalt) {
+    return res.status(500).send('Integrity salt not configured');
   }
 
   const params = req.body;
@@ -22,7 +21,7 @@ export default async function handler(req, res) {
   // Build hash to verify
   const keys = Object.keys(params).filter(k => k !== 'pp_SecureHash').sort();
 
-  let hashString = password;
+  let hashString = integritySalt;
   keys.forEach(key => {
     const value = params[key];
     if (value !== "") {
@@ -31,7 +30,7 @@ export default async function handler(req, res) {
   });
 
   const computedHash = crypto
-    .createHmac('sha256', password)
+    .createHmac('sha256', integritySalt)
     .update(hashString)
     .digest('hex')
     .toUpperCase();
@@ -39,7 +38,6 @@ export default async function handler(req, res) {
   const isValid = (computedHash === receivedHash);
   const success = isValid && params.pp_ResponseCode === '000';
 
-  // Build a simple HTML response
   const html = `<!DOCTYPE html>
   <html>
     <head>

@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const { service_key, name, email, phone, description, cnic } = req.body;
 
-  // Basic validation
+  // Validate required fields
   if (!service_key || !name || !email || !phone || !description || !cnic) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'CNIC must be exactly 6 digits.' });
   }
 
-  // Pricing
+  // Service pricing
   const servicePrices = {
     webapp: 30000,
     domainhosting: 3500,
@@ -33,19 +33,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid or zero-price service selected' });
   }
 
-  // JazzCash credentials (use environment variables in production)
+  // JazzCash sandbox credentials
   const merchantId    = "MC302132";
   const password      = "53v2z2u302";
   const integritySalt = "z60gb5u008";
   const returnUrl     = "https://naspropvt.vercel.app/api/thankyou";
 
-  // Generate timestamps
   const txnRefNo       = 'T' + Date.now();
   const now            = new Date();
   const txnDateTime    = formatDate(now);
-  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +1 day
 
-  // JazzCash payload
+  // Prepare payload (no ppmpf fields)
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -61,14 +60,7 @@ export default async function handler(req, res) {
     pp_Description: description,
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
-    pp_ReturnURL: returnUrl,
-
-    // Optional metadata fields — now empty to avoid issues
-    ppmpf_1: "",
-    ppmpf_2: "",
-    ppmpf_3: "",
-    ppmpf_4: "",
-    ppmpf_5: ""
+    pp_ReturnURL: returnUrl
   };
 
   // Generate secure hash
@@ -102,12 +94,12 @@ export default async function handler(req, res) {
   }
 }
 
-// Helper: Format date to YYYYMMDDHHMMSS
+// Format date to YYYYMMDDHHMMSS
 function formatDate(date) {
   return date.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
 }
 
-// Helper: Generate Secure Hash
+// Generate secure hash using HMAC-SHA256
 function generateSecureHash(data, salt) {
   const filtered = Object.entries(data)
     .filter(([k, v]) => k.startsWith('pp_') && v !== '')

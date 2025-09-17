@@ -30,9 +30,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid or zero-price service selected' });
     }
 
-    const merchantId = 'MC302132';
-    const password = '53v2z2u302';
-    const integritySalt = 'z60gb5u008';  // Salt / shared key
+    const merchantId = 'MC152724';
+    const password = '00v8sc695t';
+    const integritySalt = '221sb04w9x';  // Salt / shared key
 
     const txnRefNo = 'TX' + Date.now();  // prefix to ensure it starts with letter
     const now = new Date();

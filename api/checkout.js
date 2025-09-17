@@ -39,23 +39,23 @@ export default async function handler(req, res) {
 
   // Prepare data payload
   const payload = {
-    pp_Version: "2.0",
-    pp_TxnType: "MWALLET",
-    pp_Language: "EN",
-    pp_MerchantID: merchantId,
-    pp_Password: password,
-    pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amountPKR * 100),
-    pp_TxnCurrency: "PKR",
-    pp_TxnDateTime: txnDateTime,
-    pp_TxnExpiryDateTime: expiryDateTime,
-    pp_BillReference: "BillRef" + txnRefNo,
-    pp_Description: description,
-    pp_CNIC: cnic,
-    pp_MobileNumber: phone,
-    ppmpf_1: name,
-    ppmpf_2: email,
-    ppmpf_3: service_key,
-    ppmpf_4: "",
-    ppmpf_5: ""
- 
+  pp_Version: "2.0",
+  pp_TxnType: "MWALLET",
+  pp_Language: "EN",
+  pp_MerchantID: merchantId,
+  pp_Password: password,
+  pp_TxnRefNo: txnRefNo,
+  pp_Amount: String(amountPKR * 100),
+  pp_TxnCurrency: "PKR",
+  pp_TxnDateTime: txnDateTime,
+  pp_TxnExpiryDateTime: expiryDateTime,
+  pp_BillReference: `BillRef${txnRefNo}`,  // This line
+  pp_Description: description,
+  pp_CNIC: cnic,
+  pp_MobileNumber: phone,
+  ppmpf_1: name,
+  ppmpf_2: email,
+  ppmpf_3: service_key,
+  ppmpf_4: "",
+  ppmpf_5: ""
+};

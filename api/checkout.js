@@ -51,9 +51,9 @@ export default async function handler(req, res) {
     pp_Description: description || "No description provided",
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
-    ppmpf_1: name,
-    ppmpf_2: email,
-    ppmpf_3: service_key,
+    ppmpf_1: "",
+    ppmpf_2: "",
+    ppmpf_3: "",
     ppmpf_4: "",
     ppmpf_5: ""
   };

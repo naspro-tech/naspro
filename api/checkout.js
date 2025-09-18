@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // CNIC last 6 digits only
+  // JazzCash test CNIC is last 6 digits only
   if (!/^\d{6}$/.test(cnic)) {
     return res.status(400).json({ error: "CNIC must be last 6 digits" });
   }
@@ -42,7 +42,6 @@ export default async function handler(req, res) {
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +24h
 
-  // Payload
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -61,15 +60,15 @@ export default async function handler(req, res) {
     pp_ReturnURL: RETURN_URL,
   };
 
-  // Generate secure hash
+  // Generate HMAC-SHA256 secure hash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
-  console.log("HASH STRING:", buildHashString(payload, INTEGRITY_SALT));
+  console.log("DEBUG HASH STRING:", buildHashString(payload, INTEGRITY_SALT));
   console.log("FINAL HASH:", payload.pp_SecureHash);
 
   try {
     const response = await fetch(
-      "https://payment.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -98,11 +97,12 @@ function formatDate(date) {
   );
 }
 
-// Debug build string
+// Build hash string
 function buildHashString(data, salt) {
-  const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash" && data[k] !== "").sort();
-  const sortedValues = keys.map((k) => data[k]).join("&");
-  return salt + "&" + sortedValues;
+  const keys = Object.keys(data)
+    .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
+    .sort();
+  return salt + "&" + keys.map((k) => data[k]).join("&");
 }
 
 // Generate HMAC-SHA256 secure hash

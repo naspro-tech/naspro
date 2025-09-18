@@ -1,3 +1,4 @@
+// /api/checkout.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -9,6 +10,11 @@ export default async function handler(req, res) {
 
   if (!service_key || !name || !email || !phone || !cnic) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // CNIC last 6 digits only
+  if (!/^\d{6}$/.test(cnic)) {
+    return res.status(400).json({ error: "CNIC must be last 6 digits" });
   }
 
   const SERVICE_PRICES = {
@@ -25,17 +31,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // 🔹 Sandbox credentials (replace later with process.env vars)
-  const MERCHANT_ID = "MC302132";
-  const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "z60gb5u008";
-  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
+  // JazzCash credentials from env
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
+  const PASSWORD = process.env.JAZZCASH_PASSWORD;
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
-  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +24h
 
+  // Payload
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -43,7 +50,7 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // e.g. 30000 => "3000000"
+    pp_Amount: String(amount * 100), // in paisa
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
@@ -54,11 +61,11 @@ export default async function handler(req, res) {
     pp_ReturnURL: RETURN_URL,
   };
 
-  // 🔹 Secure Hash
+  // Generate secure hash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
-  console.log("=== DEBUG CHECKOUT REQUEST ===");
-  console.log("Payload:", payload);
+  console.log("HASH STRING:", buildHashString(payload, INTEGRITY_SALT));
+  console.log("FINAL HASH:", payload.pp_SecureHash);
 
   try {
     const response = await fetch(
@@ -70,24 +77,15 @@ export default async function handler(req, res) {
       }
     );
 
-    const text = await response.text();
-    let result;
-    try {
-      result = JSON.parse(text);
-    } catch (e) {
-      result = { rawResponse: text };
-    }
-
-    console.log("=== DEBUG JAZZCASH RESPONSE ===");
-    console.log(result);
-
+    const result = await response.json();
     return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
     console.error("JazzCash API Error:", err);
-    return res.status(500).json({ error: "Payment request failed", details: err.message });
+    return res.status(500).json({ error: "Payment request failed. Please try again later." });
   }
 }
 
+// Format date YYYYMMDDHHMMSS
 function formatDate(date) {
   const pad = (n) => (n < 10 ? "0" + n : n);
   return (
@@ -100,12 +98,15 @@ function formatDate(date) {
   );
 }
 
+// Debug build string
+function buildHashString(data, salt) {
+  const keys = Object.keys(data).filter((k) => k !== "pp_SecureHash" && data[k] !== "").sort();
+  const sortedValues = keys.map((k) => data[k]).join("&");
+  return salt + "&" + sortedValues;
+}
+
+// Generate HMAC-SHA256 secure hash
 function generateSecureHash(data, salt) {
-  const keys = Object.keys(data)
-    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash")
-    .sort();
-
-  const str = keys.map((k) => data[k]).join("&");
-
-  return crypto.createHmac("sha256", salt).update(str).digest("hex").toUpperCase();
+  const hashString = buildHashString(data, salt);
+  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
 }

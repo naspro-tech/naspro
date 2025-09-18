@@ -1,4 +1,3 @@
-// /api/checkout.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -12,11 +11,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // Sandbox CNIC: last 6 digits only
+  // CNIC must be last 6 digits
   if (!/^\d{6}$/.test(cnic)) {
     return res.status(400).json({ error: "CNIC must be last 6 digits" });
   }
-  const cnicLast6 = cnic;
 
   const SERVICE_PRICES = {
     webapp: 30000,
@@ -57,25 +55,27 @@ export default async function handler(req, res) {
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
     pp_Description: description,
-    pp_CNIC: cnicLast6,
+    pp_CNIC: cnic,
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
   };
 
-  // Generate secure hash (HMAC-SHA256)
-  const { canonicalString, hash } = generateSecureHash(payload, INTEGRITY_SALT);
-  payload.pp_SecureHash = hash;
+  // Generate secure hash
+  payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
-  console.log("DEBUG Canonical String:\n", canonicalString);
-  console.log("FINAL HASH (HMAC-SHA256):", payload.pp_SecureHash);
+  console.log("DEBUG HASH STRING:", buildHashString(payload));
+  console.log("FINAL HASH:", payload.pp_SecureHash);
 
   try {
+    // ✅ JazzCash expects URL-encoded form
+    const formBody = new URLSearchParams(payload).toString();
+
     const response = await fetch(
       "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formBody,
       }
     );
 
@@ -100,17 +100,22 @@ function formatDate(date) {
   );
 }
 
+// Build hash string in alphabetical order
+function buildHashString(data) {
+  return Object.keys(data)
+    .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
+    .sort()
+    .map((k) => data[k])
+    .join("&");
+}
+
 // Generate HMAC-SHA256 secure hash
 function generateSecureHash(data, salt) {
-  const keys = Object.keys(data).filter((k) => data[k] !== "" && k !== "pp_SecureHash").sort();
-  const canonicalString = keys.map((k) => data[k]).join("&");
-  const message = salt + "&" + canonicalString;
-
-  const hash = crypto
+  const sortedString = buildHashString(data);
+  const hashString = salt + "&" + sortedString;
+  return crypto
     .createHmac("sha256", salt)
-    .update(message)
+    .update(hashString)
     .digest("hex")
     .toUpperCase();
-
-  return { canonicalString: message, hash };
 }

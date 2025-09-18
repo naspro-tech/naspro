@@ -122,7 +122,7 @@ function buildHashString(data, salt) {
 }
 
 // Generate SHA256 secure hash
-function generateSecureHash(data, salt) {
-  const hashString = buildHashString(data, salt);
-  return crypto.createHash("sha256").update(hashString).digest("hex").toUpperCase();
+function generateSecureHash(payload, INTEGRITY_SALT) {
+  const hashString = buildHashString(paylod, INTEGRITY_SALT);
+  return crypto.createHMAC("SHA256").update(hashString).digest("hex").toUpperCase();
 }

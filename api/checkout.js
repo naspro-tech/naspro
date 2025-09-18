@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      "https://payment.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

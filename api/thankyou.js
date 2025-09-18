@@ -12,34 +12,28 @@ export default async function handler(req, res) {
   }
 
   const params = req.body;
-
-  // Check if secure hash exists
   const receivedHash = params.pp_SecureHash;
   if (!receivedHash) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // Build hash string in alphabetical order of keys (excluding pp_SecureHash)
-  const keys = Object.keys(params).filter((k) => k !== "pp_SecureHash").sort();
-  let hashString = INTEGRITY_SALT;
-  keys.forEach((key) => {
-    if (params[key] !== "") {
-      hashString += "&" + key + "=" + params[key];
-    }
-  });
+  // Build canonical string from response
+  const hashString = INTEGRITY_SALT + "&" +
+    Object.keys(params)
+      .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
+      .sort()
+      .map((k) => params[k])
+      .join("&");
 
-  // Compute hash
   const computedHash = crypto
     .createHmac("sha256", INTEGRITY_SALT)
     .update(hashString)
     .digest("hex")
     .toUpperCase();
 
-  // Validate hash
   const isValid = computedHash === receivedHash.toUpperCase();
   const success = isValid && params.pp_ResponseCode === "000";
 
-  // HTML response
   const html = `<!DOCTYPE html>
   <html>
     <head>
@@ -60,6 +54,7 @@ export default async function handler(req, res) {
         <p>Response Code: ${params.pp_ResponseCode || "N/A"}</p>
         <p>Message: ${params.pp_ResponseMessage || "N/A"}</p>
         <p>CNIC (Last 6): ${params.pp_CNIC || "N/A"}</p>
+        <p>Hash Valid: ${isValid ? "Yes" : "No"}</p>
         <p><a href="/">Go back to Home</a></p>
       </div>
     </body>

@@ -121,7 +121,7 @@ function buildHashString(data, salt) {
   return str;
 }
 
-// Generate SHA256 secure hash
+// Generate HMAC-SHA256 secure hash
 function generateSecureHash(payload, INTEGRITY_SALT) {
   const hashString = buildHashString(paylod, INTEGRITY_SALT);
   return crypto.createHMAC("SHA256").update(hashString).digest("hex").toUpperCase();

@@ -18,12 +18,14 @@ export default async function handler(req, res) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // Build hash string
-  const keys = Object.keys(params).filter((k) => k !== "pp_SecureHash" && params[k] !== "").sort();
-  const sortedValues = keys.map((k) => params[k]).join("&");
-  const hashString = INTEGRITY_SALT + "&" + sortedValues;
+  // Build string in alphabetical order (excluding pp_SecureHash)
+  const keys = Object.keys(params)
+    .filter((k) => k !== "pp_SecureHash" && params[k] !== "")
+    .sort();
 
-  // Compute HMAC
+  const hashString = INTEGRITY_SALT + "&" + keys.map((k) => params[k]).join("&");
+
+  // Compute HMAC-SHA256
   const computedHash = crypto
     .createHmac("sha256", INTEGRITY_SALT)
     .update(hashString)

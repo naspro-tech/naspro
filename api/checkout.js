@@ -25,11 +25,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // JazzCash credentials
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+  // 🔹 Sandbox credentials (replace later with process.env vars)
+  const MERCHANT_ID = "MC302132";
+  const PASSWORD = "53v2z2u302";
+  const INTEGRITY_SALT = "z60gb5u008";
+  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100),
+    pp_Amount: String(amount * 100), // e.g. 30000 => "3000000"
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     pp_ReturnURL: RETURN_URL,
   };
 
-  // Secure hash (HMAC-SHA256)
+  // 🔹 Secure Hash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   console.log("=== DEBUG CHECKOUT REQUEST ===");
@@ -101,7 +101,11 @@ function formatDate(date) {
 }
 
 function generateSecureHash(data, salt) {
-  const keys = Object.keys(data).filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash").sort();
+  const keys = Object.keys(data)
+    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash")
+    .sort();
+
   const str = keys.map((k) => data[k]).join("&");
+
   return crypto.createHmac("sha256", salt).update(str).digest("hex").toUpperCase();
 }

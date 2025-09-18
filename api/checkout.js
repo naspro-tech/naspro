@@ -6,17 +6,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { service_key, name, email, phone, description = "Test Payment", cnicLast6 } = req.body;
+  const { service_key, name, email, phone, description = "Test Payment", cnic } = req.body;
 
-  if (!service_key || !name || !email || !phone || !cnicLast6) {
+  if (!service_key || !name || !email || !phone || !cnic) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // JazzCash credentials from env
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+  // Sandbox CNIC: last 6 digits only
+  if (!/^\d{6}$/.test(cnic)) {
+    return res.status(400).json({ error: "CNIC must be last 6 digits" });
+  }
+  const cnicLast6 = cnic;
 
   const SERVICE_PRICES = {
     webapp: 30000,
@@ -32,11 +32,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
+  // JazzCash credentials from env
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
+  const PASSWORD = process.env.JAZZCASH_PASSWORD;
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +24h
 
+  // Payload with required fields only
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -50,16 +57,17 @@ export default async function handler(req, res) {
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
     pp_Description: description,
-    pp_CNIC: cnicLast6, // already last 6 digits only
+    pp_CNIC: cnicLast6,
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
   };
 
-  // Generate Secure Hash (HMAC-SHA256)
-  payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
+  // Generate secure hash (HMAC-SHA256)
+  const { canonicalString, hash } = generateSecureHash(payload, INTEGRITY_SALT);
+  payload.pp_SecureHash = hash;
 
-  console.log("DEBUG HASH STRING:", buildHashString(payload, INTEGRITY_SALT));
-  console.log("FINAL HASH:", payload.pp_SecureHash);
+  console.log("DEBUG Canonical String:\n", canonicalString);
+  console.log("FINAL HASH (HMAC-SHA256):", payload.pp_SecureHash);
 
   try {
     const response = await fetch(
@@ -79,6 +87,7 @@ export default async function handler(req, res) {
   }
 }
 
+// Format date YYYYMMDDHHMMSS
 function formatDate(date) {
   const pad = (n) => (n < 10 ? "0" + n : n);
   return (
@@ -91,16 +100,17 @@ function formatDate(date) {
   );
 }
 
-// Build canonical hash string
-function buildHashString(data, salt) {
-  const keys = Object.keys(data)
-    .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
-    .sort();
-  return salt + "&" + keys.map((k) => data[k]).join("&");
-}
-
 // Generate HMAC-SHA256 secure hash
 function generateSecureHash(data, salt) {
-  const hashString = buildHashString(data, salt);
-  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
+  const keys = Object.keys(data).filter((k) => data[k] !== "" && k !== "pp_SecureHash").sort();
+  const canonicalString = keys.map((k) => data[k]).join("&");
+  const message = salt + "&" + canonicalString;
+
+  const hash = crypto
+    .createHmac("sha256", salt)
+    .update(message)
+    .digest("hex")
+    .toUpperCase();
+
+  return { canonicalString: message, hash };
 }

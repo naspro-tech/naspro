@@ -6,17 +6,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { service_key, name, email, phone, description = "Test Payment", cnic } = req.body;
+  const { service_key, name, email, phone, description = "Test Payment", cnicLast6 } = req.body;
 
-  if (!service_key || !name || !email || !phone || !cnic) {
+  if (!service_key || !name || !email || !phone || !cnicLast6) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // CNIC must be exactly 6 digits (as per JazzCash sandbox credentials)
-  if (!/^\d{6}$/.test(cnic)) {
-    return res.status(400).json({ error: "CNIC must be last 6 digits only" });
-  }
-  const cnicLast6 = cnic; // Already last 6 digits
+  // JazzCash credentials from env
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
+  const PASSWORD = process.env.JAZZCASH_PASSWORD;
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
 
   const SERVICE_PRICES = {
     webapp: 30000,
@@ -32,18 +32,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // JazzCash credentials from env
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
-
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // +24h
 
-  // Payload with required fields only
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -51,18 +44,18 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // convert to paisa
+    pp_Amount: String(amount * 100), // in paisa
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
     pp_Description: description,
-    pp_CNIC: cnicLast6, // only last 6 digits
+    pp_CNIC: cnicLast6, // already last 6 digits only
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
   };
 
-  // Generate secure hash
+  // Generate Secure Hash (HMAC-SHA256)
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   console.log("DEBUG HASH STRING:", buildHashString(payload, INTEGRITY_SALT));
@@ -86,7 +79,6 @@ export default async function handler(req, res) {
   }
 }
 
-// Format date YYYYMMDDHHMMSS
 function formatDate(date) {
   const pad = (n) => (n < 10 ? "0" + n : n);
   return (
@@ -99,30 +91,16 @@ function formatDate(date) {
   );
 }
 
-// Build hash string for debug (alphabetical order of important fields)
+// Build canonical hash string
 function buildHashString(data, salt) {
-  const keys = [
-    "pp_Amount",
-    "pp_BillReference",
-    "pp_CNIC",
-    "pp_Description",
-    "pp_Language",
-    "pp_MerchantID",
-    "pp_Password",
-    "pp_ReturnURL",
-    "pp_TxnCurrency",
-    "pp_TxnDateTime",
-    "pp_TxnExpiryDateTime",
-    "pp_TxnRefNo",
-    "pp_Version"
-  ];
-  let str = keys.map(k => `${k}=${data[k]}`).join("&");
-  str += `&pp_SecureHashSecret=${salt}`;
-  return str;
+  const keys = Object.keys(data)
+    .filter((k) => k !== "pp_SecureHash" && data[k] !== "")
+    .sort();
+  return salt + "&" + keys.map((k) => data[k]).join("&");
 }
 
 // Generate HMAC-SHA256 secure hash
-function generateSecureHash(payload, INTEGRITY_SALT) {
-  const hashString = buildHashString(paylod, INTEGRITY_SALT);
-  return crypto.createHMAC("SHA256").update(hashString).digest("hex").toUpperCase();
+function generateSecureHash(data, salt) {
+  const hashString = buildHashString(data, salt);
+  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
 }

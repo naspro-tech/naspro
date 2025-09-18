@@ -3,63 +3,68 @@ import crypto from "crypto";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
+
+  const response = req.body;
+
+  if (!response || typeof response !== "object") {
+    return res.status(400).json({ error: "Invalid response format" });
   }
 
   const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  if (!INTEGRITY_SALT) {
-    return res.status(500).send("Payment credentials not configured");
+
+  // Extract JazzCash secure hash from response
+  const receivedHash = response.pp_SecureHash;
+  delete response.pp_SecureHash;
+
+  // Recalculate secure hash
+  const calculatedHash = generateSecureHash(response, INTEGRITY_SALT);
+
+  // Debug logs
+  console.log("DEBUG RESPONSE HASH STRING:", buildHashString(response, INTEGRITY_SALT));
+  console.log("JazzCash Response SecureHash:", receivedHash);
+  console.log("Our Calculated SecureHash:", calculatedHash);
+
+  // Validate hash
+  if (receivedHash !== calculatedHash) {
+    return res.status(400).json({ error: "Invalid SecureHash. Possible tampering detected." });
   }
 
-  const params = req.body;
-  const receivedHash = params.pp_SecureHash;
-  if (!receivedHash) {
-    return res.status(400).send("Secure hash missing in response");
+  // Check CNIC format (sandbox requires last 6 digits only)
+  if (response.pp_CNIC && !/^\d{6}$/.test(response.pp_CNIC)) {
+    return res.status(400).json({ error: "Invalid CNIC format in response" });
   }
 
-  // Build canonical string from response
-  const hashString = INTEGRITY_SALT + "&" +
-    Object.keys(params)
-      .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
-      .sort()
-      .map((k) => params[k])
-      .join("&");
+  // Check payment response code
+  if (response.pp_ResponseCode === "000" && response.pp_PaymentResponseCode === "000") {
+    return res.status(200).json({ message: "Payment Successful", data: response });
+  } else {
+    return res.status(200).json({
+      message: "Payment Failed or Pending",
+      responseCode: response.pp_ResponseCode,
+      paymentResponseCode: response.pp_PaymentResponseCode,
+      data: response,
+    });
+  }
+}
 
-  const computedHash = crypto
-    .createHmac("sha256", INTEGRITY_SALT)
-    .update(hashString)
-    .digest("hex")
-    .toUpperCase();
+// Build hash string for debug (alphabetical order)
+function buildHashString(data, salt) {
+  const keys = Object.keys(data)
+    .filter((k) => data[k] !== "" && data[k] !== null && k.startsWith("pp_"))
+    .sort();
 
-  const isValid = computedHash === receivedHash.toUpperCase();
-  const success = isValid && params.pp_ResponseCode === "000";
+  let str = salt;
+  keys.forEach((k) => {
+    str += "&" + data[k];
+  });
 
-  const html = `<!DOCTYPE html>
-  <html>
-    <head>
-      <title>Payment ${success ? "Success" : "Failed"}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
-        .container { max-width: 600px; margin: auto; background: #f9f9f9; padding: 20px; border-radius: 8px; }
-        .success { color: green; }
-        .fail { color: red; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1 class="${success ? "success" : "fail"}">
-          Payment ${success ? "Successful!" : "Failed"}
-        </h1>
-        <p>Transaction Ref: ${params.pp_TxnRefNo || "N/A"}</p>
-        <p>Response Code: ${params.pp_ResponseCode || "N/A"}</p>
-        <p>Message: ${params.pp_ResponseMessage || "N/A"}</p>
-        <p>CNIC (Last 6): ${params.pp_CNIC || "N/A"}</p>
-        <p>Hash Valid: ${isValid ? "Yes" : "No"}</p>
-        <p><a href="/">Go back to Home</a></p>
-      </div>
-    </body>
-  </html>`;
+  return str;
+}
 
-  res.setHeader("Content-Type", "text/html");
-  res.status(200).send(html);
+// Generate SHA256 secure hash
+function generateSecureHash(data, salt) {
+  const hashString = buildHashString(data, salt);
+  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
 }

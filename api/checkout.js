@@ -38,24 +38,21 @@ export default async function handler(req, res) {
 
   // Payload with all recommended fields
   const payload = {
-    pp_Version: "2.0",
-    pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: MERCHANT_ID,
+    pp_SubMerchantID: "",
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
+    pp_MobileNumber: phone,
+    pp_CNIC: cnic,
     pp_Amount: String(amount * 100),
+    pp_DiscountedAmount: "",
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
-    pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
     pp_Description: description,
-    pp_CNIC: cnic,
-    pp_MobileNumber: phone,
-    pp_ReturnURL: RETURN_URL,
-
-    // Optional fields
-    pp_DiscountedAmount: "",
+    pp_TxnExpiryDateTime: expiryDateTime,
+    pp_SecureHash: "",
     ppmpf_1: "",
     ppmpf_2: "",
     ppmpf_3: "",

@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   const PASSWORD = "53v2z2u302";
   const INTEGRITY_SALT = "z60gb5u008"; 
 
-  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+  const RETURN_URL = process. "naspropvt.vercel.app/api/thankyou.js;
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();

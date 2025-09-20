@@ -6,10 +6,8 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  if (!INTEGRITY_SALT) {
-    return res.status(500).send("Payment credentials not configured");
-  }
+  // 🔑 Hardcoded JazzCash credentials
+  const INTEGRITY_SALT = "z60gb5u008";
 
   const params = req.body;
 
@@ -20,7 +18,6 @@ export default async function handler(req, res) {
   }
 
   // ✅ Build string (Salt + sorted values)
-  // CRITICAL FIX: Do NOT filter out empty string values.
   const keys = Object.keys(params)
     .filter((k) => k !== "pp_SecureHash")
     .sort();

@@ -6,12 +6,8 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
-  // ✅ Hardcoded JazzCash credentials
-  const MERCHANT_ID = "MC302132";
-  const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "z60gb5u008"; // replace with your actual salt
-  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
-
+  // Use the correct Integrity Salt from the provided images
+  const INTEGRITY_SALT = "z60gb5u008";
   if (!INTEGRITY_SALT) {
     return res.status(500).send("Payment credentials not configured");
   }
@@ -24,7 +20,8 @@ export default async function handler(req, res) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // ✅ Build string (Salt + sorted values, DO NOT skip empty ones)
+  // ✅ Build string (Salt + sorted values)
+  // CRITICAL FIX: Do NOT filter out empty string values.
   const keys = Object.keys(params)
     .filter((k) => k !== "pp_SecureHash")
     .sort();

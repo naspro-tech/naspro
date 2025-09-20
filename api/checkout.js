@@ -25,10 +25,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // 🔑 Hardcoded JazzCash credentials
+  // ✅ Hardcoded JazzCash credentials
   const MERCHANT_ID = "MC302132";
   const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "z60gb5u008";
+  const INTEGRITY_SALT = "your_salt_here"; // replace with actual salt
   const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
 
   const txnRefNo = "T" + Date.now();
@@ -38,21 +38,24 @@ export default async function handler(req, res) {
 
   // Payload with all recommended fields
   const payload = {
+    pp_Version: "2.0",
+    pp_TxnType: "MWALLET",
     pp_Language: "EN",
     pp_MerchantID: MERCHANT_ID,
-    pp_SubMerchantID: "",
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_MobileNumber: phone,
-    pp_CNIC: cnic,
     pp_Amount: String(amount * 100),
-    pp_DiscountedAmount: "",
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
+    pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
     pp_Description: description,
-    pp_TxnExpiryDateTime: expiryDateTime,
-    pp_SecureHash: "",
+    pp_CNIC: cnic,
+    pp_MobileNumber: phone,
+    pp_ReturnURL: RETURN_URL,
+
+    // Optional fields
+    pp_DiscountedAmount: "",
     ppmpf_1: "",
     ppmpf_2: "",
     ppmpf_3: "",
@@ -60,7 +63,7 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // Add SecureHash
+  // ✅ Generate Secure Hash (correct method)
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   try {
@@ -94,17 +97,20 @@ function formatDate(date) {
   );
 }
 
+// ✅ Correct JazzCash Secure Hash function
 function generateSecureHash(data, salt) {
   const keys = Object.keys(data)
-    .filter(k => k !== "pp_SecureHash") // exclude hash itself
+    .filter((k) => k !== "pp_SecureHash")
     .sort();
 
-  const hashString = keys.map(k => data[k]).join("&");
-  const finalString = salt + "&" + hashString;
+  let hashString = salt;
+  keys.forEach((k) => {
+    hashString += "&" + data[k];
+  });
 
   return crypto
     .createHmac("sha256", salt)
-    .update(finalString)
+    .update(hashString)
     .digest("hex")
     .toUpperCase();
 }

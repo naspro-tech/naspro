@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   // ✅ Hardcoded JazzCash credentials
   const MERCHANT_ID = "MC302132";
   const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "your_salt_here"; // replace with your actual salt
+  const INTEGRITY_SALT = "z60gb5u008"; // replace with your actual salt
   const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
 
   if (!INTEGRITY_SALT) {

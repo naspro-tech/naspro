@@ -6,8 +6,15 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
-  // 🔑 Hardcoded JazzCash credentials
-  const INTEGRITY_SALT = "z60gb5u008";
+  // ✅ Hardcoded JazzCash credentials
+  const MERCHANT_ID = "MC302132";
+  const PASSWORD = "53v2z2u302";
+  const INTEGRITY_SALT = "your_salt_here"; // replace with your actual salt
+  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
+
+  if (!INTEGRITY_SALT) {
+    return res.status(500).send("Payment credentials not configured");
+  }
 
   const params = req.body;
 
@@ -17,7 +24,7 @@ export default async function handler(req, res) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // ✅ Build string (Salt + sorted values)
+  // ✅ Build string (Salt + sorted values, DO NOT skip empty ones)
   const keys = Object.keys(params)
     .filter((k) => k !== "pp_SecureHash")
     .sort();

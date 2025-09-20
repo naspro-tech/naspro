@@ -25,10 +25,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+  // 🔑 Hardcoded JazzCash credentials
+  const MERCHANT_ID = "MC302132";
+  const PASSWORD = "53v2z2u302";
+  const INTEGRITY_SALT = "z60gb5u008";
+  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();

@@ -6,7 +6,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { service_key, name, email, phone, cnic, description = "Test Payment" } = req.body;
+  const { service_key, name, email, phone, cnic } = req.body;
+  const description = (req.body.description || "Test Payment").trim();
 
   if (!service_key || !name || !email || !phone || !cnic) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -25,18 +26,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // ✅ Hardcoded JazzCash credentials
-  const MERCHANT_ID = "MC302132";
+  // Use credentials from the provided images
+  const MERCHANT_ID = "MC302132"; 
   const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "z60gb5u008; // replace with actual salt
-  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
+  const INTEGRITY_SALT = "z60gb5u008"; 
+
+  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
-  // Payload with all recommended fields
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -54,7 +55,6 @@ export default async function handler(req, res) {
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
 
-    // Optional fields
     pp_DiscountedAmount: "",
     ppmpf_1: "",
     ppmpf_2: "",
@@ -63,7 +63,6 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // ✅ Generate Secure Hash (correct method)
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   try {
@@ -97,20 +96,17 @@ function formatDate(date) {
   );
 }
 
-// ✅ Correct JazzCash Secure Hash function
 function generateSecureHash(data, salt) {
   const keys = Object.keys(data)
-    .filter((k) => k !== "pp_SecureHash")
+    .filter(k => k !== "pp_SecureHash")
     .sort();
 
-  let hashString = salt;
-  keys.forEach((k) => {
-    hashString += "&" + data[k];
-  });
+  const hashString = keys.map(k => data[k]).join("&");
+  const finalString = salt + "&" + hashString;
 
   return crypto
     .createHmac("sha256", salt)
-    .update(hashString)
+    .update(finalString)
     .digest("hex")
     .toUpperCase();
 }

@@ -1,28 +1,30 @@
+// /api/thankyou.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
-  // Accept both POST (body) and GET (query)
-  const params = req.method === "POST" ? req.body : req.query;
-
-  if (!params || Object.keys(params).length === 0) {
-    return res.status(400).send("No parameters received");
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
   }
 
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT || "z60gb5u008";
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
   if (!INTEGRITY_SALT) {
     return res.status(500).send("Payment credentials not configured");
   }
 
+  const params = req.body;
   const receivedHash = params.pp_SecureHash;
   if (!receivedHash) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  const keys = Object.keys(params).filter((k) => k !== "pp_SecureHash").sort();
+  // Build hash string
+  const keys = Object.keys(params)
+    .filter((k) => k !== "pp_SecureHash")
+    .sort();
 
   let hashString = INTEGRITY_SALT;
   keys.forEach((key) => {
-    hashString += "&" + (params[key] === undefined ? "" : String(params[key]));
+    hashString += "&" + params[key];
   });
 
   const computedHash = crypto
@@ -31,19 +33,14 @@ export default async function handler(req, res) {
     .digest("hex")
     .toUpperCase();
 
-  const isValid = computedHash === String(receivedHash).toUpperCase();
+  const isValid = computedHash === receivedHash.toUpperCase();
   const success = isValid && params.pp_ResponseCode === "000";
 
-  console.log("JazzCash Response Payload:", params);
-  console.log("Hash String Used:", hashString);
-  console.log("Computed Hash:", computedHash);
-  console.log("Received Hash:", receivedHash);
-
+  // HTML Response
   const html = `<!DOCTYPE html>
   <html>
     <head>
       <title>Payment ${success ? "Success" : "Failed"}</title>
-      <meta charset="utf-8" />
       <style>
         body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
         .container { max-width: 600px; margin: auto; background: #f9f9f9; padding: 20px; border-radius: 8px; }

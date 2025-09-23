@@ -1,66 +1,72 @@
-// /api/thankyou.js
-const crypto = require("crypto");
+import crypto from 'crypto';
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).send("Method Not Allowed");
-  }
+// The same function from checkout.js is used here for consistency
+function createHashString(params) {
+    const excludedKeys = ['pp_SecureHash', 'pp_Password'];
+    const sortedKeys = Object.keys(params).sort();
+    
+    let hashString = '';
+    for (const key of sortedKeys) {
+        if (!excludedKeys.includes(key)) {
+            hashString += key + '=' + params[key] + '&';
+        }
+    }
+    return hashString.slice(0, -1);
+}
 
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  if (!INTEGRITY_SALT) {
-    return res.status(500).send("Payment credentials not configured");
-  }
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
 
-  const params = req.body;
-  const receivedHash = params.pp_SecureHash;
-  if (!receivedHash) {
-    return res.status(400).send("Secure hash missing in response");
-  }
+    try {
+        const responseData = req.body;
+        
+        // Retrieve environment variables
+        const password = process.env.JAZZCASH_PASSWORD;
+        const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
 
-  const keys = Object.keys(params)
-    .filter((k) => k !== "pp_SecureHash")
-    .sort();
+        if (!password || !integritySalt) {
+            return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+        }
 
-  let hashString = INTEGRITY_SALT;
-  keys.forEach((key) => {
-    hashString += "&" + params[key];
-  });
+        const receivedHash = responseData.pp_SecureHash;
+        
+        // Generate a new hash from the received data to compare
+        const hashBaseString = createHashString(responseData);
+        const stringToHash = `${integritySalt}&${hashBaseString}`;
 
-  const computedHash = crypto
-    .createHmac("sha256", INTEGRITY_SALT)
-    .update(hashString)
-    .digest("hex")
-    .toUpperCase();
+        const hmac = crypto.createHmac('sha256', password);
+        hmac.update(stringToHash);
+        const generatedHash = hmac.digest('hex').toUpperCase();
 
-  const isValid = computedHash === receivedHash.toUpperCase();
-  const success = isValid && params.pp_ResponseCode === "000";
+        if (receivedHash === generatedHash) {
+            // Hash is valid, process the transaction
+            const responseCode = responseData.pp_ResponseCode;
+            const responseMessage = responseData.pp_ResponseMessage;
 
-  const html = `<!DOCTYPE html>
-  <html>
-    <head>
-      <title>Payment ${success ? "Success" : "Failed"}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; text-align: center; }
-        .container { max-width: 600px; margin: auto; background: #f9f9f9; padding: 20px; border-radius: 8px; }
-        .success { color: green; }
-        .fail { color: red; }
-        pre { text-align: left; background: #eee; padding: 10px; overflow-x: auto; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1 class="${success ? "success" : "fail"}">
-          Payment ${success ? "Successful!" : "Failed"}
-        </h1>
-        <p>Transaction Ref: ${params.pp_TxnRefNo || "N/A"}</p>
-        <p>Response Code: ${params.pp_ResponseCode || "N/A"}</p>
-        <p>Message: ${params.pp_ResponseMessage || "N/A"}</p>
-        <h3>Debug Info</h3>
-        <pre>Computed Hash: ${computedHash}\nReceived Hash: ${receivedHash}\nValid: ${isValid}</pre>
-      </div>
-    </body>
-  </html>`;
-
-  res.setHeader("Content-Type", "text/html");
-  res.status(200).send(html);
-};
+            if (responseCode === '000') {
+                // Payment was successful
+                return res.status(200).json({
+                    success: true,
+                    message: 'Payment was successful.',
+                    transactionDetails: responseData
+                });
+            } else {
+                // Payment failed or was cancelled
+                return res.status(200).json({
+                    success: false,
+                    message: `Payment failed: ${responseMessage}`,
+                    responseCode
+                });
+            }
+        } else {
+            // Hash mismatch, potential data tampering
+            console.error('Secure Hash Mismatch');
+            return res.status(400).json({ message: 'Invalid secure hash. Data may have been tampered with.' });
+        }
+    } catch (error) {
+        console.error('Thank You API error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+}

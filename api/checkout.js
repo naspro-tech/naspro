@@ -1,3 +1,4 @@
+// /api/checkout.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -22,17 +23,16 @@ export default async function handler(req, res) {
   };
 
   const amount = SERVICE_PRICES[service_key];
-  if (amount === undefined || amount === 0) {
+  if (!amount || amount === 0) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID || "MC302132";
-  const PASSWORD = process.env.JAZZCASH_PASSWORD || "53v2z2u302";
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT || "z60gb5u008";
-
-  const RETURN_URL =
-    process.env.JAZZCASH_RETURN_URL ||
-    "https://naspropvt.vercel.app/api/thankyou";
+  // Credentials from environment
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
+  const PASSWORD = process.env.JAZZCASH_PASSWORD;
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+  const BASE_URL = process.env.JAZZCASH_BASE_URL || "https://sandbox.jazzcash.com.pk";
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // in paisa
+    pp_Amount: String(amount * 100), // JazzCash expects paisa
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
@@ -55,6 +55,7 @@ export default async function handler(req, res) {
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
+
     pp_DiscountedAmount: "",
     ppmpf_1: "",
     ppmpf_2: "",
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      `${BASE_URL}/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,8 +79,8 @@ export default async function handler(req, res) {
     const result = await response.json();
     return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
-    console.error("JazzCash API Error:", err?.message || err);
-    return res.status(500).json({ error: "Payment request failed. " + (err?.message || err) });
+    console.error("JazzCash API Error:", err.message);
+    return res.status(500).json({ error: "Payment request failed. " + err.message });
   }
 }
 
@@ -101,8 +102,12 @@ function generateSecureHash(data, salt) {
     .filter((k) => k !== "pp_SecureHash")
     .sort();
 
-  const hashString = keys.map((k) => (data[k] === undefined ? "" : String(data[k]))).join("&");
+  const hashString = keys.map((k) => data[k]).join("&");
   const finalString = salt + "&" + hashString;
 
-  return crypto.createHmac("sha256", salt).update(finalString).digest("hex").toUpperCase();
+  return crypto
+    .createHmac("sha256", salt)
+    .update(finalString)
+    .digest("hex")
+    .toUpperCase();
 }

@@ -1,62 +1,58 @@
-// /api/inquire.js
-const crypto = require("crypto");
-const fetch = require("node-fetch");
+import crypto from 'crypto';
 
-module.exports = async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
-  const { txnRefNo } = req.body;
-  if (!txnRefNo) {
-    return res.status(400).json({ error: "Missing txnRefNo" });
-  }
-
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-
-  if (!MERCHANT_ID || !PASSWORD || !INTEGRITY_SALT) {
-    return res.status(500).json({ error: "JazzCash credentials not configured" });
-  }
-
-  const payload = {
-    pp_TxnRefNo: txnRefNo,
-    pp_MerchantID: MERCHANT_ID,
-    pp_Password: PASSWORD,
-  };
-
-  payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
-
-  try {
-    const response = await fetch(
-      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/PaymentInquiry/Inquire",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    const result = await response.json();
-    return res.status(200).json({ sentPayload: payload, apiResponse: result });
-  } catch (err) {
-    console.error("JazzCash Inquiry API Error:", err);
-    return res.status(500).json({ error: "Inquiry request failed. Please try again later." });
-  }
-};
-
-// Build canonical string
-function buildHashString(data) {
-  return Object.keys(data)
-    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && data[k] !== "")
-    .sort()
-    .map((k) => data[k])
-    .join("&");
+function createInquiryHashString(params) {
+    const excludedKeys = ['pp_SecureHash'];
+    const sortedKeys = Object.keys(params).sort();
+    
+    let hashString = '';
+    for (const key of sortedKeys) {
+        if (!excludedKeys.includes(key)) {
+            hashString += key + '=' + params[key] + '&';
+        }
+    }
+    return hashString.slice(0, -1);
 }
 
-// Generate HMAC-SHA256 hash
-function generateSecureHash(data, salt) {
-  const hashString = salt + "&" + buildHashString(data);
-  return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
+
+    try {
+        const { txnRefNo } = req.body;
+        
+        const merchantID = process.env.JAZZCASH_MERCHANT_ID;
+        const password = process.env.JAZZCASH_PASSWORD;
+        const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
+        const inquiryURL = 'https://payments.jazzcash.com.pk/Inquiry/PaymentInquiry';
+
+        if (!merchantID || !password || !integritySalt) {
+            return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+        }
+
+        const payload = {
+            "pp_MerchantID": merchantID,
+            "pp_Password": password,
+            "pp_TxnRefNo": txnRefNo,
+            "pp_TxnType": "INQUIRY",
+            "pp_Version": "2.0"
+        };
+        
+        const hashBaseString = createInquiryHashString(payload);
+        const stringToHash = `${integritySalt}&${hashBaseString}`;
+        const hmac = crypto.createHmac('sha256', password);
+        hmac.update(stringToHash);
+        const secureHash = hmac.digest('hex').toUpperCase();
+
+        payload.pp_SecureHash = secureHash;
+
+        // Note: In a real-world scenario, you would make an API call to inquiryURL
+        // const apiResponse = await fetch(inquiryURL, { method: 'POST', body: JSON.stringify(payload) });
+        
+        return res.status(200).json({ message: 'Inquiry payload generated', payload });
+
+    } catch (error) {
+        console.error('Inquiry API error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
 }

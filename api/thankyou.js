@@ -6,18 +6,18 @@ export default async function handler(req, res) {
     return res.status(405).send("Method Not Allowed");
   }
 
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  if (!INTEGRITY_SALT) {
-    return res.status(500).send("Payment credentials not configured");
-  }
+  // 🔑 Hardcoded JazzCash credentials
+  const INTEGRITY_SALT = "z60gb5u008";
 
   const params = req.body;
+
+  // Extract JazzCash provided hash
   const receivedHash = params.pp_SecureHash;
   if (!receivedHash) {
     return res.status(400).send("Secure hash missing in response");
   }
 
-  // Build hash string
+  // ✅ Build string (Salt + sorted values)
   const keys = Object.keys(params)
     .filter((k) => k !== "pp_SecureHash")
     .sort();
@@ -27,14 +27,22 @@ export default async function handler(req, res) {
     hashString += "&" + params[key];
   });
 
+  // ✅ Compute hash using HMAC-SHA256
   const computedHash = crypto
     .createHmac("sha256", INTEGRITY_SALT)
     .update(hashString)
     .digest("hex")
     .toUpperCase();
 
+  // ✅ Verify
   const isValid = computedHash === receivedHash.toUpperCase();
   const success = isValid && params.pp_ResponseCode === "000";
+
+  // Debug log
+  console.log("JazzCash Response Payload:", params);
+  console.log("Hash String Used:", hashString);
+  console.log("Computed Hash:", computedHash);
+  console.log("Received Hash:", receivedHash);
 
   // HTML Response
   const html = `<!DOCTYPE html>

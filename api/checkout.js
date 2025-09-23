@@ -6,8 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { service_key, name, email, phone, cnic } = req.body;
-  const description = (req.body.description || "Test Payment").trim();
+  const { service_key, name, email, phone, cnic, description = "Test Payment" } = req.body;
 
   if (!service_key || !name || !email || !phone || !cnic) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -21,24 +20,23 @@ export default async function handler(req, res) {
     cloudit: 0,
     digitalmarketing: 15000,
   };
-
   const amount = SERVICE_PRICES[service_key];
   if (!amount || amount === 0) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // Credentials from environment
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
-  const BASE_URL = process.env.JAZZCASH_BASE_URL || "https://sandbox.jazzcash.com.pk";
+  // 🔑 Hardcoded JazzCash credentials
+  const MERCHANT_ID = "MC302132";
+  const PASSWORD = "53v2z2u302";
+  const INTEGRITY_SALT = "z60gb5u008";
+  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
+  // Payload with all recommended fields
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -46,7 +44,7 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100), // JazzCash expects paisa
+    pp_Amount: String(amount * 100),
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
@@ -56,6 +54,7 @@ export default async function handler(req, res) {
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
 
+    // Optional fields
     pp_DiscountedAmount: "",
     ppmpf_1: "",
     ppmpf_2: "",
@@ -64,11 +63,12 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
+  // Add SecureHash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   try {
     const response = await fetch(
-      `${BASE_URL}/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction`,
+      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -99,10 +99,10 @@ function formatDate(date) {
 
 function generateSecureHash(data, salt) {
   const keys = Object.keys(data)
-    .filter((k) => k !== "pp_SecureHash")
+    .filter(k => k !== "pp_SecureHash") // exclude hash itself
     .sort();
 
-  const hashString = keys.map((k) => data[k]).join("&");
+  const hashString = keys.map(k => data[k]).join("&");
   const finalString = salt + "&" + hashString;
 
   return crypto

@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         const hashBaseString = createHashString(responseData);
         const stringToHash = `${integritySalt}&${hashBaseString}`;
 
-        const hmac = crypto.createHmac('sha256', password);
+        const hmac = crypto.createHmac('sha256', integritySalt);
         hmac.update(stringToHash);
         const generatedHash = hmac.digest('hex').toUpperCase();
 

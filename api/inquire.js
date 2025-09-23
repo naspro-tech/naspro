@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { txnRefNo } = req.body;
+        const { txnRefNo, amount } = req.body; // amount in paisa
         
         const merchantID = process.env.JAZZCASH_MERCHANT_ID;
         const password = process.env.JAZZCASH_PASSWORD;
@@ -30,44 +30,39 @@ export default async function handler(req, res) {
         }
 
         const payload = {
-            "pp_MerchantID": merchantID,
-            "pp_Password": password,
-            "pp_TxnRefNo": txnRefNo,
-            "pp_TxnType": "INQUIRY",
-            "pp_Version": "2.0"
+            pp_MerchantID: merchantID,
+            pp_Amount: amount, // in paisa
+            pp_Password: password,
+            pp_TxnRefNo: txnRefNo,
+            pp_TxnType: "INQUIRY",
+            pp_Version: "2.0"
         };
         
         const hashBaseString = createInquiryHashString(payload);
         const stringToHash = `${integritySalt}&${hashBaseString}`;
-        const hmac = crypto.createHmac('sha256', password);
+        const hmac = crypto.createHmac('sha256', integritySalt);
         hmac.update(stringToHash);
         const secureHash = hmac.digest('hex').toUpperCase();
 
         payload.pp_SecureHash = secureHash;
 
-        try {
-            // 🔹 Call JazzCash Inquiry API
-            const apiResponse = await fetch(
-                "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/PaymentInquiry/Inquire",
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                }
-            );
+        // 🔹 Call JazzCash Inquiry API
+        const apiResponse = await fetch(
+            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry/Inquire",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            }
+        );
 
-            const result = await apiResponse.json();
+        const result = await apiResponse.json();
 
-            return res.status(200).json({
-                success: true,
-                payload,
-                apiResponse: result,
-            });
-
-        } catch (error) {
-            console.error("JazzCash Inquiry API error:", error);
-            return res.status(500).json({ message: "Failed to connect to JazzCash Inquiry API." });
-        }
+        return res.status(200).json({
+            success: true,
+            payload,
+            apiResponse: result,
+        });
 
     } catch (error) {
         console.error('Inquiry API error:', error);

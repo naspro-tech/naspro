@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import querystring from "querystring";
 
 // The function to sort parameters and create the string for hashing
 function createHashString(params) {

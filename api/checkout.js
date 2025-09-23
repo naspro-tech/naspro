@@ -1,4 +1,3 @@
-// /api/checkout.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -21,17 +20,19 @@ export default async function handler(req, res) {
     cloudit: 0,
     digitalmarketing: 15000,
   };
+
   const amount = SERVICE_PRICES[service_key];
-  if (!amount || amount === 0) {
+  if (amount === undefined || amount === 0) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // Use credentials from the provided images
-  const MERCHANT_ID = "MC302132"; 
-  const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "z60gb5u008"; 
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID || "MC302132";
+  const PASSWORD = process.env.JAZZCASH_PASSWORD || "53v2z2u302";
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT || "z60gb5u008";
 
-  const RETURN_URL = "naspropvt.vercel.app/api/thankyou";
+  const RETURN_URL =
+    process.env.JAZZCASH_RETURN_URL ||
+    "https://naspropvt.vercel.app/api/thankyou";
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
@@ -45,7 +46,7 @@ export default async function handler(req, res) {
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
     pp_TxnRefNo: txnRefNo,
-    pp_Amount: String(amount * 100),
+    pp_Amount: String(amount * 100), // in paisa
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
@@ -54,7 +55,6 @@ export default async function handler(req, res) {
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
-
     pp_DiscountedAmount: "",
     ppmpf_1: "",
     ppmpf_2: "",
@@ -78,8 +78,8 @@ export default async function handler(req, res) {
     const result = await response.json();
     return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
-    console.error("JazzCash API Error:", err.message);
-    return res.status(500).json({ error: "Payment request failed. " + err.message });
+    console.error("JazzCash API Error:", err?.message || err);
+    return res.status(500).json({ error: "Payment request failed. " + (err?.message || err) });
   }
 }
 
@@ -98,15 +98,11 @@ function formatDate(date) {
 
 function generateSecureHash(data, salt) {
   const keys = Object.keys(data)
-    .filter(k => k !== "pp_SecureHash")
+    .filter((k) => k !== "pp_SecureHash")
     .sort();
 
-  const hashString = keys.map(k => data[k]).join("&");
+  const hashString = keys.map((k) => (data[k] === undefined ? "" : String(data[k]))).join("&");
   const finalString = salt + "&" + hashString;
 
-  return crypto
-    .createHmac("sha256", salt)
-    .update(finalString)
-    .digest("hex")
-    .toUpperCase();
+  return crypto.createHmac("sha256", salt).update(finalString).digest("hex").toUpperCase();
 }

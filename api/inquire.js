@@ -1,3 +1,4 @@
+// /api/inquire.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -10,28 +11,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing txnRefNo" });
   }
 
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID || "MC302132";
-  const PASSWORD = process.env.JAZZCASH_PASSWORD || "53v2z2u302";
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT || "z60gb5u008";
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
+  const PASSWORD = process.env.JAZZCASH_PASSWORD;
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const BASE_URL = process.env.JAZZCASH_BASE_URL || "https://sandbox.jazzcash.com.pk";
 
   const payload = {
-    pp_Version: "2.0",
-    pp_TxnType: "MWALLET",
-    pp_Language: "EN",
+    pp_TxnRefNo: txnRefNo,
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
-    pp_TxnRefNo: txnRefNo,
-    pp_TxnCurrency: "PKR",
   };
 
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
-  console.log("STATUS INQUIRY HASH STRING:", buildHashString(payload));
-  console.log("STATUS INQUIRY HASH:", payload.pp_SecureHash);
-
   try {
     const response = await fetch(
-      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/PaymentInquiry/Inquire",
+      `${BASE_URL}/ApplicationAPI/API/PaymentInquiry/Inquire`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,16 +37,16 @@ export default async function handler(req, res) {
     const result = await response.json();
     return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
-    console.error("JazzCash Inquiry API Error:", err);
-    return res.status(500).json({ error: "Inquiry request failed. Please try again later." });
+    console.error("JazzCash Inquiry API Error:", err.message);
+    return res.status(500).json({ error: "Inquiry request failed. " + err.message });
   }
 }
 
 function buildHashString(data) {
   return Object.keys(data)
-    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash")
+    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && data[k] !== "")
     .sort()
-    .map((k) => (data[k] === undefined ? "" : String(data[k])))
+    .map((k) => data[k])
     .join("&");
 }
 

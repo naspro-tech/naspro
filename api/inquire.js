@@ -14,8 +14,7 @@ export default async function handler(req, res) {
   const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
   const PASSWORD = process.env.JAZZCASH_PASSWORD;
   const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  const BASE_URL = process.env.JAZZCASH_BASE_URL || "https://sandbox.jazzcash.com.pk";
-
+  
   const payload = {
     pp_TxnRefNo: txnRefNo,
     pp_MerchantID: MERCHANT_ID,

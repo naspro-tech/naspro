@@ -1,4 +1,3 @@
-// /api/inquire.js
 import crypto from "crypto";
 
 export default async function handler(req, res) {
@@ -11,18 +10,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing txnRefNo" });
   }
 
-  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
-  const PASSWORD = process.env.JAZZCASH_PASSWORD;
-  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID || "MC302132";
+  const PASSWORD = process.env.JAZZCASH_PASSWORD || "53v2z2u302";
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT || "z60gb5u008";
 
-  // Prepare request body
   const payload = {
-    pp_TxnRefNo: txnRefNo,
+    pp_Version: "2.0",
+    pp_TxnType: "MWALLET",
+    pp_Language: "EN",
     pp_MerchantID: MERCHANT_ID,
     pp_Password: PASSWORD,
+    pp_TxnRefNo: txnRefNo,
+    pp_TxnCurrency: "PKR",
   };
 
-  // Generate secure hash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   console.log("STATUS INQUIRY HASH STRING:", buildHashString(payload));
@@ -46,16 +47,14 @@ export default async function handler(req, res) {
   }
 }
 
-// Build canonical string (values only, sorted by key)
 function buildHashString(data) {
   return Object.keys(data)
-    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && data[k] !== "")
+    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash")
     .sort()
-    .map((k) => data[k])
+    .map((k) => (data[k] === undefined ? "" : String(data[k])))
     .join("&");
 }
 
-// Generate HMAC-SHA256 hash
 function generateSecureHash(data, salt) {
   const hashString = salt + "&" + buildHashString(data);
   return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();

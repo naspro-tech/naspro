@@ -1,12 +1,13 @@
 // /api/checkout.js
-import crypto from "crypto";
+const crypto = require("crypto");
+const fetch = require("node-fetch"); // ensure node-fetch installed
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { service_key, name, email, phone, cnic, description = "Test Payment" } = req.body;
+  const { service_key, name, email, phone, cnic, description } = req.body;
 
   if (!service_key || !name || !email || !phone || !cnic) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -20,23 +21,26 @@ export default async function handler(req, res) {
     cloudit: 0,
     digitalmarketing: 15000,
   };
+
   const amount = SERVICE_PRICES[service_key];
   if (!amount || amount === 0) {
     return res.status(400).json({ error: "Invalid or zero-price service selected" });
   }
 
-  // 🔑 Hardcoded JazzCash credentials
-  const MERCHANT_ID = "MC302132";
-  const PASSWORD = "53v2z2u302";
-  const INTEGRITY_SALT = "z60gb5u008";
-  const RETURN_URL = "https://naspropvt.vercel.app/thankyou";
+  const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
+  const PASSWORD = process.env.JAZZCASH_PASSWORD;
+  const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
+  const RETURN_URL = process.env.JAZZCASH_RETURN_URL;
+
+  if (!MERCHANT_ID || !PASSWORD || !INTEGRITY_SALT || !RETURN_URL) {
+    return res.status(500).json({ error: "JazzCash credentials not configured" });
+  }
 
   const txnRefNo = "T" + Date.now();
   const now = new Date();
   const txnDateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
-  // Payload with all recommended fields
   const payload = {
     pp_Version: "2.0",
     pp_TxnType: "MWALLET",
@@ -49,12 +53,11 @@ export default async function handler(req, res) {
     pp_TxnDateTime: txnDateTime,
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_BillReference: "BillRef",
-    pp_Description: description,
+    pp_Description: description || "Test Payment",
     pp_CNIC: cnic,
     pp_MobileNumber: phone,
     pp_ReturnURL: RETURN_URL,
 
-    // Optional fields
     pp_DiscountedAmount: "",
     ppmpf_1: "",
     ppmpf_2: "",
@@ -63,7 +66,6 @@ export default async function handler(req, res) {
     ppmpf_5: "",
   };
 
-  // Add SecureHash
   payload.pp_SecureHash = generateSecureHash(payload, INTEGRITY_SALT);
 
   try {
@@ -79,12 +81,12 @@ export default async function handler(req, res) {
     const result = await response.json();
     return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
-    console.error("JazzCash API Error:", err.message);
+    console.error("JazzCash API Error:", err);
     return res.status(500).json({ error: "Payment request failed. " + err.message });
   }
-}
+};
 
-// helpers
+// Helpers
 function formatDate(date) {
   const pad = (n) => (n < 10 ? "0" + n : n);
   return (
@@ -99,10 +101,10 @@ function formatDate(date) {
 
 function generateSecureHash(data, salt) {
   const keys = Object.keys(data)
-    .filter(k => k !== "pp_SecureHash") // exclude hash itself
+    .filter((k) => k !== "pp_SecureHash")
     .sort();
 
-  const hashString = keys.map(k => data[k]).join("&");
+  const hashString = keys.map((k) => data[k]).join("&");
   const finalString = salt + "&" + hashString;
 
   return crypto

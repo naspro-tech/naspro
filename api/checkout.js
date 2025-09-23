@@ -79,7 +79,30 @@ export default async function handler(req, res) {
         // Add the secure hash to the payload
         payload.pp_SecureHash = secureHash;
 
-        return res.status(200).json({ success: true, payload });
+        try {
+            // 🔹 Call JazzCash Purchase API
+            const apiResponse = await fetch(
+                "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            const result = await apiResponse.json();
+
+            // Return both payload and JazzCash's API response
+            return res.status(200).json({
+                success: true,
+                payload,
+                apiResponse: result,
+            });
+
+        } catch (error) {
+            console.error("JazzCash API error:", error);
+            return res.status(500).json({ message: "Failed to connect to JazzCash API." });
+        }
 
     } catch (error) {
         console.error('Checkout API error:', error);

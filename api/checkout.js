@@ -67,7 +67,7 @@ export default async function handler(req, res) {
             "pp_MerchantID": merchantID,
             "pp_Password": password,
             "pp_TxnRefNo": txnRefNo,
-            "pp_Amount": formattedAmount, // ✅ Only change
+            "pp_Amount": String(amount * 100), // in paisa
             "pp_TxnCurrency": "PKR",
             "pp_TxnDateTime": txnDateTime,
             "pp_TxnExpiryDateTime": txnExpiryDateTime,

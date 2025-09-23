@@ -89,7 +89,7 @@ export default async function handler(req, res) {
         const stringToHash = `${integritySalt}&${hashBaseString}`;
 
         // Generate the secure hash using HMAC-SHA256
-        const hmac = crypto.createHmac('sha256', password);
+        const hmac = crypto.createHmac('sha256', integritySalt);
         hmac.update(stringToHash);
         const secureHash = hmac.digest('hex').toUpperCase();
 
@@ -102,8 +102,8 @@ export default async function handler(req, res) {
                 "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: querystring.stringify(payload),
                 }
             );
 

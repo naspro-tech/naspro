@@ -17,15 +17,29 @@ function createHashString(params) {
 }
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
-    }
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
-    try {
-        const { amount, mobile, cnic } = req.body;
+  const { service_key, name, email, phone, cnic } = req.body;
+  const description = (req.body.description || "Test Payment").trim();
 
-        // ✅ Fix only this: JazzCash requires amount in paisa
-        const formattedAmount = (parseFloat(amount) * 100).toFixed(0);
+  if (!service_key || !name || !email || !phone || !cnic) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  const SERVICE_PRICES = {
+    webapp: 30000,
+    domainhosting: 3500,
+    branding: 5000,
+    ecommerce: 50000,
+    cloudit: 0,
+    digitalmarketing: 15000,
+  };
+  const amount = SERVICE_PRICES[service_key];
+  if (!amount || amount === 0) {
+    return res.status(400).json({ error: "Invalid or zero-price service selected" });
+  }
           
         // Retrieve environment variables
         const merchantID = process.env.JAZZCASH_MERCHANT_ID;

@@ -23,7 +23,10 @@ export default async function handler(req, res) {
 
     try {
         const { amount, mobile, cnic } = req.body;
-        
+
+        // ✅ Fix only this: JazzCash requires amount in paisa
+        const formattedAmount = (parseFloat(amount) * 100).toFixed(0);
+          
         // Retrieve environment variables
         const merchantID = process.env.JAZZCASH_MERCHANT_ID;
         const password = process.env.JAZZCASH_PASSWORD;
@@ -50,7 +53,7 @@ export default async function handler(req, res) {
             "pp_MerchantID": merchantID,
             "pp_Password": password,
             "pp_TxnRefNo": txnRefNo,
-            "pp_Amount": amount,
+            "pp_Amount": formattedAmount, // ✅ Only change
             "pp_TxnCurrency": "PKR",
             "pp_TxnDateTime": txnDateTime,
             "pp_TxnExpiryDateTime": txnExpiryDateTime,

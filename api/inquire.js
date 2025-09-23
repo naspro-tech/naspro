@@ -1,7 +1,8 @@
 // /api/inquire.js
-import crypto from "crypto";
+const crypto = require("crypto");
+const fetch = require("node-fetch");
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
@@ -14,7 +15,11 @@ export default async function handler(req, res) {
   const MERCHANT_ID = process.env.JAZZCASH_MERCHANT_ID;
   const PASSWORD = process.env.JAZZCASH_PASSWORD;
   const INTEGRITY_SALT = process.env.JAZZCASH_INTEGRITY_SALT;
-  
+
+  if (!MERCHANT_ID || !PASSWORD || !INTEGRITY_SALT) {
+    return res.status(500).json({ error: "JazzCash credentials not configured" });
+  }
+
   const payload = {
     pp_TxnRefNo: txnRefNo,
     pp_MerchantID: MERCHANT_ID,
@@ -25,7 +30,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `${BASE_URL}/ApplicationAPI/API/PaymentInquiry/Inquire`,
+      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/PaymentInquiry/Inquire",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -36,11 +41,12 @@ export default async function handler(req, res) {
     const result = await response.json();
     return res.status(200).json({ sentPayload: payload, apiResponse: result });
   } catch (err) {
-    console.error("JazzCash Inquiry API Error:", err.message);
-    return res.status(500).json({ error: "Inquiry request failed. " + err.message });
+    console.error("JazzCash Inquiry API Error:", err);
+    return res.status(500).json({ error: "Inquiry request failed. Please try again later." });
   }
-}
+};
 
+// Build canonical string
 function buildHashString(data) {
   return Object.keys(data)
     .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && data[k] !== "")
@@ -49,6 +55,7 @@ function buildHashString(data) {
     .join("&");
 }
 
+// Generate HMAC-SHA256 hash
 function generateSecureHash(data, salt) {
   const hashString = salt + "&" + buildHashString(data);
   return crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();

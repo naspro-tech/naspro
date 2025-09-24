@@ -1,18 +1,11 @@
-// /api/ipn.js
+// /api/ipn.js - CORRECTED VERSION
 import crypto from 'crypto';
 
-function createHashString(params) {
-    // Exclude pp_SecureHash from hashing
-    const excludedKeys = ['pp_SecureHash'];
-    const sortedKeys = Object.keys(params).sort();
-    let hashString = '';
-    for (const key of sortedKeys) {
-        if (!excludedKeys.includes(key)) {
-            hashString += params[key] + '&';
-        }
-    }
-    // Remove trailing '&'
-    return hashString.slice(0, -1);
+function createIPNHash(params, integritySalt) {
+    // JazzCash IPN hash uses specific field order
+    const hashString = `${integritySalt}&${params.pp_Amount}&${params.pp_BillReference}&${params.pp_Language}&${params.pp_MerchantID}&${params.pp_Password}&${params.pp_ResponseCode}&${params.pp_ResponseMessage}&${params.pp_RetreivalReferenceNo}&${params.pp_SettlementExpiry}&${params.pp_SubMerchantID}&${params.pp_TxnCurrency}&${params.pp_TxnDateTime}&${params.pp_TxnRefNo}&${params.pp_Version}`;
+    
+    return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }
 
 export default async function handler(req, res) {
@@ -33,28 +26,36 @@ export default async function handler(req, res) {
 
         // Validate secure hash
         const receivedHash = responseData.pp_SecureHash;
-        const hashBaseString = createHashString(responseData);
-        const stringToHash = `${integritySalt}&${hashBaseString}`;
-
-        const hmac = crypto.createHmac('sha256', integritySalt);
-        hmac.update(stringToHash);
-        const generatedHash = hmac.digest('hex').toUpperCase();
+        const generatedHash = createIPNHash(responseData, integritySalt);
 
         if (receivedHash !== generatedHash) {
             console.error('Secure Hash Mismatch in IPN');
+            console.log('Received Hash:', receivedHash);
+            console.log('Generated Hash:', generatedHash);
             return res.status(400).json({ message: 'Invalid secure hash. Data may have been tampered with.' });
         }
 
-        // At this point, hash is valid. You can update your database/order status.
-        // Example placeholder logic:
-        const { pp_TxnRefNo, pp_ResponseCode, pp_ResponseMessage } = responseData;
-        console.log(`IPN Received: TxnRefNo=${pp_TxnRefNo}, ResponseCode=${pp_ResponseCode}, Message=${pp_ResponseMessage}`);
+        // Hash is valid - process the payment
+        const { pp_TxnRefNo, pp_ResponseCode, pp_ResponseMessage, pp_Amount } = responseData;
+        
+        console.log(`IPN Received: TxnRefNo=${pp_TxnRefNo}, ResponseCode=${pp_ResponseCode}, Message=${pp_ResponseMessage}, Amount=${pp_Amount}`);
 
-        // TODO: Replace this with actual DB update logic
-        // await updateOrderStatus(pp_TxnRefNo, pp_ResponseCode);
+        if (pp_ResponseCode === '000') {
+            // Payment successful - update your database
+            console.log(`✅ Payment successful for transaction: ${pp_TxnRefNo}`);
+            // await updateOrderStatus(pp_TxnRefNo, 'completed');
+        } else {
+            // Payment failed
+            console.log(`❌ Payment failed for transaction: ${pp_TxnRefNo} - ${pp_ResponseMessage}`);
+            // await updateOrderStatus(pp_TxnRefNo, 'failed');
+        }
 
-        // Respond with 200 OK to acknowledge the IPN
-        return res.status(200).json({ success: true, message: 'IPN received and validated successfully.' });
+        // Always respond with 200 OK to acknowledge IPN
+        return res.status(200).json({ 
+            success: true, 
+            message: 'IPN received and processed successfully.',
+            transactionStatus: pp_ResponseCode === '000' ? 'success' : 'failed'
+        });
 
     } catch (error) {
         console.error('IPN API error:', error);

@@ -1,3 +1,4 @@
+// /pages/checkout.js - KEEPING 6-DIGIT CNIC
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
@@ -6,7 +7,7 @@ const SERVICE_PRICES = {
   domainhosting: 3500,
   branding: 5000,
   ecommerce: 50000,
-  cloudit: 0, // Custom pricing - no direct payment
+  cloudit: 0,
   digitalmarketing: 15000,
 };
 
@@ -33,7 +34,6 @@ export default function Checkout() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Price display text
   const price = service && SERVICE_PRICES.hasOwnProperty(service)
     ? SERVICE_PRICES[service] === 0
       ? 'Custom Pricing - Please contact us'
@@ -57,13 +57,13 @@ export default function Checkout() {
     e.preventDefault();
     setErrorMsg('');
 
-    // Basic validation
+    // Basic validation - KEEP 6-digit CNIC
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
       setErrorMsg('Please fill in all required fields.');
       return;
     }
     if (!/^\d{6}$/.test(formData.cnic)) {
-      setErrorMsg('CNIC must be exactly 6 digits.');
+      setErrorMsg('CNIC must be exactly 6 digits (last 6 digits).');
       return;
     }
     if (service === 'cloudit') {
@@ -74,30 +74,66 @@ export default function Checkout() {
     setLoading(true);
 
     try {
-      // Call backend API to generate JazzCash payment form
+      // Call backend API
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ service_key: service, ...formData }),
+        body: JSON.stringify({ 
+          service_key: service, 
+          ...formData
+          // Let backend handle invoice number generation
+        }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        setErrorMsg(data.error || 'Something went wrong.');
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setErrorMsg(result.error || result.message || 'Payment initiation failed.');
         setLoading(false);
         return;
       }
 
-      const html = await response.text();
+      // Check JazzCash response
+      if (result.jazzCashResponse) {
+        if (result.jazzCashResponse.pp_ResponseCode === '000') {
+          // Success - check if we need to redirect or auto-submit form
+          if (result.jazzCashResponse.pp_RedirectURL) {
+            window.location.href = result.jazzCashResponse.pp_RedirectURL;
+          } else {
+            // Auto-submit form to JazzCash
+            autoSubmitToJazzCash(result.payload);
+          }
+        } else {
+          setErrorMsg(`JazzCash Error: ${result.jazzCashResponse.pp_ResponseMessage}`);
+          setLoading(false);
+        }
+      } else {
+        setErrorMsg('Unexpected response from payment gateway.');
+        setLoading(false);
+      }
 
-      // Replace current page with JazzCash payment form (auto submit)
-      document.open();
-      document.write(html);
-      document.close();
     } catch (err) {
       setErrorMsg('Network error. Please try again.');
       setLoading(false);
     }
+  }
+
+  // Function to auto-submit form to JazzCash
+  function autoSubmitToJazzCash(payload) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Purchase/DoTransaction';
+    
+    Object.keys(payload).forEach(key => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = payload[key];
+      form.appendChild(input);
+    });
+    
+    document.body.appendChild(form);
+    form.submit();
   }
 
   if (!service) {
@@ -142,6 +178,8 @@ export default function Checkout() {
             value={formData.phone}
             onChange={handleChange}
             required
+            pattern="03\d{9}"
+            placeholder="03XXXXXXXXX"
             style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
           />
         </label>

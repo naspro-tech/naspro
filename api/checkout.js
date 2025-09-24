@@ -62,8 +62,7 @@ export default async function handler(req, res) {
       ppmpf_2: '',
       ppmpf_3: '',
       ppmpf_4: '',
-      ppmpf_5: '',
-      pp_ReturnURL: returnURL // included in payload but NOT in hash
+      ppmpf_5: ''
     };
 
     payload.pp_SecureHash = calculateSecureHash(payload, integritySalt);
@@ -78,7 +77,12 @@ export default async function handler(req, res) {
     );
 
     const result = await apiResponse.json();
-    return res.status(200).json({ success: true, payload, apiResponse: result });
+    return res.status(200).json({
+      success: true,
+      payload,              // payload sent to JazzCash
+      apiResponse: result,  // JazzCash response
+      returnURL             // for frontend redirect
+    });
 
   } catch (error) {
     console.error('JazzCash Checkout API error:', error);

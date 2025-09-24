@@ -1,16 +1,10 @@
-// /api/inquire.js
+// /api/inquire.js - CORRECTED VERSION
 import crypto from 'crypto';
 
-function createHashString(params) {
-    const excludedKeys = ['pp_SecureHash'];
-    const sortedKeys = Object.keys(params).sort();
-    let hashString = '';
-    for (const key of sortedKeys) {
-        if (!excludedKeys.includes(key)) {
-            hashString += params[key] + '&';
-        }
-    }
-    return hashString.slice(0, -1);
+function createInquiryHash(params, integritySalt) {
+    const hashString = `${integritySalt}&${params.pp_MerchantID}&${params.pp_Password}&${params.pp_TxnRefNo}&${params.pp_TxnType}&${params.pp_Version}`;
+    
+    return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }
 
 export default async function handler(req, res) {
@@ -19,7 +13,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { txnRefNo, amount } = req.body;
+        const { txnRefNo } = req.body;
 
         const merchantID = process.env.JAZZCASH_MERCHANT_ID;
         const password = process.env.JAZZCASH_PASSWORD;
@@ -30,22 +24,19 @@ export default async function handler(req, res) {
         }
 
         const payload = {
+            pp_Version: "2.0",
+            pp_TxnType: "INQUIRY",
             pp_MerchantID: merchantID,
-            pp_Amount: amount,
             pp_Password: password,
             pp_TxnRefNo: txnRefNo,
-            pp_TxnType: "INQUIRY",
-            pp_Version: "2.0"
+            pp_RetreivalReferenceNo: "" // Required but can be empty
         };
 
-        const hashBaseString = createHashString(payload);
-        const stringToHash = `${integritySalt}&${hashBaseString}`;
-        const hmac = crypto.createHmac('sha256', integritySalt);
-        hmac.update(stringToHash);
-        payload.pp_SecureHash = hmac.digest('hex').toUpperCase();
+        // Create secure hash
+        payload.pp_SecureHash = createInquiryHash(payload, integritySalt);
 
         const apiResponse = await fetch(
-            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry/Inquire",
+            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

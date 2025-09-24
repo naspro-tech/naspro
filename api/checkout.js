@@ -73,7 +73,7 @@ export default async function handler(req, res) {
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
     try {
-        const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase", {
+        const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

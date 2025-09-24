@@ -1,73 +1,56 @@
 import crypto from 'crypto';
 
-function createInquiryHashString(params) {
-    const excludedKeys = ['pp_SecureHash'];
-    const sortedKeys = Object.keys(params).sort();
-    
-    let hashString = '';
-    for (const key of sortedKeys) {
-        if (!excludedKeys.includes(key)) {
-            hashString += key + '=' + params[key] + '&';
-        }
-    }
-    return hashString.slice(0, -1);
+function calculateSecureHash(payload, integritySalt) {
+  const sortedKeys = Object.keys(payload).sort();
+  const concatenatedValues = sortedKeys
+    .filter(key => key !== 'pp_SecureHash')
+    .map(key => payload[key])
+    .join('&');
+  const stringToHash = `${integritySalt}&${concatenatedValues}`;
+  return crypto.createHmac('sha256', integritySalt)
+               .update(stringToHash)
+               .digest('hex')
+               .toUpperCase();
 }
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
-    }
+  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
-    try {
-        const { txnRefNo, amount } = req.body;
-        
-        const merchantID = process.env.JAZZCASH_MERCHANT_ID;
-        const password = process.env.JAZZCASH_PASSWORD;
-        const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
+  try {
+    const { pp_TxnRefNo, pp_Amount } = req.body;
 
-        if (!merchantID || !password || !integritySalt) {
-            return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
-        }
+    const pp_MerchantID = process.env.JAZZCASH_MERCHANT_ID;
+    const pp_Password = process.env.JAZZCASH_PASSWORD;
+    const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
 
-        const payload = {
-            pp_MerchantID: merchantID,
-            pp_Amount: amount,
-            pp_Password: password,
-            pp_TxnRefNo: txnRefNo,
-            pp_TxnType: "INQUIRY",
-            pp_Version: "2.0"
-        };
-        
-        const hashBaseString = createInquiryHashString(payload);
-        const stringToHash = `${integritySalt}&${hashBaseString}`;
+    if (!pp_MerchantID || !pp_Password || !integritySalt)
+      return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
 
-        // ✅ CORRECT: Use the integritySalt as the key based on your documentation
-        const hmac = crypto.createHmac('sha256', integritySalt);
-        hmac.update(stringToHash);
-        const secureHash = hmac.digest('hex').toUpperCase();
+    const payload = {
+      pp_MerchantID,
+      pp_Password,
+      pp_TxnRefNo,
+      pp_Amount: String(pp_Amount),
+      pp_TxnType: "INQUIRY",
+      pp_Version: "2.0"
+    };
 
-        payload.pp_SecureHash = secureHash;
+    payload.pp_SecureHash = calculateSecureHash(payload, integritySalt);
 
-        const apiResponse = await fetch(
-            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry/Inquire",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            }
-        );
+    const apiResponse = await fetch(
+      'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry/Inquire',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }
+    );
 
-        const result = await apiResponse.json();
+    const result = await apiResponse.json();
+    return res.status(200).json({ success: true, payload, apiResponse: result });
 
-        return res.status(200).json({
-            success: true,
-            payload,
-            apiResponse: result,
-        });
-
-    } catch (error) {
-        console.error('Inquiry API error:', error);
-        retur
-n res.status(500).json({ message: 'Internal Server Error' });
-    }
+  } catch (error) {
+    console.error('JazzCash Inquiry API error:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 }

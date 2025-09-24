@@ -1,9 +1,20 @@
-// /api/checkout.js - CORRECTED VERSION
+// /api/checkout.js - CORRECTED HASH GENERATION
 import crypto from 'crypto';
 
 function createJazzCashHash(params, integritySalt) {
-    const hashString = `${integritySalt}&${params.pp_Amount}&${params.pp_BillReference}&${params.pp_CNIC}&${params.pp_Description}&${params.pp_Language}&${params.pp_MerchantID}&${params.pp_MobileNumber}&${params.pp_Password}&${params.pp_ReturnURL}&${params.pp_TxnCurrency}&${params.pp_TxnDateTime}&${params.pp_TxnExpiryDateTime}&${params.pp_TxnRefNo}&${params.ppmpf_1}&${params.ppmpf_2}&${params.ppmpf_3}&${params.ppmpf_4}&${params.ppmpf_5}`;
+    // ✅ CORRECT: Sort fields alphabetically by ASCII value
+    const sortedKeys = Object.keys(params).sort();
     
+    // Build hash string with integritySalt first, then sorted fields
+    let hashString = integritySalt;
+    
+    for (const key of sortedKeys) {
+        if (key !== 'pp_SecureHash') { // Exclude the hash field itself
+            hashString += '&' + params[key];
+        }
+    }
+    
+    console.log('Hash String:', hashString); // For debugging
     return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }
 
@@ -13,6 +24,7 @@ export default async function handler(req, res) {
     }
 
     const { service_key, name, email, phone, cnic, description } = req.body;
+    
     const SERVICE_PRICES = {
         webapp: 30000,
         domainhosting: 3500,
@@ -59,31 +71,46 @@ export default async function handler(req, res) {
         pp_TxnDateTime: txnDateTime,
         pp_BillReference: `PaymentFor-${service_key}`,
         pp_ReturnURL: returnURL,
-        pp_CNIC: cnic,
+        pp_CNIC: cnic || "",
         pp_MobileNumber: phone,
         pp_TxnExpiryDateTime: txnExpiryDateTime,
         ppmpf_1: "",
-        ppmpf_2: "",
+        ppmpf_2: "", 
         ppmpf_3: "",
         ppmpf_4: "",
         ppmpf_5: ""
     };
 
-    // Create secure hash - CORRECT METHOD
+    // Create secure hash with CORRECT alphabetical sorting
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
+
+    // Debug: Show the field order
+    const sortedKeys = Object.keys(payload).sort().filter(key => key !== 'pp_SecureHash');
+    console.log('Field order for hash:', sortedKeys);
 
     try {
         const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
             body: JSON.stringify(payload),
         });
         
         const result = await apiResponse.json();
-        return res.status(200).json({ success: true, payload, apiResponse: result });
+        
+        return res.status(200).json({ 
+            success: true, 
+            payload,
+            jazzCashResponse: result 
+        });
         
     } catch (error) {
         console.error("JazzCash API error:", error);
-        return res.status(500).json({ message: "Failed to connect to JazzCash API." });
+        return res.status(500).json({ 
+            message: "Failed to connect to JazzCash API.",
+            error: error.message 
+        });
     }
 }

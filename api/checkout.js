@@ -62,8 +62,8 @@ export default async function handler(req, res) {
         pp_CNIC: cnic,
         pp_MobileNumber: phone,
         pp_TxnExpiryDateTime: txnExpiryDateTime,
-        ppmpf_1: name || "",
-        ppmpf_2: email || "",
+        ppmpf_1: "",
+        ppmpf_2: "",
         ppmpf_3: "",
         ppmpf_4: "",
         ppmpf_5: ""

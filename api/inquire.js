@@ -36,7 +36,7 @@ export default async function handler(req, res) {
         payload.pp_SecureHash = createInquiryHash(payload, integritySalt);
 
         const apiResponse = await fetch(
-            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry",
+            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/PaymentInquiry/Inquire",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

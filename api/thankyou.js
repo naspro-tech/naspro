@@ -2,8 +2,15 @@
 import crypto from 'crypto';
 
 function createThankYouHash(params, integritySalt) {
-    // Same as IPN hash - JazzCash uses consistent order for responses
-    const hashString = `${integritySalt}&${params.pp_Amount}&${params.pp_BillReference}&${params.pp_Language}&${params.pp_MerchantID}&${params.pp_Password}&${params.pp_ResponseCode}&${params.pp_ResponseMessage}&${params.pp_RetreivalReferenceNo}&${params.pp_SettlementExpiry}&${params.pp_SubMerchantID}&${params.pp_TxnCurrency}&${params.pp_TxnDateTime}&${params.pp_TxnRefNo}&${params.pp_Version}`;
+    // Sort fields alphabetically by ASCII value
+    const sortedKeys = Object.keys(params).sort();
+    
+    let hashString = integritySalt;
+    for (const key of sortedKeys) {
+        if (key !== 'pp_SecureHash') {
+            hashString += '&' + params[key];
+        }
+    }
     
     return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }

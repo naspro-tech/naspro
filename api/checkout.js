@@ -67,8 +67,6 @@ export default async function handler(req, res) {
     const billReference = invoice_number || generateInvoiceNumber(service_key);
 
     const payload = {
-        pp_Version: "2.0",
-        pp_TxnType: "MWALLET",
         pp_Language: "EN",
         pp_MerchantID: merchantID,
         pp_SubMerchantID: "",

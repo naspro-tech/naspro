@@ -1,16 +1,11 @@
-// /api/thankyou.js
+// /api/thankyou.js - CORRECTED VERSION
 import crypto from 'crypto';
 
-function createHashString(params) {
-    const excludedKeys = ['pp_SecureHash'];
-    const sortedKeys = Object.keys(params).sort();
-    let hashString = '';
-    for (const key of sortedKeys) {
-        if (!excludedKeys.includes(key)) {
-            hashString += params[key] + '&';
-        }
-    }
-    return hashString.slice(0, -1);
+function createThankYouHash(params, integritySalt) {
+    // Same as IPN hash - JazzCash uses consistent order for responses
+    const hashString = `${integritySalt}&${params.pp_Amount}&${params.pp_BillReference}&${params.pp_Language}&${params.pp_MerchantID}&${params.pp_Password}&${params.pp_ResponseCode}&${params.pp_ResponseMessage}&${params.pp_RetreivalReferenceNo}&${params.pp_SettlementExpiry}&${params.pp_SubMerchantID}&${params.pp_TxnCurrency}&${params.pp_TxnDateTime}&${params.pp_TxnRefNo}&${params.pp_Version}`;
+    
+    return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }
 
 export default async function handler(req, res) {
@@ -30,25 +25,27 @@ export default async function handler(req, res) {
         }
 
         const receivedHash = responseData.pp_SecureHash;
-        const hashBaseString = createHashString(responseData);
-        const stringToHash = `${integritySalt}&${hashBaseString}`;
-
-        const hmac = crypto.createHmac('sha256', integritySalt);
-        hmac.update(stringToHash);
-        const generatedHash = hmac.digest('hex').toUpperCase();
+        const generatedHash = createThankYouHash(responseData, integritySalt);
 
         if (receivedHash !== generatedHash) {
+            console.error('ThankYou Page: Secure Hash Mismatch');
+            console.log('Received Hash:', receivedHash);
+            console.log('Generated Hash:', generatedHash);
             return res.status(400).json({ message: 'Invalid secure hash. Data may have been tampered with.' });
         }
 
-        // At this point, payment is verified. You can also call inquire API if needed.
-        const { pp_ResponseCode, pp_ResponseMessage, pp_TxnRefNo } = responseData;
+        const { pp_ResponseCode, pp_ResponseMessage, pp_TxnRefNo, pp_Amount, pp_RetreivalReferenceNo } = responseData;
+
+        // Convert amount back to rupees (from paisas)
+        const amountInRupees = (parseInt(pp_Amount) / 100).toFixed(2);
 
         return res.status(200).json({
             success: pp_ResponseCode === '000',
             message: pp_ResponseMessage,
-            transactionDetails: responseData,
-            returnURL: process.env.JAZZCASH_RETURN_URL
+            transactionId: pp_TxnRefNo,
+            retrievalReferenceNo: pp_RetreivalReferenceNo,
+            amount: amountInRupees,
+            transactionDetails: responseData
         });
 
     } catch (error) {

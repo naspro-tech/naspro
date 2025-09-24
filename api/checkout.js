@@ -1,21 +1,18 @@
 import crypto from 'crypto';
 
+// Function to build hash string in ascending order
 function createHashString(params) {
-    const excludedKeys = ['pp_SecureHash', 'pp_Password'];
-    const sortedKeys = Object.keys(params).sort();
-
+    const sortedKeys = Object.keys(params).sort(); // ascending order
     let hashString = '';
     for (const key of sortedKeys) {
-        if (!excludedKeys.includes(key)) {
-            hashString += key + '=' + params[key] + '&';
-        }
+        hashString += key + '=' + params[key] + '&';
     }
-    return hashString.slice(0, -1);
+    return hashString.slice(0, -1); // remove trailing &
 }
 
 export default async function handler(req, res) {
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method Not Allowed" });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
     const { service_key, name, email, phone, cnic } = req.body;
@@ -30,10 +27,7 @@ export default async function handler(req, res) {
         digitalmarketing: 15000,
     };
     const amount = SERVICE_PRICES[service_key];
-
-    if (!amount || amount === 0) {
-        return res.status(400).json({ error: "Invalid or zero-price service selected" });
-    }
+    if (!amount || amount === 0) return res.status(400).json({ error: "Invalid service" });
 
     const merchantID = process.env.JAZZCASH_MERCHANT_ID;
     const password = process.env.JAZZCASH_PASSWORD;
@@ -41,19 +35,19 @@ export default async function handler(req, res) {
     const returnURL = process.env.JAZZCASH_RETURN_URL;
 
     if (!merchantID || !password || !integritySalt || !returnURL) {
-        return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+        return res.status(500).json({ message: "Missing JazzCash environment variables" });
     }
 
     try {
         const now = new Date();
-        const txnDateTime = `${now.getFullYear()}${('0' + (now.getMonth() + 1)).slice(-2)}${('0' + now.getDate()).slice(-2)}${('0' + now.getHours()).slice(-2)}${('0' + now.getMinutes()).slice(-2)}${('0' + now.getSeconds()).slice(-2)}`;
-
-        const expiryTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        const txnExpiryDateTime = `${expiryTime.getFullYear()}${('0' + (expiryTime.getMonth() + 1)).slice(-2)}${('0' + expiryTime.getDate()).slice(-2)}${('0' + expiryTime.getHours()).slice(-2)}${('0' + expiryTime.getMinutes()).slice(-2)}${('0' + expiryTime.getSeconds()).slice(-2)}`;
+        const txnDateTime = `${now.getFullYear()}${('0'+(now.getMonth()+1)).slice(-2)}${('0'+now.getDate()).slice(-2)}${('0'+now.getHours()).slice(-2)}${('0'+now.getMinutes()).slice(-2)}${('0'+now.getSeconds()).slice(-2)}`;
+        const expiryTime = new Date(now.getTime() + 24*60*60*1000);
+        const txnExpiryDateTime = `${expiryTime.getFullYear()}${('0'+(expiryTime.getMonth()+1)).slice(-2)}${('0'+expiryTime.getDate()).slice(-2)}${('0'+expiryTime.getHours()).slice(-2)}${('0'+expiryTime.getMinutes()).slice(-2)}${('0'+expiryTime.getSeconds()).slice(-2)}`;
 
         const txnRefNo = `T${now.getTime()}`;
         const formattedAmount = String(amount * 100);
 
+        // Full payload for JazzCash
         const payload = {
             pp_Version: "2.0",
             pp_TxnType: "MWALLET",
@@ -78,47 +72,53 @@ export default async function handler(req, res) {
             ppmpf_5: ""
         };
 
-        const hashBaseString = createHashString(payload);
+        // ✅ Only required keys for hash
+        const hashPayload = {
+            pp_Amount: payload.pp_Amount,
+            pp_BillReference: payload.pp_BillReference,
+            pp_CNIC: payload.pp_CNIC,
+            pp_Description: payload.pp_Description,
+            pp_Language: payload.pp_Language,
+            pp_MerchantID: payload.pp_MerchantID,
+            pp_MobileNumber: payload.pp_MobileNumber,
+            pp_Password: payload.pp_Password,
+            pp_TxnCurrency: payload.pp_TxnCurrency,
+            pp_TxnDateTime: payload.pp_TxnDateTime,
+            pp_TxnExpiryDateTime: payload.pp_TxnExpiryDateTime,
+            pp_TxnRefNo: payload.pp_TxnRefNo
+        };
+
+        const hashBaseString = createHashString(hashPayload);
         const stringToHash = `${integritySalt}&${hashBaseString}`;
 
+        // HMAC-SHA256 hash
         const hmac = crypto.createHmac('sha256', integritySalt);
         hmac.update(stringToHash);
-        const secureHash = hmac.digest('hex').toUpperCase();
-        payload.pp_SecureHash = secureHash;
+        payload.pp_SecureHash = hmac.digest('hex').toUpperCase(); // ✅ This ensures pp_SecureHash exists
+
+        console.log("Payload with secure hash:", payload); // Debug
 
         const apiResponse = await fetch(
             "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(payload)
             }
         );
 
         const resultText = await apiResponse.text();
-
         let resultJson;
         try {
             resultJson = JSON.parse(resultText);
-        } catch (parseErr) {
-            // If response is not JSON, return raw text for debugging
-            return res.status(500).json({
-                message: "Failed to parse JazzCash response",
-                rawResponse: resultText
-            });
+        } catch {
+            return res.status(500).json({ message: "Failed to parse JazzCash response", rawResponse: resultText });
         }
 
-        return res.status(200).json({
-            success: true,
-            payload,
-            apiResponse: resultJson
-        });
+        return res.status(200).json({ success: true, payload, apiResponse: resultJson });
 
     } catch (error) {
         console.error("JazzCash API error:", error);
-        return res.status(500).json({
-            message: "Failed to connect to JazzCash API.",
-            error: error.message
-        });
+        return res.status(500).json({ message: "Failed to connect to JazzCash API", error: error.message });
     }
 }

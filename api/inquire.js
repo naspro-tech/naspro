@@ -2,7 +2,15 @@
 import crypto from 'crypto';
 
 function createInquiryHash(params, integritySalt) {
-    const hashString = `${integritySalt}&${params.pp_MerchantID}&${params.pp_Password}&${params.pp_TxnRefNo}&${params.pp_TxnType}&${params.pp_Version}`;
+    // Sort fields alphabetically by ASCII value
+    const sortedKeys = Object.keys(params).sort();
+    
+    let hashString = integritySalt;
+    for (const key of sortedKeys) {
+        if (key !== 'pp_SecureHash') {
+            hashString += '&' + params[key];
+        }
+    }
     
     return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }

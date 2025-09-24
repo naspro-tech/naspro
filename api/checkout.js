@@ -1,4 +1,4 @@
-// /api/checkout.js - CORRECTED HASH GENERATION
+// /api/checkout.js - UPDATED WITH CORRECT BILL REFERENCE
 import crypto from 'crypto';
 
 function createJazzCashHash(params, integritySalt) {
@@ -54,6 +54,9 @@ export default async function handler(req, res) {
 
     const txnRefNo = `T${now.getTime()}`;
     const formattedAmount = String(amount * 100);
+    
+    // ✅ CORRECT Bill Reference format
+    const billReference = `billRef${now.getTime()}`.substring(0, 20); // Ensure it's not too long
 
     const payload = {
         pp_Version: "2.0",
@@ -69,7 +72,7 @@ export default async function handler(req, res) {
         pp_Description: description || "Service Payment",
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,
-        pp_BillReference: `PaymentFor-${service_key}`,
+        pp_BillReference: billReference, // ✅ Using correct format
         pp_ReturnURL: returnURL,
         pp_CNIC: cnic || "",
         pp_MobileNumber: phone,
@@ -84,12 +87,14 @@ export default async function handler(req, res) {
     // Create secure hash with CORRECT alphabetical sorting
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
-    // Debug: Show the field order
+    // Debug: Show the field order and values
     const sortedKeys = Object.keys(payload).sort().filter(key => key !== 'pp_SecureHash');
     console.log('Field order for hash:', sortedKeys);
+    console.log('Bill Reference:', payload.pp_BillReference);
+    console.log('Generated Hash:', payload.pp_SecureHash);
 
     try {
-        const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
+        const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Purchase/DoTransaction", {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

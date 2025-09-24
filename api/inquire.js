@@ -1,61 +1,68 @@
+// /api/inquire.js
 import crypto from 'crypto';
 
-function calculateSecureHash(payload, integritySalt) {
-  const sortedKeys = Object.keys(payload).sort().filter(k => k !== 'pp_SecureHash');
-  let finalString = integritySalt + '&';
-  sortedKeys.forEach((key, index) => {
-    const value = payload[key] || '';
-    finalString += value;
-    if (value !== '' && index !== sortedKeys.length - 1) finalString += '&';
-  });
-  return crypto.createHmac('sha256', integritySalt)
-               .update(finalString)
-               .digest('hex')
-               .toUpperCase();
+function createHashString(params) {
+    const excludedKeys = ['pp_SecureHash'];
+    const sortedKeys = Object.keys(params).sort();
+    let hashString = '';
+    for (const key of sortedKeys) {
+        if (!excludedKeys.includes(key)) {
+            hashString += params[key] + '&';
+        }
+    }
+    return hashString.slice(0, -1);
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
 
-  try {
-    const { pp_TxnRefNo, pp_Amount } = req.body;
+    try {
+        const { txnRefNo, amount } = req.body;
 
-    const pp_MerchantID = process.env.JAZZCASH_MERCHANT_ID;
-    const pp_Password = process.env.JAZZCASH_PASSWORD;
-    const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
+        const merchantID = process.env.JAZZCASH_MERCHANT_ID;
+        const password = process.env.JAZZCASH_PASSWORD;
+        const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
 
-    if (!pp_MerchantID || !pp_Password || !integritySalt)
-      return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+        if (!merchantID || !password || !integritySalt) {
+            return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+        }
 
-    const payload = {
-      pp_MerchantID,
-      pp_Password,
-      pp_TxnRefNo,
-      pp_Amount: String(pp_Amount),
-      pp_TxnType: "INQUIRY",
-      pp_Version: "2.0"
-    };
+        const payload = {
+            pp_MerchantID: merchantID,
+            pp_Amount: amount,
+            pp_Password: password,
+            pp_TxnRefNo: txnRefNo,
+            pp_TxnType: "INQUIRY",
+            pp_Version: "2.0"
+        };
 
-    payload.pp_SecureHash = calculateSecureHash(payload, integritySalt);
+        const hashBaseString = createHashString(payload);
+        const stringToHash = `${integritySalt}&${hashBaseString}`;
+        const hmac = crypto.createHmac('sha256', integritySalt);
+        hmac.update(stringToHash);
+        payload.pp_SecureHash = hmac.digest('hex').toUpperCase();
 
-    const apiResponse = await fetch(
-      'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry/Inquire',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }
-    );
+        const apiResponse = await fetch(
+            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/PaymentInquiry/Inquire",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            }
+        );
 
-    const result = await apiResponse.json();
-    return res.status(200).json({
-      success: true,
-      payload,
-      apiResponse: result
-    });
+        const result = await apiResponse.json();
 
-  } catch (error) {
-    console.error('JazzCash Inquiry API error:', error);
-    return res.status(500).json({ message: 'Internal server error', error: error.message });
-  }
+        return res.status(200).json({
+            success: true,
+            payload,
+            apiResponse: result
+        });
+
+    } catch (error) {
+        console.error('Inquiry API error:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
 }

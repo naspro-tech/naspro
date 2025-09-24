@@ -48,7 +48,11 @@ export default async function handler(req, res) {
     );
 
     const result = await apiResponse.json();
-    return res.status(200).json({ success: true, payload, apiResponse: result });
+    return res.status(200).json({
+      success: true,
+      payload,
+      apiResponse: result
+    });
 
   } catch (error) {
     console.error('JazzCash Inquiry API error:', error);

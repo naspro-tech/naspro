@@ -1,4 +1,4 @@
-// /api/checkout.js - UPDATED WITH CORRECT BILL REFERENCE
+// /api/checkout.js - UPDATED WITH PROPER BILL/INVOICE NUMBER
 import crypto from 'crypto';
 
 function createJazzCashHash(params, integritySalt) {
@@ -18,12 +18,20 @@ function createJazzCashHash(params, integritySalt) {
     return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
 }
 
+// Function to generate invoice number (you can replace this with your actual invoice system)
+function generateInvoiceNumber(serviceKey) {
+    const now = new Date();
+    const timestamp = now.getTime();
+    const serviceCode = serviceKey.substring(0, 3).toUpperCase();
+    return `INV-${serviceCode}-${timestamp}`;
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method not allowed' });
     }
 
-    const { service_key, name, email, phone, cnic, description } = req.body;
+    const { service_key, name, email, phone, cnic, description, invoice_number } = req.body;
     
     const SERVICE_PRICES = {
         webapp: 30000,
@@ -55,8 +63,8 @@ export default async function handler(req, res) {
     const txnRefNo = `T${now.getTime()}`;
     const formattedAmount = String(amount * 100);
     
-    // ✅ CORRECT Bill Reference format
-    const billReference = `billRef${now.getTime()}`.substring(0, 20); // Ensure it's not too long
+    // ✅ CORRECT: Use provided invoice number or generate one
+    const billReference = invoice_number || generateInvoiceNumber(service_key);
 
     const payload = {
         pp_Version: "2.0",
@@ -72,7 +80,7 @@ export default async function handler(req, res) {
         pp_Description: description || "Service Payment",
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,
-        pp_BillReference: billReference, // ✅ Using correct format
+        pp_BillReference: billReference, // ✅ Actual bill/invoice number
         pp_ReturnURL: returnURL,
         pp_CNIC: cnic || "",
         pp_MobileNumber: phone,
@@ -90,7 +98,8 @@ export default async function handler(req, res) {
     // Debug: Show the field order and values
     const sortedKeys = Object.keys(payload).sort().filter(key => key !== 'pp_SecureHash');
     console.log('Field order for hash:', sortedKeys);
-    console.log('Bill Reference:', payload.pp_BillReference);
+    console.log('Bill Reference (Invoice #):', payload.pp_BillReference);
+    console.log('Transaction Reference:', payload.pp_TxnRefNo);
     console.log('Generated Hash:', payload.pp_SecureHash);
 
     try {

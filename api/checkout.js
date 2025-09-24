@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         pp_Description: description || "Service Payment",
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,
-        pp_BillReference: billReference, // ✅ Actual bill/invoice number
+        pp_BillReference: billRef, // ✅ Actual bill/invoice number
         pp_ReturnURL: returnURL,
         pp_CNIC: cnic || "",
         pp_MobileNumber: phone,

@@ -1,14 +1,15 @@
 import crypto from 'crypto';
 
 function calculateSecureHash(payload, integritySalt) {
-  const sortedKeys = Object.keys(payload).sort();
-  const concatenatedValues = sortedKeys
-    .filter(key => key !== 'pp_SecureHash')
-    .map(key => payload[key])
-    .join('&');
-  const stringToHash = `${integritySalt}&${concatenatedValues}`;
+  const sortedKeys = Object.keys(payload).sort().filter(k => k !== 'pp_SecureHash');
+  let finalString = integritySalt + '&';
+  sortedKeys.forEach((key, index) => {
+    const value = payload[key] || '';
+    finalString += value;
+    if (value !== '' && index !== sortedKeys.length - 1) finalString += '&';
+  });
   return crypto.createHmac('sha256', integritySalt)
-               .update(stringToHash)
+               .update(finalString)
                .digest('hex')
                .toUpperCase();
 }
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
       ppmpf_3: '',
       ppmpf_4: '',
       ppmpf_5: '',
-      pp_ReturnURL: returnURL
+      pp_ReturnURL: returnURL // included in payload but NOT in hash
     };
 
     payload.pp_SecureHash = calculateSecureHash(payload, integritySalt);

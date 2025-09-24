@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     console.log('Generated Hash:', payload.pp_SecureHash);
 
     try {
-        const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Purchase/DoTransaction", {
+        const apiResponse = await fetch("https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction", {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

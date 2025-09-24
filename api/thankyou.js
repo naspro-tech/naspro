@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     if (receivedHash !== generatedHash)
       return res.status(400).json({ message: 'Invalid secure hash. Data may have been tampered with.' });
 
-    // Optionally call inquiry API to double-check
+    // Optional: inquiry check
     const inquiryPayload = {
       pp_MerchantID,
       pp_Password,
@@ -57,7 +57,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: responseData.pp_ResponseCode === '000',
       transactionDetails: responseData,
-      inquiryResponse: inquiryResult
+      inquiryResponse: inquiryResult,
+      returnURL: process.env.JAZZCASH_RETURN_URL  // frontend can redirect here
     });
 
   } catch (error) {

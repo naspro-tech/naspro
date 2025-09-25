@@ -1,4 +1,4 @@
-// /pages/api/ipn.js
+// /api/ipn.js
 import crypto from "crypto";
 
 function createIpnHash(params, integritySalt) {

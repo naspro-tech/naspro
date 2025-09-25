@@ -1,151 +1,211 @@
-// /pages/checkout.js
-import { useState } from "react";
+// /pages/checkout.js - CLEANED (Removed autoSubmitToJazzCash)
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
+
+const SERVICE_PRICES = {
+  webapp: 30000,
+  domainhosting: 3500,
+  branding: 5000,
+  ecommerce: 50000,
+  cloudit: 0,
+  digitalmarketing: 15000,
+};
+
+const SERVICE_LABELS = {
+  webapp: 'Web & App Development',
+  domainhosting: 'Domain & Hosting',
+  branding: 'Branding & Logo Design',
+  ecommerce: 'E-Commerce Solutions',
+  cloudit: 'Cloud & IT Infrastructure',
+  digitalmarketing: 'Digital Marketing',
+};
 
 export default function Checkout() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    cnic: "",
-    amount: "",
-    billRef: "",
-    description: "",
-  });
+  const router = useRouter();
+  const { service } = router.query;
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    cnic: '',
+    description: '',
+  });
+  const [errorMsg, setErrorMsg] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const price = service && SERVICE_PRICES.hasOwnProperty(service)
+    ? SERVICE_PRICES[service] === 0
+      ? 'Custom Pricing - Please contact us'
+      : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
+    : '';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  useEffect(() => {
+    if (!service) return;
+    if (!SERVICE_PRICES.hasOwnProperty(service)) {
+      setErrorMsg('Invalid service selected.');
+    } else {
+      setErrorMsg('');
+    }
+  }, [service]);
 
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+  function handleChange(e) {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  }
 
-      const data = await response.json();
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setErrorMsg('');
 
-      if (!response.ok || !data.success) {
-        setError(data.message || "Something went wrong");
-        setLoading(false);
-        return;
-      }
+    // Basic validation - KEEP 6-digit CNIC
+    if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
+      setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+    if (!/^\d{6}$/.test(formData.cnic)) {
+      setErrorMsg('CNIC must be exactly 6 digits (last 6 digits).');
+      return;
+    }
+    if (service === 'cloudit') {
+      setErrorMsg('Please contact us for custom pricing on Cloud & IT Infrastructure.');
+      return;
+    }
 
-      // Auto-submit hidden form to JazzCash
-      const formEl = document.createElement("form");
-      formEl.method = "POST";
-      formEl.action = data.paymentUrl;
+    setLoading(true);
 
-      Object.keys(data.payload).forEach((key) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = data.payload[key];
-        formEl.appendChild(input);
-      });
+    try {
+      // Call backend API
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          service_key: service, 
+          ...formData
+          // Let backend handle invoice number generation
+        }),
+      });
 
-      document.body.appendChild(formEl);
-      formEl.submit();
-    } catch (err) {
-      setError("Network error. Please try again.");
-      setLoading(false);
-    }
-  };
+      const result = await response.json();
 
-  return (
-    <div
-      style={{
-        maxWidth: 600,
-        margin: "80px auto",
-        padding: "30px",
-        background: "#fff",
-        borderRadius: "12px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-      }}
-    >
-      <h1 style={{ textAlign: "center" }}>Checkout</h1>
+      if (!response.ok || !result.success) {
+        setErrorMsg(result.error || result.message || 'Payment initiation failed.');
+        setLoading(false);
+        return;
+      }
 
-      <form onSubmit={handleSubmit}>
-        <label>Name*</label>
-        <input name="name" value={form.name} onChange={handleChange} required />
+      // ✅ Only handle JazzCash response, no autoSubmitToJazzCash
+      if (result.jazzCashResponse) {
+        if (result.jazzCashResponse.pp_ResponseCode === '000') {
+          // Redirect to thank you page
+          router.push(`/thankyou?txnRef=${result.jazzCashResponse.pp_TxnRefNo}`);
+        } else {
+          setErrorMsg(`JazzCash Error: ${result.jazzCashResponse.pp_ResponseMessage}`);
+          setLoading(false);
+        }
+      } else {
+        setErrorMsg('Unexpected response from payment gateway.');
+        setLoading(false);
+      }
 
-        <label>Email*</label>
-        <input
-          name="email"
-          type="email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
+    } catch (err) {
+      setErrorMsg('Network error. Please try again.');
+      setLoading(false);
+    }
+  }
 
-        <label>Phone*</label>
-        <input
-          name="phone"
-          value={form.phone}
-          onChange={handleChange}
-          required
-        />
+  if (!service) {
+    return <p style={{ padding: 20, textAlign: 'center' }}>Loading service details...</p>;
+  }
 
-        <label>CNIC (last 6 digits)*</label>
-        <input
-          name="cnic"
-          value={form.cnic}
-          onChange={handleChange}
-          required
-        />
+  return (
+    <div style={{ maxWidth: 600, margin: '40px auto', padding: '30px', background: '#fff', borderRadius: '10px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+      <h1>Checkout - {SERVICE_LABELS[service]}</h1>
+      <p><strong>Price:</strong> {price}</p>
 
-        <label>Amount (PKR)*</label>
-        <input
-          name="amount"
-          type="number"
-          value={form.amount}
-          onChange={handleChange}
-          required
-        />
+      <form onSubmit={handleSubmit} style={{ marginTop: 20 }}>
+        <label>
+          Name*:<br />
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
 
-        <label>Bill Reference*</label>
-        <input
-          name="billRef"
-          value={form.billRef}
-          onChange={handleChange}
-          required
-        />
+        <label>
+          Email*:<br />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
 
-        <label>Description (optional)</label>
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-        />
+        <label>
+          Phone*:<br />
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+            pattern="03\d{9}"
+            placeholder="03XXXXXXXXX"
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        <label>
+          CNIC (last 6 digits)*:<br />
+          <input
+            type="text"
+            name="cnic"
+            value={formData.cnic}
+            onChange={handleChange}
+            required
+            maxLength={6}
+            pattern="\d{6}"
+            placeholder="Enter last 6 digits of CNIC"
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            marginTop: 20,
-            backgroundColor: "#ff6600",
-            color: "#fff",
-            padding: "12px 24px",
-            border: "none",
-            borderRadius: 8,
-            fontSize: "1rem",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Processing..." : "Pay Now"}
-        </button>
-      </form>
-    </div>
-  );
-            }
-            
+        <label>
+          Description (optional):<br />
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={4}
+            style={{ width: '100%', padding: 8, marginBottom: 15, borderRadius: 5, border: '1px solid #ccc' }}
+          />
+        </label>
+
+        {errorMsg && <p style={{ color: 'red', marginBottom: 15 }}>{errorMsg}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            backgroundColor: '#ff6600',
+            color: '#fff',
+            padding: '12px 25px',
+            fontSize: '1rem',
+            borderRadius: 6,
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: '600',
+          }}
+        >
+          {loading ? 'Processing...' : 'Pay Now'}
+        </button>
+      </form>
+    </div>
+  );
+                                         }

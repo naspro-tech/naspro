@@ -1,4 +1,4 @@
-// /pages/checkout.js - KEEPING 6-DIGIT CNIC
+// /pages/checkout.js - CLEANED (Removed autoSubmitToJazzCash)
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
@@ -93,16 +93,11 @@ export default function Checkout() {
         return;
       }
 
-      // Check JazzCash response
+      // ✅ Only handle JazzCash response, no autoSubmitToJazzCash
       if (result.jazzCashResponse) {
         if (result.jazzCashResponse.pp_ResponseCode === '000') {
-          // Success - check if we need to redirect or auto-submit form
-          if (result.jazzCashResponse.pp_RedirectURL) {
-            window.location.href = result.jazzCashResponse.pp_RedirectURL;
-          } else {
-            // Auto-submit form to JazzCash
-            autoSubmitToJazzCash(result.payload);
-          }
+          // Redirect to thank you page
+          router.push(`/thankyou?txnRef=${result.jazzCashResponse.pp_TxnRefNo}`);
         } else {
           setErrorMsg(`JazzCash Error: ${result.jazzCashResponse.pp_ResponseMessage}`);
           setLoading(false);
@@ -116,24 +111,6 @@ export default function Checkout() {
       setErrorMsg('Network error. Please try again.');
       setLoading(false);
     }
-  }
-
-  // Function to auto-submit form to JazzCash
-  function autoSubmitToJazzCash(payload) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/Purchase/DoTransaction';
-    
-    Object.keys(payload).forEach(key => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = payload[key];
-      form.appendChild(input);
-    });
-    
-    document.body.appendChild(form);
-    form.submit();
   }
 
   if (!service) {

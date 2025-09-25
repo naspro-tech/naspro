@@ -107,7 +107,7 @@ export default async function handler(req, res) {
         pp_CNIC: cnic,
         pp_Amount: formattedAmount,
         pp_TxnRefNo: txnRefNo,
-        pp_BillReference: billRef,
+        pp_BillReference: billReference,
         pp_Description: description || "Service Payment",
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,

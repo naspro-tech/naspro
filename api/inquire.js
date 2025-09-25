@@ -1,25 +1,38 @@
-// /api/inquire.js - CORRECTED VERSION
-import crypto from 'crypto';
+// /api/inquire.js - FIXED for JazzCash
+import crypto from "crypto";
 
 function createInquiryHash(params, integritySalt) {
-    // Sort fields alphabetically by ASCII value
-    const sortedKeys = Object.keys(params).sort();
-    
-    let hashString = integritySalt;
-    for (const key of sortedKeys) {
-        if (key !== 'pp_SecureHash') {
-            hashString += '&' + params[key];
+    // JazzCash Inquiry required field order
+    const fieldOrder = [
+        "pp_Version",
+        "pp_TxnType",
+        "pp_MerchantID",
+        "pp_Password",
+        "pp_TxnRefNo",
+        "pp_RetreivalReferenceNo"
+    ];
+
+    let hashString = integritySalt + "&";
+
+    for (const field of fieldOrder) {
+        if (params[field] && params[field] !== "") {
+            hashString += params[field] + "&";
         }
     }
-    
- const hmac = crypto.createHmac('sha256', integritySalt);
-hmac.update(hashString);
-return hmac.digest('hex').toUpperCase();
+
+    // Remove last "&"
+    hashString = hashString.slice(0, -1);
+
+    console.log("Inquiry Hash String:", hashString);
+
+    const hmac = crypto.createHmac("sha256", integritySalt);
+    hmac.update(hashString);
+    return hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
+    if (req.method !== "POST") {
+        return res.status(405).json({ message: "Method not allowed" });
     }
 
     try {
@@ -30,7 +43,9 @@ export default async function handler(req, res) {
         const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
 
         if (!merchantID || !password || !integritySalt) {
-            return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+            return res
+                .status(500)
+                .json({ message: "Missing JazzCash environment variables." });
         }
 
         const payload = {
@@ -39,18 +54,27 @@ export default async function handler(req, res) {
             pp_MerchantID: merchantID,
             pp_Password: password,
             pp_TxnRefNo: txnRefNo,
-            pp_RetreivalReferenceNo: "" // Required but can be empty
+            pp_RetreivalReferenceNo: "", // can stay empty
         };
 
-        // Create secure hash
+        // Generate secure hash
         payload.pp_SecureHash = createInquiryHash(payload, integritySalt);
+
+        // Send as form-urlencoded
+        const formData = new URLSearchParams();
+        for (const key in payload) {
+            formData.append(key, payload[key]);
+        }
 
         const apiResponse = await fetch(
             "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/PaymentInquiry/Inquire",
             {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    Accept: "application/json",
+                },
+                body: formData.toString(),
             }
         );
 
@@ -59,11 +83,10 @@ export default async function handler(req, res) {
         return res.status(200).json({
             success: true,
             payload,
-            apiResponse: result
+            jazzCashResponse: result,
         });
-
     } catch (error) {
-        console.error('Inquiry API error:', error);
-        return res.status(500).json({ message: 'Internal Server Error' });
+        console.error("Inquiry API error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 }

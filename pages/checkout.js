@@ -1,4 +1,4 @@
-// /pages/checkout.js - MOBILE FRIENDLY
+// /pages/checkout.js
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
@@ -34,11 +34,12 @@ export default function Checkout() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const price = service && SERVICE_PRICES.hasOwnProperty(service)
-    ? SERVICE_PRICES[service] === 0
-      ? 'Custom Pricing - Please contact us'
-      : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
-    : '';
+  const price =
+    service && SERVICE_PRICES.hasOwnProperty(service)
+      ? SERVICE_PRICES[service] === 0
+        ? 'Custom Pricing - Please contact us'
+        : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
+      : '';
 
   useEffect(() => {
     if (!service) return;
@@ -50,7 +51,7 @@ export default function Checkout() {
   }, [service]);
 
   function handleChange(e) {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   async function handleSubmit(e) {
@@ -66,7 +67,9 @@ export default function Checkout() {
       return;
     }
     if (service === 'cloudit') {
-      setErrorMsg('Please contact us for custom pricing on Cloud & IT Infrastructure.');
+      setErrorMsg(
+        'Please contact us for custom pricing on Cloud & IT Infrastructure.'
+      );
       return;
     }
 
@@ -94,7 +97,9 @@ export default function Checkout() {
         if (result.jazzCashResponse.pp_ResponseCode === '000') {
           router.push(`/thankyou?txnRef=${result.jazzCashResponse.pp_TxnRefNo}`);
         } else {
-          setErrorMsg(`JazzCash Error: ${result.jazzCashResponse.pp_ResponseMessage}`);
+          setErrorMsg(
+            `JazzCash Error: ${result.jazzCashResponse.pp_ResponseMessage}`
+          );
           setLoading(false);
         }
       } else {
@@ -108,27 +113,33 @@ export default function Checkout() {
   }
 
   if (!service) {
-    return <p style={{ padding: 20, textAlign: 'center' }}>Loading service details...</p>;
+    return (
+      <p style={{ padding: 20, textAlign: 'center' }}>
+        Loading service details...
+      </p>
+    );
   }
 
   return (
-    <div style={{
-      maxWidth: 500,
-      margin: '20px auto',
-      padding: '20px',
-      background: '#fff',
-      borderRadius: '10px',
-      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-    }}>
-      <h1 style={{ fontSize: '1.5rem', marginBottom: 10, textAlign: 'center' }}>
+    <div
+      style={{
+        maxWidth: 600,
+        margin: '30px auto',
+        padding: '20px',
+        background: '#fff',
+        borderRadius: '10px',
+        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+      }}
+    >
+      <h1 style={{ fontSize: '1.4rem', marginBottom: 10 }}>
         Checkout - {SERVICE_LABELS[service]}
       </h1>
-      <p style={{ textAlign: 'center', marginBottom: 20 }}>
+      <p style={{ marginBottom: 20 }}>
         <strong>Price:</strong> {price}
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <label style={labelStyle}>
+      <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Name*:
           <input
             type="text"
@@ -140,7 +151,7 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={labelStyle}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Email*:
           <input
             type="email"
@@ -152,7 +163,7 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={labelStyle}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Phone*:
           <input
             type="tel"
@@ -166,7 +177,7 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={labelStyle}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           CNIC (last 6 digits)*:
           <input
             type="text"
@@ -181,13 +192,13 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={labelStyle}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Description (optional):
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
-            rows={3}
+            rows={4}
             style={{ ...inputStyle, resize: 'vertical' }}
           />
         </label>
@@ -200,15 +211,15 @@ export default function Checkout() {
           type="submit"
           disabled={loading}
           style={{
-            width: '100%',
             backgroundColor: '#ff6600',
             color: '#fff',
-            padding: '14px',
+            padding: '12px',
             fontSize: '1rem',
             borderRadius: 6,
             border: 'none',
             cursor: loading ? 'not-allowed' : 'pointer',
             fontWeight: '600',
+            width: '100%', // full width on mobile
           }}
         >
           {loading ? 'Processing...' : 'Pay Now'}
@@ -218,22 +229,12 @@ export default function Checkout() {
   );
 }
 
-// ✅ Reusable styles for inputs/labels
 const inputStyle = {
   width: '100%',
-  padding: '12px',
-  marginTop: '6px',
-  marginBottom: '16px',
-  borderRadius: '6px',
+  padding: '10px',
+  marginTop: 6,
+  borderRadius: 6,
   border: '1px solid #ccc',
-  fontSize: '16px',
-  boxSizing: 'border-box',
+  fontSize: '1rem',
 };
-
-const labelStyle = {
-  display: 'block',
-  marginBottom: '10px',
-  fontWeight: '500',
-  fontSize: '0.95rem',
-};
-    
+              

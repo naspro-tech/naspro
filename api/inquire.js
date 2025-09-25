@@ -1,4 +1,4 @@
-// /pages/api/inquire.js
+// /api/inquire.js
 import crypto from "crypto";
 
 function createInquiryHash(params, integritySalt) {

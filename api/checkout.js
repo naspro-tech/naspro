@@ -1,4 +1,4 @@
-    // /pages/api/checkout.js
+    // /api/checkout.js
 import crypto from "crypto";
 
 function createHashString(params, integritySalt) {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { amount, billRef, description, cnic, mobile } = req.body;
+    const { amount, description, cnic, mobile } = req.body;
 
     const merchantID = process.env.JAZZCASH_MERCHANT_ID;
     const password = process.env.JAZZCASH_PASSWORD;
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       pp_TxnCurrency: "PKR",
       pp_TxnDateTime: txnDateTime,
       pp_TxnExpiryDateTime: expiryDateTime,
-      pp_BillReference: billRef || "TestBill001",
+      pp_BillReference: billRef,
       pp_Description: description || "Service Payment",
       pp_ReturnURL: returnURL,
       pp_MobileNumber: mobile || "",

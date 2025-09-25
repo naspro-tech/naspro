@@ -23,7 +23,7 @@ function generateInvoiceNumber(serviceKey) {
     const now = new Date();
     const timestamp = now.getTime();
     const serviceCode = serviceKey.substring(0, 3).toUpperCase();
-    return `INV-${serviceCode}-${timestamp}`;
+    return `INV${serviceCode}${timestamp}`;
 }
 
 export default async function handler(req, res) {

@@ -59,6 +59,18 @@ export default async function handler(req, res) {
 
     payload.pp_SecureHash = createHashString(payload, integritySalt);
 
+      // POST to JazzCash API
+    const jazzRes = await fetch(
+      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      }
+    );
+
+    const jazzData = await jazzRes.json();
+      
     return res.status(200).json(payload);
   } catch (error) {
     console.error("Checkout API error:", error);

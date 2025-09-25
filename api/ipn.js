@@ -1,25 +1,56 @@
-// /api/ipn.js - CORRECTED VERSION
-import crypto from 'crypto';
+// /api/ipn.js - FIXED JazzCash IPN Handler
+import crypto from "crypto";
 
 function createIPNHash(params, integritySalt) {
-    // Sort fields alphabetically by ASCII value
-    const sortedKeys = Object.keys(params).sort();
-    
-    let hashString = integritySalt;
-    for (const key of sortedKeys) {
-        if (key !== 'pp_SecureHash') {
-            hashString += '&' + params[key];
+    // IPN fields order from JazzCash docs
+    const fieldOrder = [
+        "pp_Amount",
+        "pp_BillReference",
+        "pp_BankID",
+        "pp_CNIC",
+        "pp_Description",
+        "pp_Language",
+        "pp_MerchantID",
+        "pp_MobileNumber",
+        "pp_Password",
+        "pp_ProductID",
+        "pp_ResponseCode",
+        "pp_ResponseMessage",
+        "pp_RetreivalReferenceNo",
+        "pp_SettlementExpiryDate",
+        "pp_TxnCurrency",
+        "pp_TxnDateTime",
+        "pp_TxnExpiryDateTime",
+        "pp_TxnRefNo",
+        "pp_TransactionState",
+        "ppmpf_1",
+        "ppmpf_2",
+        "ppmpf_3",
+        "ppmpf_4",
+        "ppmpf_5"
+    ];
+
+    let hashString = integritySalt + "&";
+
+    for (const field of fieldOrder) {
+        if (params[field] && params[field] !== "") {
+            hashString += params[field] + "&";
         }
     }
-    
-    const hmac = crypto.createHmac('sha256', integritySalt);
+
+    // Remove trailing "&"
+    hashString = hashString.slice(0, -1);
+
+    console.log("IPN Hash String:", hashString);
+
+    const hmac = crypto.createHmac("sha256", integritySalt);
     hmac.update(hashString);
-    return hmac.digest('hex').toUpperCase();
+    return hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method not allowed' });
+    if (req.method !== "POST") {
+        return res.status(405).json({ message: "Method not allowed" });
     }
 
     try {
@@ -30,7 +61,7 @@ export default async function handler(req, res) {
         const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
 
         if (!merchantID || !password || !integritySalt) {
-            return res.status(500).json({ message: 'Missing JazzCash environment variables.' });
+            return res.status(500).json({ message: "Missing JazzCash environment variables." });
         }
 
         // Validate secure hash
@@ -38,36 +69,37 @@ export default async function handler(req, res) {
         const generatedHash = createIPNHash(responseData, integritySalt);
 
         if (receivedHash !== generatedHash) {
-            console.error('Secure Hash Mismatch in IPN');
-            console.log('Received Hash:', receivedHash);
-            console.log('Generated Hash:', generatedHash);
-            return res.status(400).json({ message: 'Invalid secure hash. Data may have been tampered with.' });
+            console.error("❌ Secure Hash Mismatch in IPN");
+            console.log("Received Hash:", receivedHash);
+            console.log("Generated Hash:", generatedHash);
+
+            return res.status(400).json({
+                message: "Invalid secure hash. Data may have been tampered with."
+            });
         }
 
         // Hash is valid - process the payment
         const { pp_TxnRefNo, pp_ResponseCode, pp_ResponseMessage, pp_Amount } = responseData;
-        
-        console.log(`IPN Received: TxnRefNo=${pp_TxnRefNo}, ResponseCode=${pp_ResponseCode}, Message=${pp_ResponseMessage}, Amount=${pp_Amount}`);
 
-        if (pp_ResponseCode === '000') {
-            // Payment successful - update your database
+        console.log(`📩 IPN Received: TxnRefNo=${pp_TxnRefNo}, ResponseCode=${pp_ResponseCode}, Message=${pp_ResponseMessage}, Amount=${pp_Amount}`);
+
+        if (pp_ResponseCode === "000") {
+            // Payment successful - update DB here
             console.log(`✅ Payment successful for transaction: ${pp_TxnRefNo}`);
-            // await updateOrderStatus(pp_TxnRefNo, 'completed');
         } else {
             // Payment failed
             console.log(`❌ Payment failed for transaction: ${pp_TxnRefNo} - ${pp_ResponseMessage}`);
-            // await updateOrderStatus(pp_TxnRefNo, 'failed');
         }
 
-        // Always respond with 200 OK to acknowledge IPN
-        return res.status(200).json({ 
-            success: true, 
-            message: 'IPN received and processed successfully.',
-            transactionStatus: pp_ResponseCode === '000' ? 'success' : 'failed'
+        // Always respond 200 OK
+        return res.status(200).json({
+            success: true,
+            message: "IPN received and processed successfully.",
+            transactionStatus: pp_ResponseCode === "000" ? "success" : "failed"
         });
 
     } catch (error) {
-        console.error('IPN API error:', error);
-        return res.status(500).json({ message: 'Internal Server Error' });
+        console.error("IPN API error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 }

@@ -15,7 +15,7 @@ const SERVICE_LABELS = {
   webapp: 'Web & App Development',
   domainhosting: 'Domain & Hosting',
   branding: 'Branding & Logo Design',
-  ecommerce: 'E-Commerce & Payment Solutions',
+  ecommerce: 'E-Commerce Solutions',
   cloudit: 'Cloud & IT Infrastructure',
   digitalmarketing: 'Digital Marketing',
 };

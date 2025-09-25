@@ -14,8 +14,9 @@ function createJazzCashHash(params, integritySalt) {
         }
     }
     
-    console.log('Hash String:', hashString); // For debugging
-    return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
+    const hmac = crypto.createHmac('sha256', integritySalt);
+hmac.update(hashString);
+return hmac.digest('hex').toUpperCase();
 }
 
 // Function to generate invoice number (you can replace this with your actual invoice system)

@@ -96,6 +96,7 @@ export default async function handler(req, res) {
         pp_SubMerchantID: "",
         pp_Password: password,
         pp_MobileNumber: phone,
+        pp_CNIC: cnic,
         pp_Amount: formattedAmount,
         pp_TxnRefNo: txnRefNo,
         pp_Description: description || "Service Payment",

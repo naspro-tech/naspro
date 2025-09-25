@@ -12,7 +12,9 @@ function createThankYouHash(params, integritySalt) {
         }
     }
     
-    return crypto.createHash('sha256').update(hashString).digest('hex').toUpperCase();
+    const hmac = crypto.createHmac('sha256', integritySalt);
+hmac.update(hashString);
+return hmac.digest('hex').toUpperCase();
 }
 
 export default async function handler(req, res) {

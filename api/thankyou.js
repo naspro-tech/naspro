@@ -1,4 +1,4 @@
-// /pages/api/thankyou.js
+// /api/thankyou.js
 import crypto from "crypto";
 
 function createThankYouHash(params, integritySalt) {

@@ -1,25 +1,49 @@
-// /api/checkout.js - UPDATED WITH PROPER BILL/INVOICE NUMBER
+// /api/checkout.js - UPDATED (Removed discount parameters)
 import crypto from 'crypto';
 
 function createJazzCashHash(params, integritySalt) {
-    // ✅ CORRECT: Sort fields alphabetically by ASCII value
-    const sortedKeys = Object.keys(params).sort();
+    // ✅ CORRECT: Use exact field order from JazzCash CalculateHash() function
+    const fieldOrder = [
+        'pp_Amount',
+        'pp_BankID', 
+        'pp_BillReference',
+        'pp_CNIC',
+        'pp_Description',
+        'pp_Language',
+        'pp_MerchantID',
+        'pp_Password',
+        'pp_MobileNumber',
+        'pp_ProductID',
+        'pp_TxnCurrency',
+        'pp_TxnDateTime',
+        'pp_TxnExpiryDateTime', 
+        'pp_TxnRefNo',
+        'ppmpf_1',
+        'ppmpf_2',
+        'ppmpf_3',
+        'ppmpf_4',
+        'ppmpf_5'
+    ];
     
-    // Build hash string with integritySalt first, then sorted fields
-    let hashString = integritySalt;
+    let hashString = integritySalt + '&';
     
-    for (const key of sortedKeys) {
-        if (key !== 'pp_SecureHash') { // Exclude the hash field itself
-            hashString += '&' + params[key];
+    for (const field of fieldOrder) {
+        if (params[field] && params[field] !== '') {
+            hashString += params[field] + '&';
         }
     }
     
+    // Remove trailing '&'
+    hashString = hashString.slice(0, -1);
+    
+    console.log('Hash String:', hashString);
+    
+    // ✅ CORRECT: Use HMAC-SHA256 instead of regular SHA256
     const hmac = crypto.createHmac('sha256', integritySalt);
-hmac.update(hashString);
-return hmac.digest('hex').toUpperCase();
+    hmac.update(hashString);
+    return hmac.digest('hex').toUpperCase();
 }
 
-// Function to generate invoice number (you can replace this with your actual invoice system)
 function generateInvoiceNumber(serviceKey) {
     const now = new Date();
     const timestamp = now.getTime();
@@ -63,42 +87,35 @@ export default async function handler(req, res) {
 
     const txnRefNo = `T${now.getTime()}`;
     const formattedAmount = String(amount * 100);
-    
-    // ✅ CORRECT: Use provided invoice number or generate one
     const billReference = invoice_number || generateInvoiceNumber(service_key);
 
+    // ✅ UPDATED PAYLOAD (removed discount parameters)
     const payload = {
         pp_Language: "EN",
         pp_MerchantID: merchantID,
         pp_SubMerchantID: "",
         pp_Password: password,
-        pp_BankID: "",
-        pp_ProductID: "",
+        pp_MobileNumber: phone,
         pp_Amount: formattedAmount,
         pp_TxnRefNo: txnRefNo,
         pp_Description: description || "Service Payment",
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,
-        pp_BillReference: billReference,   // ✔️ matches your const billReference
+        pp_BillReference: billReference,
         pp_ReturnURL: returnURL,
-        pp_CNIC: cnic || "",
-        pp_MobileNumber: phone,
         pp_TxnExpiryDateTime: txnExpiryDateTime,
+        pp_SecureHash: "",
         ppmpf_1: "",
-        ppmpf_2: "", 
+        ppmpf_2: "",
         ppmpf_3: "",
         ppmpf_4: "",
-        ppmpf_5: ""
+        ppmpf_5: "",
     };
 
-    // Create secure hash with CORRECT alphabetical sorting
+    // ✅ CORRECT: Generate HMAC-SHA256 hash
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
-    // Debug: Show the field order and values
-    const sortedKeys = Object.keys(payload).sort().filter(key => key !== 'pp_SecureHash');
-    console.log('Field order for hash:', sortedKeys);
-    console.log('Bill Reference (Invoice #):', payload.pp_BillReference);
-    console.log('Transaction Reference:', payload.pp_TxnRefNo);
+    console.log('Final Payload:', JSON.stringify(payload, null, 2));
     console.log('Generated Hash:', payload.pp_SecureHash);
 
     try {

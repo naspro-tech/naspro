@@ -97,8 +97,6 @@ export default async function handler(req, res) {
     const billReference = bill_reference || `Bill${txnRefNo}`;
 
     const payload = {
-        pp_Version: "1.1",
-        pp_TxnType: "MWALLET",
         pp_Language: "EN",
         pp_MerchantID: merchantID,
         pp_SubMerchantID: "",
@@ -109,7 +107,7 @@ export default async function handler(req, res) {
         pp_CNIC: cnic,
         pp_Amount: formattedAmount,
         pp_TxnRefNo: txnRefNo,
-        pp_BillReference: billReference,
+        pp_BillReference: billRef,
         pp_Description: description || "Service Payment",
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,

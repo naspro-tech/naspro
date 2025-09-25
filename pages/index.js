@@ -1,4 +1,4 @@
-import Head from 'next/head';
+        import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
@@ -39,7 +39,10 @@ export default function Home() {
           <span></span>
           <span></span>
         </div>
-        <nav className={`menu-items ${menuActive ? 'active' : ''}`} aria-hidden={!menuActive}>
+        <nav
+          className={`menu-items ${menuActive ? 'active' : ''}`}
+          aria-hidden={!menuActive}
+        >
           <a href="#services">Services</a>
           <a href="#why-choose-us">Why Choose Us?</a>
           <a href="#faq">FAQ</a>
@@ -54,39 +57,87 @@ export default function Home() {
       <section id="services" className="services">
         <div className="card">
           <h3>Web &amp; App Development</h3>
-          <p>Custom-built, scalable, and high-performance websites and mobile apps for every industry.</p>
+          <p>
+            Custom-built, scalable, and high-performance websites and mobile apps
+            for every industry.
+          </p>
           <p className="price">PKR 30,000</p>
-          <button className="buy-btn" onClick={() => handleBuyNowClick('webapp')}>Buy Now</button>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('webapp')}
+          >
+            Buy Now
+          </button>
         </div>
         <div className="card">
           <h3>Domain &amp; Hosting</h3>
-          <p>Fast, secure, and reliable hosting with premium domain registration services.</p>
+          <p>
+            Fast, secure, and reliable hosting with premium domain registration
+            services.
+          </p>
           <p className="price">Starting from PKR 3,500/year</p>
-          <button className="buy-btn" onClick={() => handleBuyNowClick('domainhosting')}>Buy Now</button>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('domainhosting')}
+          >
+            Buy Now
+          </button>
         </div>
         <div className="card">
           <h3>Branding &amp; Logo Design</h3>
-          <p>Memorable brand identities and creative designs that leave a lasting impression.</p>
+          <p>
+            Memorable brand identities and creative designs that leave a lasting
+            impression.
+          </p>
           <p className="price">PKR 5,000</p>
-          <button className="buy-btn" onClick={() => handleBuyNowClick('branding')}>Buy Now</button>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('branding')}
+          >
+            Buy Now
+          </button>
         </div>
         <div className="card">
-          <h3>E-Commerce &amp; Payment Solutions</h3>
-          <p>Fully functional online stores with seamless payment gateway integration.</p>
+          <h3>E-Commerce Solutions</h3>
+          <p>
+            Fully functional online stores with modern features to help you sell
+            online effectively.
+          </p>
           <p className="price">PKR 50,000</p>
-          <button className="buy-btn" onClick={() => handleBuyNowClick('ecommerce')}>Buy Now</button>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('ecommerce')}
+          >
+            Buy Now
+          </button>
         </div>
         <div className="card">
           <h3>Cloud &amp; IT Infrastructure</h3>
-          <p>Secure cloud hosting, data backups, and IT infrastructure management.</p>
+          <p>
+            Secure cloud hosting, data backups, and IT infrastructure
+            management.
+          </p>
           <p className="price">Custom Pricing</p>
-          <button className="buy-btn" onClick={() => handleBuyNowClick('cloudit')}>Buy Now</button>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('cloudit')}
+          >
+            Buy Now
+          </button>
         </div>
         <div className="card">
           <h3>Digital Marketing</h3>
-          <p>Grow your online presence with SEO, social media, and targeted ad campaigns.</p>
+          <p>
+            Grow your online presence with SEO, social media, and targeted ad
+            campaigns.
+          </p>
           <p className="price">Starting at PKR 15,000/month</p>
-          <button className="buy-btn" onClick={() => handleBuyNowClick('digitalmarketing')}>Buy Now</button>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('digitalmarketing')}
+          >
+            Buy Now
+          </button>
         </div>
       </section>
 
@@ -105,11 +156,17 @@ export default function Home() {
         <h2>Frequently Asked Questions</h2>
         <div className="faq-item">
           <strong>Q: How long does a typical website project take?</strong>
-          <p>A: Usually between 2-6 weeks depending on complexity and client feedback.</p>
+          <p>
+            A: Usually between 2-6 weeks depending on complexity and client
+            feedback.
+          </p>
         </div>
         <div className="faq-item">
           <strong>Q: Do you offer support after project completion?</strong>
-          <p>A: Yes! We offer maintenance packages to keep your site/app up-to-date and secure.</p>
+          <p>
+            A: Yes! We offer maintenance packages to keep your site/app
+            up-to-date and secure.
+          </p>
         </div>
         <div className="faq-item">
           <strong>Q: Can I upgrade my plan later?</strong>
@@ -117,7 +174,10 @@ export default function Home() {
         </div>
         <div className="faq-item">
           <strong>Q: What payment methods do you accept?</strong>
-          <p>A: Currently Easypaisa and JazzCash gateways are coming soon. For now, contact us directly for other options.</p>
+          <p>
+            A: Currently we accept direct bank transfer and cash on delivery for
+            services. For other methods, please contact us.
+          </p>
         </div>
       </section>
 
@@ -130,4 +190,5 @@ export default function Home() {
       </footer>
     </>
   );
-}
+              }
+              

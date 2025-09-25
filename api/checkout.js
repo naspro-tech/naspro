@@ -105,7 +105,6 @@ export default async function handler(req, res) {
         pp_BillReference: billReference,
         pp_ReturnURL: returnURL,
         pp_TxnExpiryDateTime: txnExpiryDateTime,
-        pp_SecureHash: "",
         ppmpf_1: "",
         ppmpf_2: "",
         ppmpf_3: "",

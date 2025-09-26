@@ -1,43 +1,13 @@
-// /api/checkout.js - FIXED for JazzCash (form-urlencoded)
+// /api/checkout.js - JazzCash Checkout (Sandbox/Production)
 import crypto from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
-    const fieldOrder = [
-        "pp_Amount",
-        "pp_BankID",
-        "pp_BillReference",
-        "pp_CNIC",
-        "pp_Description",
-        "pp_Language",
-        "pp_MerchantID",
-        "pp_Password",
-        "pp_MobileNumber",
-        "pp_ProductID",
-        "pp_TxnCurrency",
-        "pp_TxnDateTime",
-        "pp_TxnExpiryDateTime",
-        "pp_TxnRefNo",
-        "ppmpf_1",
-        "ppmpf_2",
-        "ppmpf_3",
-        "ppmpf_4",
-        "ppmpf_5",
-    ];
+    const keys = Object.keys(params)
+        .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
+        .sort();
 
-    let hashString = integritySalt + "&";
+    let hashString = integritySalt + "&" + keys.map(k => params[k]).join("&");
 
-    for (const field of fieldOrder) {
-        if (params[field] && params[field] !== "") {
-            hashString += params[field] + "&";
-        }
-    }
-
-    // Remove trailing &
-    hashString = hashString.slice(0, -1);
-
-    console.log("Hash String:", hashString);
-
-    // HMAC-SHA256 with integritySalt
     const hmac = crypto.createHmac("sha256", integritySalt);
     hmac.update(hashString);
     return hmac.digest("hex").toUpperCase();
@@ -48,7 +18,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ message: "Method not allowed" });
     }
 
-    const { service_key, name, email, phone, cnic, description, bill_reference } = req.body;
+    const { service_key, phone, cnic, description, bill_reference } = req.body;
 
     const SERVICE_PRICES = {
         webapp: 30000,
@@ -92,8 +62,6 @@ export default async function handler(req, res) {
 
     const txnRefNo = `T${now.getTime()}`;
     const formattedAmount = String(amount * 100);
-
-    // Use bill_reference from frontend (e.g. "TestBill001")
     const billReference = bill_reference || `Bill${txnRefNo}`;
 
     const payload = {
@@ -103,8 +71,8 @@ export default async function handler(req, res) {
         pp_MerchantID: merchantID,
         pp_SubMerchantID: "",
         pp_Password: password,
-        pp_BankID: "TBANK",
-        pp_ProductID: "RETL",
+        pp_BankID: "",
+        pp_ProductID: "",
         pp_MobileNumber: phone,
         pp_CNIC: cnic,
         pp_Amount: formattedAmount,
@@ -115,20 +83,16 @@ export default async function handler(req, res) {
         pp_TxnDateTime: txnDateTime,
         pp_TxnExpiryDateTime: txnExpiryDateTime,
         pp_ReturnURL: returnURL,
-        ppmpf_1: "1",
-        ppmpf_2: "2",
-        ppmpf_3: "3",
-        ppmpf_4: "4",
-        ppmpf_5: "5",
+        ppmpf_1: "",
+        ppmpf_2: "",
+        ppmpf_3: "",
+        ppmpf_4: "",
+        ppmpf_5: "",
     };
 
-    // Generate hash
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
-    console.log("Final Payload:", JSON.stringify(payload, null, 2));
-
     try {
-        // Send as form-urlencoded
         const formData = new URLSearchParams();
         for (const key in payload) {
             formData.append(key, payload[key]);
@@ -161,4 +125,3 @@ export default async function handler(req, res) {
         });
     }
             }
-    

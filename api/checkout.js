@@ -1,12 +1,15 @@
-// /api/checkout.js - JazzCash Checkout (Sandbox/Production)
+// /api/checkout.js - JazzCash Checkout (Clean Payload)
 import crypto from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
+    // Only include non-empty pp_ fields (excluding pp_SecureHash itself)
     const keys = Object.keys(params)
         .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
         .sort();
 
-    let hashString = integritySalt + "&" + keys.map(k => params[k]).join("&");
+    const hashString = integritySalt + "&" + keys.map(k => params[k]).join("&");
+
+    console.log("🔑 Hash String for JazzCash:", hashString);
 
     const hmac = crypto.createHmac("sha256", integritySalt);
     hmac.update(hashString);
@@ -37,9 +40,8 @@ export default async function handler(req, res) {
     const merchantID = process.env.JAZZCASH_MERCHANT_ID;
     const password = process.env.JAZZCASH_PASSWORD;
     const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
-    const returnURL = process.env.JAZZCASH_RETURN_URL;
 
-    if (!merchantID || !password || !integritySalt || !returnURL) {
+    if (!merchantID || !password || !integritySalt) {
         return res.status(500).json({ message: "Missing JazzCash environment variables." });
     }
 
@@ -64,6 +66,7 @@ export default async function handler(req, res) {
     const formattedAmount = String(amount * 100);
     const billReference = bill_reference || `Bill${txnRefNo}`;
 
+    // ✅ Clean payload (no nulls, no extra fields, includes version + txnType)
     const payload = {
         pp_Version: "2.0",
         pp_TxnType: "MWALLET",
@@ -71,8 +74,6 @@ export default async function handler(req, res) {
         pp_MerchantID: merchantID,
         pp_SubMerchantID: "",
         pp_Password: password,
-        pp_BankID: "",
-        pp_ProductID: "",
         pp_MobileNumber: phone,
         pp_CNIC: cnic,
         pp_Amount: formattedAmount,
@@ -82,7 +83,6 @@ export default async function handler(req, res) {
         pp_TxnCurrency: "PKR",
         pp_TxnDateTime: txnDateTime,
         pp_TxnExpiryDateTime: txnExpiryDateTime,
-        pp_ReturnURL: returnURL,
         ppmpf_1: "",
         ppmpf_2: "",
         ppmpf_3: "",
@@ -90,12 +90,15 @@ export default async function handler(req, res) {
         ppmpf_5: "",
     };
 
+    // Generate hash
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
+
+    console.log("📦 Final Payload Sent to JazzCash:", JSON.stringify(payload, null, 2));
 
     try {
         const formData = new URLSearchParams();
         for (const key in payload) {
-            formData.append(key, payload[key]);
+            formData.append(key, payload[key] ?? ""); // 🚨 convert null → ""
         }
 
         const apiResponse = await fetch(
@@ -112,13 +115,15 @@ export default async function handler(req, res) {
 
         const result = await apiResponse.json();
 
+        console.log("📩 JazzCash Response:", result);
+
         return res.status(200).json({
             success: true,
             payload,
             jazzCashResponse: result,
         });
     } catch (error) {
-        console.error("JazzCash API error:", error);
+        console.error("❌ JazzCash API error:", error);
         return res.status(500).json({
             message: "Failed to connect to JazzCash API.",
             error: error.message,

@@ -1,30 +1,12 @@
-// /api/inquire.js - FIXED for JazzCash
+// /api/inquire.js - JazzCash Inquiry
 import crypto from "crypto";
 
-function createInquiryHash(params, integritySalt) {
-    // JazzCash Inquiry required field order
-    const fieldOrder = [
-        "pp_Version",
-        "pp_TxnType",
-        "pp_MerchantID",
-        "pp_Password",
-        "pp_TxnRefNo",
-        "pp_RetreivalReferenceNo"
-    ];
+function createJazzCashHash(params, integritySalt) {
+    const keys = Object.keys(params)
+        .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
+        .sort();
 
-    let hashString = integritySalt + "&";
-
-    for (const field of fieldOrder) {
-        if (params[field] && params[field] !== "") {
-            hashString += params[field] + "&";
-        }
-    }
-
-    // Remove last "&"
-    hashString = hashString.slice(0, -1);
-
-    console.log("Inquiry Hash String:", hashString);
-
+    let hashString = integritySalt + "&" + keys.map(k => params[k]).join("&");
     const hmac = crypto.createHmac("sha256", integritySalt);
     hmac.update(hashString);
     return hmac.digest("hex").toUpperCase();
@@ -43,9 +25,7 @@ export default async function handler(req, res) {
         const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
 
         if (!merchantID || !password || !integritySalt) {
-            return res
-                .status(500)
-                .json({ message: "Missing JazzCash environment variables." });
+            return res.status(500).json({ message: "Missing JazzCash environment variables." });
         }
 
         const payload = {
@@ -54,13 +34,11 @@ export default async function handler(req, res) {
             pp_MerchantID: merchantID,
             pp_Password: password,
             pp_TxnRefNo: txnRefNo,
-            pp_RetreivalReferenceNo: "", // can stay empty
+            pp_RetreivalReferenceNo: "",
         };
 
-        // Generate secure hash
-        payload.pp_SecureHash = createInquiryHash(payload, integritySalt);
+        payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
-        // Send as form-urlencoded
         const formData = new URLSearchParams();
         for (const key in payload) {
             formData.append(key, payload[key]);
@@ -90,4 +68,3 @@ export default async function handler(req, res) {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 }
-  

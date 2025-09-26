@@ -1,60 +1,24 @@
-// /api/thankyou.js - FIXED JazzCash ThankYou Handler
+// /api/thankyou.js - JazzCash Return/ThankYou Handler
 import crypto from "crypto";
 
-function createThankYouHash(params, integritySalt) {
-    // JazzCash ThankYou/Return fields order (same as IPN)
-    const fieldOrder = [
-        "pp_Amount",
-        "pp_BillReference",
-        "pp_BankID",
-        "pp_CNIC",
-        "pp_Description",
-        "pp_Language",
-        "pp_MerchantID",
-        "pp_MobileNumber",
-        "pp_Password",
-        "pp_ProductID",
-        "pp_ResponseCode",
-        "pp_ResponseMessage",
-        "pp_RetreivalReferenceNo",
-        "pp_SettlementExpiryDate",
-        "pp_TxnCurrency",
-        "pp_TxnDateTime",
-        "pp_TxnExpiryDateTime",
-        "pp_TxnRefNo",
-        "pp_TransactionState",
-        "ppmpf_1",
-        "ppmpf_2",
-        "ppmpf_3",
-        "ppmpf_4",
-        "ppmpf_5"
-    ];
+function createJazzCashHash(params, integritySalt) {
+    const keys = Object.keys(params)
+        .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
+        .sort();
 
-    let hashString = integritySalt + "&";
-
-    for (const field of fieldOrder) {
-        if (params[field] && params[field] !== "") {
-            hashString += params[field] + "&";
-        }
-    }
-
-    // Remove trailing &
-    hashString = hashString.slice(0, -1);
-
-    console.log("ThankYou Hash String:", hashString);
-
+    let hashString = integritySalt + "&" + keys.map(k => params[k]).join("&");
     const hmac = crypto.createHmac("sha256", integritySalt);
     hmac.update(hashString);
     return hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
-    if (req.method !== "POST") {
+    if (req.method !== "POST" && req.method !== "GET") {
         return res.status(405).json({ message: "Method not allowed" });
     }
 
     try {
-        const responseData = req.body;
+        const responseData = req.method === "POST" ? req.body : req.query;
 
         const merchantID = process.env.JAZZCASH_MERCHANT_ID;
         const password = process.env.JAZZCASH_PASSWORD;
@@ -65,15 +29,11 @@ export default async function handler(req, res) {
         }
 
         const receivedHash = responseData.pp_SecureHash;
-        const generatedHash = createThankYouHash(responseData, integritySalt);
+        const generatedHash = createJazzCashHash(responseData, integritySalt);
 
         if (receivedHash !== generatedHash) {
-            console.error("❌ ThankYou Page: Secure Hash Mismatch");
-            console.log("Received Hash:", receivedHash);
-            console.log("Generated Hash:", generatedHash);
-            return res.status(400).json({
-                message: "Invalid secure hash. Data may have been tampered with."
-            });
+            console.error("❌ ThankYou Secure Hash Mismatch");
+            return res.status(400).json({ message: "Invalid secure hash" });
         }
 
         const {
@@ -81,22 +41,22 @@ export default async function handler(req, res) {
             pp_ResponseMessage,
             pp_TxnRefNo,
             pp_Amount,
-            pp_RetreivalReferenceNo
+            pp_RetreivalReferenceNo,
         } = responseData;
 
-        // Convert amount from paisa → rupees
+        const success = pp_ResponseCode === "000" || pp_ResponseCode === "121";
         const amountInRupees = (parseInt(pp_Amount, 10) / 100).toFixed(2);
 
         return res.status(200).json({
-            success: pp_ResponseCode === "000",
+            success,
             message: pp_ResponseMessage,
             transactionId: pp_TxnRefNo,
             retrievalReferenceNo: pp_RetreivalReferenceNo,
             amount: amountInRupees,
-            transactionDetails: responseData
+            transactionDetails: responseData,
         });
     } catch (error) {
         console.error("ThankYou API error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
-}
+                                     }

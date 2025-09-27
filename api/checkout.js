@@ -1,132 +1,131 @@
-// /api/checkout.js - JazzCash Checkout (Clean Payload)
+// /api/checkout.js - JazzCash Checkout (fixed endpoint + lowercase fields + proper HMAC)
 import crypto from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
-    // Only include non-empty pp_ fields (excluding pp_SecureHash itself)
-    const keys = Object.keys(params)
-        .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== "")
-        .sort();
+  // include only pp_ fields that have a non-empty value and exclude pp_SecureHash
+  const keys = Object.keys(params)
+    .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== undefined && params[k] !== null && params[k] !== "")
+    .sort();
 
-    const hashString = integritySalt + "&" + keys.map(k => params[k]).join("&");
+  const valuesString = keys.map(k => params[k]).join("&");
+  const hashString = `${integritySalt}&${valuesString}`;
 
-    console.log("🔑 Hash String for JazzCash:", hashString);
+  // do NOT log integritySalt in plaintext in production
+  const masked = hashString.replace(integritySalt, "***");
+  console.log("🔑 Hash string (masked):", masked);
 
-    const hmac = crypto.createHmac("sha256", integritySalt);
-    hmac.update(hashString);
-    return hmac.digest("hex").toUpperCase();
+  const hmac = crypto.createHmac("sha256", integritySalt);
+  hmac.update(hashString);
+  return hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
-    if (req.method !== "POST") {
-        return res.status(405).json({ message: "Method not allowed" });
-    }
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
+  }
 
+  try {
     const { service_key, phone, cnic, description, bill_reference } = req.body;
 
     const SERVICE_PRICES = {
-        webapp: 30000,
-        domainhosting: 3500,
-        branding: 5000,
-        ecommerce: 50000,
-        cloudit: 0,
-        digitalmarketing: 15000,
+      webapp: 30000,
+      domainhosting: 3500,
+      branding: 5000,
+      ecommerce: 50000,
+      cloudit: 0,
+      digitalmarketing: 15000,
     };
 
     const amount = SERVICE_PRICES[service_key];
     if (!amount || amount === 0) {
-        return res.status(400).json({ error: "Invalid service" });
+      return res.status(400).json({ error: "Invalid service" });
     }
 
     const merchantID = process.env.JAZZCASH_MERCHANT_ID;
     const password = process.env.JAZZCASH_PASSWORD;
     const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
+    const returnUrl = process.env.JAZZCASH_RETURN_URL; // optional: set this in Vercel if you want Return URL hashed
 
     if (!merchantID || !password || !integritySalt) {
-        return res.status(500).json({ message: "Missing JazzCash environment variables." });
+      return res.status(500).json({ message: "Missing JazzCash environment variables." });
     }
 
-    // Format timestamps
     const now = new Date();
-    const txnDateTime = `${now.getFullYear()}${("0" + (now.getMonth() + 1)).slice(-2)}${(
-        "0" + now.getDate()
-    ).slice(-2)}${("0" + now.getHours()).slice(-2)}${("0" + now.getMinutes()).slice(-2)}${(
-        "0" + now.getSeconds()
-    ).slice(-2)}`;
+    const pad = n => ("0" + n).slice(-2);
+    const txnDateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
-    const expiryTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const txnExpiryDateTime = `${expiryTime.getFullYear()}${(
-        "0" + (expiryTime.getMonth() + 1)
-    ).slice(-2)}${("0" + expiryTime.getDate()).slice(-2)}${(
-        "0" + expiryTime.getHours()
-    ).slice(-2)}${("0" + expiryTime.getMinutes()).slice(-2)}${(
-        "0" + expiryTime.getSeconds()
-    ).slice(-2)}`;
+    const expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const txnExpiryDateTime = `${expiry.getFullYear()}${pad(expiry.getMonth() + 1)}${pad(expiry.getDate())}${pad(expiry.getHours())}${pad(expiry.getMinutes())}${pad(expiry.getSeconds())}`;
 
-    const txnRefNo = `T${now.getTime()}`;
-    const formattedAmount = String(amount * 100);
-    const billReference = bill_reference || `Bill${txnRefNo}`;
+    const txnRefNo = `T${Date.now()}`;
+    const formattedAmount = String(amount * 100); // JazzCash expects amount * 100 (last two digits = decimals)
+    const billRef = bill_reference || `Bill${txnRefNo}`;
 
-    // ✅ Clean payload (no nulls, no extra fields, includes version + txnType)
+    // Build minimal payload with lowercase pp_ keys matching JazzCash example
     const payload = {
-        pp_Version: "2.0",
-        pp_TxnType: "MWALLET",
-        pp_Language: "EN",
-        pp_MerchantID: merchantID,
-        pp_SubMerchantID: "",
-        pp_Password: password,
-        pp_MobileNumber: phone,
-        pp_CNIC: cnic,
-        pp_Amount: formattedAmount,
-        pp_TxnRefNo: txnRefNo,
-        pp_BillReference: billReference,
-        pp_Description: description || "Service Payment",
-        pp_TxnCurrency: "PKR",
-        pp_TxnDateTime: txnDateTime,
-        pp_TxnExpiryDateTime: txnExpiryDateTime,
-        ppmpf_1: "",
-        ppmpf_2: "",
-        ppmpf_3: "",
-        ppmpf_4: "",
-        ppmpf_5: "",
+      pp_amount: formattedAmount,
+      pp_bankID: "",           // include but empty (will be filtered out for hash if empty)
+      pp_billRef: billRef,
+      pp_cnic: cnic,
+      pp_description: description || "Service Payment",
+      pp_language: "EN",
+      pp_merchantID: merchantID,
+      pp_mobile: phone,
+      pp_password: password,
+      pp_productID: "",        // include but empty
+      pp_txnCurrency: "PKR",
+      pp_txnDateTime: txnDateTime,
+      pp_txnExpiryDateTime: txnExpiryDateTime,
+      pp_txnRefNo: txnRefNo,
+      ppmpf_1: "",
+      ppmpf_2: "",
+      ppmpf_3: "",
+      ppmpf_4: "",
+      ppmpf_5: "",
     };
 
-    // Generate hash
+    // Optional: include return URL in payload (only if you set it in env)
+    if (returnUrl) {
+      // note: add lowercase key so it participates correctly in sorting/hashing
+      payload.pp_returnURL = returnUrl;
+    }
+
+    // Generate SecureHash as per JazzCash spec
     payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
-    console.log("📦 Final Payload Sent to JazzCash:", JSON.stringify(payload, null, 2));
+    console.log("📦 Final payload keys sent (lowercase):", Object.keys(payload).join(", "));
 
-    try {
-        const formData = new URLSearchParams();
-        for (const key in payload) {
-            formData.append(key, payload[key] ?? ""); // 🚨 convert null → ""
-        }
+    // Use the correct DoMWalletTransaction endpoint (sandbox)
+    const endpoint = "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
+    // For live use: "https://payment.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction"
 
-        const apiResponse = await fetch(
-            "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    Accept: "application/json",
-                },
-                body: formData.toString(),
-            }
-        );
-
-        const result = await apiResponse.json();
-
-        console.log("📩 JazzCash Response:", result);
-
-        return res.status(200).json({
-            success: true,
-            payload,
-            jazzCashResponse: result,
-        });
-    } catch (error) {
-        console.error("❌ JazzCash API error:", error);
-        return res.status(500).json({
-            message: "Failed to connect to JazzCash API.",
-            error: error.message,
-        });
+    const formData = new URLSearchParams();
+    for (const key in payload) {
+      // ensure values appended as strings
+      formData.append(key, payload[key] ?? "");
     }
-            }
+
+    const apiResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body: formData.toString(),
+    });
+
+    const result = await apiResponse.json();
+
+    console.log("📩 JazzCash Response:", result);
+
+    return res.status(200).json({
+      success: true,
+      endpoint,
+      payload,
+      jazzCashResponse: result,
+    });
+  } catch (error) {
+    console.error("Checkout API error:", error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+}

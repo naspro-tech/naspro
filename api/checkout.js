@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     const payload = {
       pp_amount: formattedAmount,
       pp_bankID: "",           // include but empty (will be filtered out for hash if empty)
-      pp_billRef: "billRef",
+      pp_billReference: "billRef",
       pp_cnic: cnic,
       pp_description: description || "Service Payment",
       pp_language: "EN",

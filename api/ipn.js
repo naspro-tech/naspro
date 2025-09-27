@@ -1,4 +1,4 @@
-// /pages/api/ipn.js - JazzCash IPN Handler (PascalCase fields + hash validation)
+// /api/ipn.js - JazzCash IPN Handler (PascalCase fields + hash validation)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
@@ -16,9 +16,14 @@ function createJazzCashHash(params, integritySalt) {
   const valuesString = keys.map((k) => params[k]).join("&");
   const hashString = `${integritySalt}&${valuesString}`;
 
-  const hmac = crypto.createHmac("sha256", integritySalt); // integritySalt also handled as utf8 by default
-hmac.update(hashString, "utf8"); // explicitly ensure UTF-8
-const secureHash = hmac.digest("hex").toUpperCase();
+  // Masked log (avoid leaking salt in production)
+  console.log("🔑 IPN Hash string (masked):", hashString.replace(integritySalt, "***"));
+
+  const hmac = createHmac("sha256", integritySalt);
+  hmac.update(hashString, "utf8");
+  const secureHash = hmac.digest("hex").toUpperCase();
+
+  return secureHash;
 }
 
 export default async function handler(req, res) {
@@ -28,12 +33,10 @@ export default async function handler(req, res) {
 
   try {
     const responseData = req.body;
-
     const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
+
     if (!integritySalt) {
-      return res
-        .status(500)
-        .json({ message: "Missing JazzCash integrity salt." });
+      return res.status(500).json({ message: "Missing JazzCash integrity salt." });
     }
 
     const receivedHash = responseData.pp_SecureHash;
@@ -65,6 +68,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("IPN API error:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }
+  

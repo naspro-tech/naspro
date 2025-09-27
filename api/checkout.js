@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       pp_description: description || "Service Payment",
       pp_language: "EN",
       pp_merchantID: merchantID,
-      pp_mobile: phone,
+      pp_mobileNumber: phone,
       pp_password: password,
       pp_productID: "",        // include but empty
       pp_txnCurrency: "PKR",

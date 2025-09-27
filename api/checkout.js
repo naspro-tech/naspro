@@ -1,22 +1,30 @@
-// /api/checkout.js - JazzCash Checkout (fixed endpoint + lowercase fields + proper HMAC)
-import crypto from "crypto";
+// /pages/api/checkout.js - JazzCash Checkout (PascalCase + proper HMAC)
+import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
   // include only pp_ fields that have a non-empty value and exclude pp_SecureHash
   const keys = Object.keys(params)
-    .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== undefined && params[k] !== null && params[k] !== "")
+    .filter(
+      (k) =>
+        k.startsWith("pp_") &&
+        k !== "pp_SecureHash" &&
+        params[k] !== undefined &&
+        params[k] !== null &&
+        params[k] !== ""
+    )
     .sort();
 
-  const valuesString = keys.map(k => params[k]).join("&");
+  const valuesString = keys.map((k) => params[k]).join("&");
   const hashString = `${integritySalt}&${valuesString}`;
 
-  // do NOT log integritySalt in plaintext in production
+  // Masked log (never log real salt in production)
   const masked = hashString.replace(integritySalt, "***");
   console.log("🔑 Hash string (masked):", masked);
 
-  const hmac = crypto.createHmac("sha256", integritySalt);
-  hmac.update(hashString);
-  return hmac.digest("hex").toUpperCase();
+  return createHmac("sha256", integritySalt)
+    .update(hashString)
+    .digest("hex")
+    .toUpperCase();
 }
 
 export default async function handler(req, res) {
@@ -32,50 +40,61 @@ export default async function handler(req, res) {
       domainhosting: 3500,
       branding: 5000,
       ecommerce: 50000,
-      cloudit: 0,
       digitalmarketing: 15000,
     };
 
     const amount = SERVICE_PRICES[service_key];
-    if (!amount || amount === 0) {
+    if (!amount) {
       return res.status(400).json({ error: "Invalid service" });
     }
 
     const merchantID = process.env.JAZZCASH_MERCHANT_ID;
     const password = process.env.JAZZCASH_PASSWORD;
     const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
-    const returnUrl = process.env.JAZZCASH_RETURN_URL; // optional: set this in Vercel if you want Return URL hashed
+    const returnUrl = process.env.JAZZCASH_RETURN_URL;
 
     if (!merchantID || !password || !integritySalt) {
-      return res.status(500).json({ message: "Missing JazzCash environment variables." });
+      return res
+        .status(500)
+        .json({ message: "Missing JazzCash environment variables." });
     }
 
     const now = new Date();
-    const pad = n => ("0" + n).slice(-2);
-    const txnDateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const pad = (n) => ("0" + n).slice(-2);
+
+    const txnDateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
+      now.getDate()
+    )}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
     const expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const txnExpiryDateTime = `${expiry.getFullYear()}${pad(expiry.getMonth() + 1)}${pad(expiry.getDate())}${pad(expiry.getHours())}${pad(expiry.getMinutes())}${pad(expiry.getSeconds())}`;
+    const txnExpiryDateTime = `${expiry.getFullYear()}${pad(
+      expiry.getMonth() + 1
+    )}${pad(expiry.getDate())}${pad(expiry.getHours())}${pad(
+      expiry.getMinutes()
+    )}${pad(expiry.getSeconds())}`;
 
     const txnRefNo = `T${Date.now()}`;
     const formattedAmount = String(amount * 100); // JazzCash expects amount * 100 (last two digits = decimals)
 
-    // Build minimal payload with lowercase pp_ keys matching JazzCash example
+    // ⚡ IMPORTANT: PascalCase keys (exact as per JazzCash spec)
     const payload = {
-      pp_amount: formattedAmount,
-      pp_bankID: "",           // include but empty (will be filtered out for hash if empty)
-      pp_billReference: "billRef",
-      pp_cnic: cnic,
-      pp_description: description || "Service Payment",
-      pp_language: "EN",
-      pp_merchantID: merchantID,
-      pp_mobileNumber: phone,
-      pp_password: password,
-      pp_productID: "",        // include but empty
-      pp_txnCurrency: "PKR",
-      pp_txnDateTime: txnDateTime,
-      pp_txnExpiryDateTime: txnExpiryDateTime,
-      pp_txnRefNo: txnRefNo,
+      pp_Version: "2.0",
+      pp_TxnType: "MWALLET",
+      pp_Language: "EN",
+      pp_MerchantID: merchantID,
+      pp_Password: password,
+      pp_TxnRefNo: txnRefNo,
+      pp_Amount: formattedAmount,
+      pp_TxnCurrency: "PKR",
+      pp_TxnDateTime: txnDateTime,
+      pp_BillReference: bill_reference || "billRef",
+      pp_Description: description || "Service Payment",
+      pp_TxnExpiryDateTime: txnExpiryDateTime,
+      pp_ReturnURL: returnUrl,
+      pp_CNIC: cnic,
+      pp_MobileNumber: phone,
+      pp_BankID: "",
+      pp_ProductID: "",
       ppmpf_1: "",
       ppmpf_2: "",
       ppmpf_3: "",
@@ -83,24 +102,17 @@ export default async function handler(req, res) {
       ppmpf_5: "",
     };
 
-    // Optional: include return URL in payload (only if you set it in env)
-    if (returnUrl) {
-      // note: add lowercase key so it participates correctly in sorting/hashing
-      payload.pp_returnURL = returnUrl;
-    }
+    // ✅ Generate SecureHash
+    payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
-    // Generate SecureHash as per JazzCash spec
-    payload.pp_SecureHash = createJazzCashHash(payload , integritySalt);
+    console.log("📦 Final payload keys sent:", Object.keys(payload).join(", "));
 
-    console.log("📦 Final payload keys sent (lowercase):", Object.keys(payload).join(", "));
-
-    // Use the correct DoMWalletTransaction endpoint (sandbox)
-    const endpoint = "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
-    // For live use: "https://payment.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction"
+    // JazzCash Sandbox Endpoint
+    const endpoint =
+      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
 
     const formData = new URLSearchParams();
     for (const key in payload) {
-      // ensure values appended as strings
       formData.append(key, payload[key] ?? "");
     }
 
@@ -114,7 +126,6 @@ export default async function handler(req, res) {
     });
 
     const result = await apiResponse.json();
-
     console.log("📩 JazzCash Response:", result);
 
     return res.status(200).json({
@@ -125,6 +136,8 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("Checkout API error:", error);
-    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
 }

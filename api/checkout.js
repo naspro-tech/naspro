@@ -59,13 +59,12 @@ export default async function handler(req, res) {
 
     const txnRefNo = `T${Date.now()}`;
     const formattedAmount = String(amount * 100); // JazzCash expects amount * 100 (last two digits = decimals)
-    const billRef = bill_reference || `Bill${txnRefNo}`;
 
     // Build minimal payload with lowercase pp_ keys matching JazzCash example
     const payload = {
       pp_amount: formattedAmount,
       pp_bankID: "",           // include but empty (will be filtered out for hash if empty)
-      pp_billRef: billRef,
+      pp_billRef: "billRef",
       pp_cnic: cnic,
       pp_description: description || "Service Payment",
       pp_language: "EN",

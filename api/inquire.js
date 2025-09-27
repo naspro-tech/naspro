@@ -1,4 +1,4 @@
-// /pages/api/inquire.js - JazzCash Inquiry (PascalCase + fixed keys)
+// /pages/api/inquire.js - JazzCash Inquiry (PascalCase + fixed SecureHash)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
@@ -16,9 +16,15 @@ function createJazzCashHash(params, integritySalt) {
   const valuesString = keys.map((k) => params[k]).join("&");
   const hashString = `${integritySalt}&${valuesString}`;
 
-  const hmac = crypto.createHmac("sha256", integritySalt); // integritySalt also handled as utf8 by default
-hmac.update(hashString, "utf8"); // explicitly ensure UTF-8
-const secureHash = hmac.digest("hex").toUpperCase();
+  // Masked log (never log real salt in production)
+  console.log("🔑 Inquiry Hash string (masked):", hashString.replace(integritySalt, "***"));
+
+  // ✅ Generate secure hash (same as CryptoJS style)
+  const hmac = createHmac("sha256", integritySalt);
+  hmac.update(hashString, "utf8");
+  const secureHash = hmac.digest("hex").toUpperCase();
+
+  return secureHash;
 }
 
 export default async function handler(req, res) {
@@ -49,7 +55,9 @@ export default async function handler(req, res) {
       pp_RetreivalReferenceNo: "",
     };
 
-    payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
+    // ✅ Generate SecureHash
+    const secureHash = createJazzCashHash(payload, integritySalt);
+    payload.pp_SecureHash = secureHash;
 
     const formData = new URLSearchParams();
     for (const key in payload) {
@@ -76,6 +84,6 @@ export default async function handler(req, res) {
       .json({ success: true, payload, jazzCashResponse: result });
   } catch (error) {
     console.error("Inquiry API error:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 }

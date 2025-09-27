@@ -76,6 +76,7 @@ export default async function handler(req, res) {
       pp_txnDateTime: txnDateTime,
       pp_txnExpiryDateTime: txnExpiryDateTime,
       pp_txnRefNo: txnRefNo,
+      pp_secureHash: "",
       ppmpf_1: "",
       ppmpf_2: "",
       ppmpf_3: "",

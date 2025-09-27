@@ -1,4 +1,4 @@
-// /pages/api/checkout.js - JazzCash Checkout (PascalCase + proper HMAC-SHA256)
+// /api/checkout.js - JazzCash Checkout (PascalCase + proper HMAC-SHA256)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {

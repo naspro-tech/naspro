@@ -1,4 +1,4 @@
-// /pages/api/checkout.js - JazzCash Checkout (PascalCase + proper HMAC)
+// /pages/api/checkout.js - JazzCash Checkout (PascalCase + proper HMAC-SHA256)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
@@ -18,12 +18,14 @@ function createJazzCashHash(params, integritySalt) {
   const hashString = `${integritySalt}&${valuesString}`;
 
   // Masked log (never log real salt in production)
-  const masked = hashString.replace(integritySalt, "***");
-  console.log("🔑 Hash string (masked):", masked);
+  console.log("🔑 Hash string (masked):", hashString.replace(integritySalt, "***"));
 
-  const hmac = crypto.createHmac("sha256", integritySalt); // integritySalt also handled as utf8 by default
-hmac.update(hashString, "utf8"); // explicitly ensure UTF-8
-const secureHash = hmac.digest("hex").toUpperCase();
+  // ✅ Generate secure hash just like CryptoJS example
+  const hmac = createHmac("sha256", integritySalt);
+  hmac.update(hashString, "utf8");
+  const secureHash = hmac.digest("hex").toUpperCase();
+
+  return secureHash; // return this var
 }
 
 export default async function handler(req, res) {
@@ -77,10 +79,9 @@ export default async function handler(req, res) {
 
     // ⚡ IMPORTANT: PascalCase keys (exact as per JazzCash spec)
     const payload = {
-      pp_Version: "2.0",
-      pp_TxnType: "MWALLET",
       pp_Language: "EN",
       pp_MerchantID: merchantID,
+      pp_SubMerchantID: "",
       pp_Password: password,
       pp_TxnRefNo: txnRefNo,
       pp_Amount: formattedAmount,
@@ -101,8 +102,9 @@ export default async function handler(req, res) {
       ppmpf_5: "",
     };
 
-    // ✅ Generate SecureHash
-    payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
+    // ✅ Generate SecureHash (CryptoJS style variable)
+    const secureHash = createJazzCashHash(payload, integritySalt);
+    payload.pp_SecureHash = secureHash;
 
     console.log("📦 Final payload keys sent:", Object.keys(payload).join(", "));
 

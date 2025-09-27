@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     }
 
     // Generate SecureHash as per JazzCash spec
-    payload.pp_SecureHash = createJazzCashHash(payload);
+    payload.pp_SecureHash = createJazzCashHash(payload , integritySalt);
 
     console.log("📦 Final payload keys sent (lowercase):", Object.keys(payload).join(", "));
 

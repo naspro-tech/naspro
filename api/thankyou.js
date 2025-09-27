@@ -16,10 +16,9 @@ function createJazzCashHash(params, integritySalt) {
   const valuesString = keys.map((k) => params[k]).join("&");
   const hashString = `${integritySalt}&${valuesString}`;
 
-  return createHmac("sha256", integritySalt)
-    .update(hashString)
-    .digest("hex")
-    .toUpperCase();
+  const hmac = crypto.createHmac("sha256", integritySalt); // integritySalt also handled as utf8 by default
+hmac.update(hashString, "utf8"); // explicitly ensure UTF-8
+const secureHash = hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {

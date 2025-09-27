@@ -1,4 +1,4 @@
-// /pages/api/inquire.js - JazzCash Inquiry (PascalCase + fixed SecureHash)
+// /api/inquire.js - JazzCash Inquiry (PascalCase + fixed SecureHash)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {

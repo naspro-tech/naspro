@@ -14,7 +14,7 @@ function createJazzCashHash(params, integritySalt) {
   const masked = hashString.replace(integritySalt, "***");
   console.log("🔑 Hash string (masked):", masked);
 
-  const hmac = crypto.createhmac("sha256", integritySalt);
+  const hmac = crypto. createhmac("sha256", integritySalt);
   hmac.update(hashString);
   return hmac.digest("hex").toUpperCase();
 }

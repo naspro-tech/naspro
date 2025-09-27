@@ -1,4 +1,4 @@
-// /pages/api/thankyou.js - JazzCash ThankYou Handler (PascalCase fields + hash validation)
+// /api/thankyou.js - JazzCash ThankYou Handler (PascalCase fields + hash validation)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
@@ -16,9 +16,13 @@ function createJazzCashHash(params, integritySalt) {
   const valuesString = keys.map((k) => params[k]).join("&");
   const hashString = `${integritySalt}&${valuesString}`;
 
-  const hmac = crypto.createHmac("sha256", integritySalt); // integritySalt also handled as utf8 by default
-hmac.update(hashString, "utf8"); // explicitly ensure UTF-8
-const secureHash = hmac.digest("hex").toUpperCase();
+  console.log("🔑 ThankYou Hash String (masked):", hashString.replace(integritySalt, "***"));
+
+  const hmac = createHmac("sha256", integritySalt);
+  hmac.update(hashString, "utf8");
+  const secureHash = hmac.digest("hex").toUpperCase();
+
+  return secureHash;
 }
 
 export default async function handler(req, res) {
@@ -65,5 +69,7 @@ export default async function handler(req, res) {
       transactionDetails: responseData,
     });
   } catch (error) {
-    console.error("T
-    
+    console.error("ThankYou API error:", error);
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+}

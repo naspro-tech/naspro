@@ -1,5 +1,5 @@
 // /api/checkout.js - JazzCash Checkout (fixed endpoint + lowercase fields + proper HMAC)
-import crypto from "crypto";
+const crypto = require("crypto");
 
 function createJazzCashHash(params, integritySalt) {
   // include only pp_ fields that have a non-empty value and exclude pp_SecureHash

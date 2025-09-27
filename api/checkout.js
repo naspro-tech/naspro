@@ -1,5 +1,5 @@
 // /api/checkout.js - JazzCash Checkout (fixed endpoint + lowercase fields + proper HMAC)
-const crypto = require("crypto");
+import crypto from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
   // include only pp_ fields that have a non-empty value and exclude pp_SecureHash
@@ -14,7 +14,7 @@ function createJazzCashHash(params, integritySalt) {
   const masked = hashString.replace(integritySalt, "***");
   console.log("🔑 Hash string (masked):", masked);
 
-  const hmac = crypto. createhmac("sha256", integritySalt);
+  const hmac = crypto.createHmac("sha256", integritySalt);
   hmac.update(hashString);
   return hmac.digest("hex").toUpperCase();
 }

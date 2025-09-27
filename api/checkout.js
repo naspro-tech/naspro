@@ -14,9 +14,9 @@ function createJazzCashHash(params, integritySalt) {
   const masked = hashString.replace(integritySalt, "***");
   console.log("🔑 Hash string (masked):", masked);
 
-  const hmac = crypto.createhash_hmac("sha256", integritySalt);
-  hash_hmac.update(hashString);
-  return hash_hmac.digest("hex").toUpperCase();
+  const hmac = crypto.createhmac("sha256", integritySalt);
+  hmac.update(hashString);
+  return hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
@@ -90,7 +90,7 @@ export default async function handler(req, res) {
     }
 
     // Generate SecureHash as per JazzCash spec
-    payload.pp_SecureHash = createJazzCashHash(payload , integritySalt);
+    payload.pp_SecureHash = createJazzCashHash(payload);
 
     console.log("📦 Final payload keys sent (lowercase):", Object.keys(payload).join(", "));
 

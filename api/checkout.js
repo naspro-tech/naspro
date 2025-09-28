@@ -40,7 +40,6 @@ export default async function handler(req, res) {
     const payload = {
       pp_Language: "EN",
       pp_MerchantID: "MC339532",
-      pp_SubMerchantID: "",
       pp_UsageMode: "API",
       pp_Password: "2282sxh9z8",
       pp_TxnRefNo: txnRefNo,
@@ -52,13 +51,6 @@ export default async function handler(req, res) {
       pp_TxnExpiryDateTime: formatDate(new Date(now.getTime() + 24*60*60*1000)),
       pp_MobileNumber: phone,
       pp_CNIC: cnic,
-      pp_DiscountedAmount: "",
-      ppmpf_1: "",
-      ppmpf_2: "",
-      ppmpf_3: "",
-      ppmpf_4: "",
-      ppmpf_5: "",
-      DiscountProfileId: ""
     };
 
     payload.pp_SecureHash = createJazzCashHash(payload);

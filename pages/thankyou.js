@@ -1,109 +1,55 @@
 // /pages/thankyou.js
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
 export default function ThankYou() {
   const router = useRouter();
-  const { txnRef } = router.query;
-
-  const [loading, setLoading] = useState(true);
-  const [transaction, setTransaction] = useState(null);
-  const [error, setError] = useState("");
+  const [txnData, setTxnData] = useState(null);
 
   useEffect(() => {
-    if (!txnRef) return;
-
-    async function fetchTransaction() {
-      try {
-        const res = await fetch(`/api/thankyou?txnRefNo=${txnRef}`);
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          setError(data.message || "Failed to fetch transaction status.");
-        } else {
-          setTransaction(data);
-        }
-      } catch (err) {
-        setError("Network error. Please try again.");
-      } finally {
-        setLoading(false);
-      }
+    if (router.isReady) {
+      // Get JazzCash redirect params from query string
+      setTxnData(router.query);
     }
+  }, [router.isReady, router.query]);
 
-    fetchTransaction();
-  }, [txnRef]);
-
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", marginTop: 80 }}>
-        <h2>Loading your payment status...</h2>
-      </div>
-    );
+  if (!txnData) {
+    return <p style={{ textAlign: "center", marginTop: 80 }}>Loading...</p>;
   }
 
-  if (error) {
-    return (
-      <div style={{ textAlign: "center", marginTop: 80 }}>
-        <h2 style={{ color: "red" }}>⚠️ {error}</h2>
-        <button
-          onClick={() => router.push("/")}
-          style={buttonStyle}
-        >
-          Back to Home
-        </button>
-      </div>
-    );
-  }
+  const { pp_ResponseCode, pp_ResponseMessage, pp_TxnRefNo, pp_Amount } = txnData;
 
-  const { transactionStatus, transactionId, amount, message } = transaction;
+  const isSuccess = pp_ResponseCode === "000"; // JazzCash success code
 
   return (
-    <div style={{
-      maxWidth: 600,
-      margin: "80px auto",
-      padding: 30,
-      background: "#fff",
-      borderRadius: 12,
-      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-      textAlign: "center"
-    }}>
-      {transactionStatus === "success" ? (
-        <>
-          <h1 style={{ color: "#28a745" }}>🎉 Payment Successful!</h1>
-          <p style={{ fontSize: "1.2rem", marginTop: 10 }}>{message}</p>
-          <p style={{ marginTop: 20 }}>
-            <strong>Transaction Reference:</strong><br />
-            <span style={{ fontSize: "1.1rem", color: "#555" }}>{transactionId}</span>
-          </p>
-          <p>
-            <strong>Amount:</strong><br />
-            <span style={{ fontSize: "1.1rem", color: "#555" }}>PKR {amount}</span>
-          </p>
-        </>
-      ) : (
-        <>
-          <h1 style={{ color: "#dc3545" }}>❌ Payment Failed</h1>
-          <p style={{ fontSize: "1.2rem", marginTop: 10 }}>{message}</p>
-        </>
-      )}
-      <button
-        onClick={() => router.push("/")}
-        style={buttonStyle}
+    <div style={{ maxWidth: 600, margin: "60px auto", textAlign: "center" }}>
+      <h1>{isSuccess ? "🎉 Payment Successful!" : "❌ Payment Failed"}</h1>
+
+      <p>
+        <strong>Message:</strong> {pp_ResponseMessage || "No response message"}
+      </p>
+      <p>
+        <strong>Transaction Ref:</strong> {pp_TxnRefNo}
+      </p>
+      <p>
+        <strong>Amount:</strong> {pp_Amount ? `${pp_Amount} PKR (paisa)` : "-"}
+      </p>
+
+      <a
+        href="/"
+        style={{
+          marginTop: 30,
+          display: "inline-block",
+          backgroundColor: "#ff6600",
+          color: "#fff",
+          padding: "12px 24px",
+          borderRadius: 8,
+          fontWeight: "600",
+          textDecoration: "none",
+        }}
       >
         Back to Home
-      </button>
+      </a>
     </div>
   );
 }
-
-const buttonStyle = {
-  marginTop: 30,
-  backgroundColor: "#ff6600",
-  color: "#fff",
-  padding: "12px 24px",
-  border: "none",
-  borderRadius: 8,
-  fontSize: "1rem",
-  cursor: "pointer"
-};
-        

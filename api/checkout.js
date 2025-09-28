@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     pp_UsageMode: "API",
     pp_Password: "2282sxh9z8",
     pp_TxnRefNo: `T${Date.now()}`,
-    pp_Amount: amount,
+    pp_Amount: String(Number(amount) * 100), // Convert PKR → paisa
     pp_TxnCurrency: "PKR",
     pp_TxnDateTime: new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14),
     pp_TxnExpiryDateTime: new Date(Date.now() + 24 * 60 * 60 * 1000)

@@ -1,14 +1,13 @@
-// /pages/checkout.js
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 
 const SERVICE_PRICES = {
   webapp: 30000,
-  domainhosting: 3500,
+  domainhosting: 3500/Year,
   branding: 5000,
   ecommerce: 50000,
   cloudit: 0,
-  digitalmarketing: 15000,
+  digitalmarketing: 15000/Month,
 };
 
 const SERVICE_LABELS = {
@@ -75,41 +74,8 @@ export default function Checkout() {
 
     setLoading(true);
 
-    try {
-      // ✅ Safe alphanumeric Bill Reference
-      const safeBillRef =
-        service.toUpperCase().replace(/[^A-Z0-9]/g, "") + Date.now();
-
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: SERVICE_PRICES[service],
-          phone: formData.phone,
-          cnic: formData.cnic,
-          billReference: safeBillRef,
-          description: formData.description || SERVICE_LABELS[service],
-          name: formData.name,
-          email: formData.email,
-        }),
-      });
-
-      const html = await response.text();
-
-      if (!response.ok) {
-        setErrorMsg("Payment initiation failed.");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Write the HTML form returned by API into the document
-      const newWin = window.open("", "_self");
-      newWin.document.write(html);
-      newWin.document.close();
-    } catch (err) {
-      setErrorMsg("Network error. Please try again.");
-      setLoading(false);
-    }
+    // 👉 Directly go to Thank You page (skip JazzCash for now)
+    router.push(`/thankyou?service=${service}&name=${formData.name}`);
   }
 
   if (!service) {
@@ -222,7 +188,7 @@ export default function Checkout() {
             width: "100%",
           }}
         >
-          {loading ? "Processing..." : "Pay with JazzCash"}
+          {loading ? "Processing..." : "Pay Now"}
         </button>
       </form>
     </div>
@@ -237,4 +203,4 @@ const inputStyle = {
   border: "1px solid #ccc",
   fontSize: "1rem",
 };
-        
+    

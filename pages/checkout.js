@@ -1,99 +1,36 @@
-import { useState } from "react";
-
-export default function CheckoutPage() {
-  const [form, setForm] = useState({
-    amount: "3000000", // in paisa (Rs. 30,000.00)
-    phone: "03123456789",
-    cnic: "345678",
-    billReference: "billRef123",
-    description: "Testing",
-  });
-
-  const [response, setResponse] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleCheckout = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-      setResponse(data);
-    } catch (err) {
-      setResponse({ error: err.message });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+// /pages/checkout.js
+export default function Checkout() {
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
       <h1>JazzCash Checkout</h1>
+      <form method="POST" action="/api/checkout">
+        <div>
+          <label>Amount (in paisa):</label>
+          <input type="text" name="amount" defaultValue="30000" required />
+        </div>
 
-      <div>
-        <label>Amount (in paisa): </label>
-        <input
-          type="text"
-          name="amount"
-          value={form.amount}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label>Phone: </label>
-        <input
-          type="text"
-          name="phone"
-          value={form.phone}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label>CNIC: </label>
-        <input
-          type="text"
-          name="cnic"
-          value={form.cnic}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label>Bill Reference: </label>
-        <input
-          type="text"
-          name="billReference"
-          value={form.billReference}
-          onChange={handleChange}
-        />
-      </div>
-      <div>
-        <label>Description: </label>
-        <input
-          type="text"
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-        />
-      </div>
+        <div>
+          <label>Phone:</label>
+          <input type="text" name="phone" defaultValue="03123456789" required />
+        </div>
 
-      <button onClick={handleCheckout} disabled={loading}>
-        {loading ? "Processing..." : "Checkout"}
-      </button>
+        <div>
+          <label>CNIC:</label>
+          <input type="text" name="cnic" defaultValue="345678" required />
+        </div>
 
-      {response && (
-        <pre style={{ marginTop: 20, background: "#eee", padding: 10 }}>
-          {JSON.stringify(response, null, 2)}
-        </pre>
-      )}
+        <div>
+          <label>Bill Reference:</label>
+          <input type="text" name="billReference" defaultValue="billRef123" required />
+        </div>
+
+        <div>
+          <label>Description:</label>
+          <input type="text" name="description" defaultValue="Testing" />
+        </div>
+
+        <button type="submit" style={{ marginTop: "20px" }}>Checkout</button>
+      </form>
     </div>
   );
   }
-            

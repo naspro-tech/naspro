@@ -1,7 +1,10 @@
 // /api/checkout.js
 import { createHmac } from "crypto";
 
-const INTEGRITY_SALT = "1g90sz31w2"; // Your JazzCash integrity salt
+const INTEGRITY_SALT = "1g90sz31w2"; // your integrity salt
+const JAZZCASH_URL =
+  "https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/"; 
+// switch to live: https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/
 
 function createJazzCashHash(params, integritySalt) {
   const keys = Object.keys(params)
@@ -30,7 +33,7 @@ export default async function handler(req, res) {
   try {
     const data = req.body;
 
-    // JazzCash required parameters
+    // Required JazzCash fields
     const payload = {
       pp_Version: "2.0",
       pp_TxnType: "MWALLET",
@@ -38,7 +41,7 @@ export default async function handler(req, res) {
       pp_MerchantID: "MC339532",
       pp_UsageMode: "API",
       pp_Password: "2282sxh9z8",
-      pp_TxnRefNo: data.txnRef || `TR${Date.now()}`,
+      pp_TxnRefNo: data.txnRef || `T${Date.now()}`,
       pp_Amount: data.amount, // in paisa
       pp_TxnCurrency: "PKR",
       pp_TxnDateTime: data.txnDateTime,
@@ -55,15 +58,33 @@ export default async function handler(req, res) {
       DiscountProfileId: "",
     };
 
-    // Generate secure hash including Version + TxnType
+    // Secure hash
     payload.pp_SecureHash = createJazzCashHash(payload, INTEGRITY_SALT);
 
-    // For now just return the payload (in real use, POST to JazzCash API)
-    return res.status(200).json({
-      success: true,
-      jazzCashRequest: payload,
-    });
+    // Build auto-submit HTML form
+    const formInputs = Object.entries(payload)
+      .map(
+        ([key, value]) =>
+          `<input type="hidden" name="${key}" value="${value || ""}" />`
+      )
+      .join("\n");
+
+    const html = `
+      <html>
+        <body onload="document.forms[0].submit()">
+          <form method="POST" action="${JAZZCASH_URL}">
+            ${formInputs}
+          </form>
+          <p>Redirecting to JazzCash...</p>
+        </body>
+      </html>
+    `;
+
+    res.setHeader("Content-Type", "text/html");
+    res.status(200).send(html);
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res
+      .status(500)
+      .json({ success: false, error: error.message });
   }
 }

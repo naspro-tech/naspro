@@ -1,4 +1,3 @@
-// /pages/checkout.js
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
@@ -67,9 +66,7 @@ export default function Checkout() {
       return;
     }
     if (service === 'cloudit') {
-      setErrorMsg(
-        'Please contact us for custom pricing on Cloud & IT Infrastructure.'
-      );
+      setErrorMsg('Please contact us for custom pricing on Cloud & IT Infrastructure.');
       return;
     }
 
@@ -93,7 +90,9 @@ export default function Checkout() {
         return;
       }
 
+      // Redirect to JazzCash payment page or show confirmation
       if (result.jazzCashResponse) {
+        // Usually, JazzCash responds with pp_ResponseCode if sandbox auto approves
         if (result.jazzCashResponse.pp_ResponseCode === '000') {
           router.push(`/thankyou?txnRef=${result.jazzCashResponse.pp_TxnRefNo}`);
         } else {
@@ -121,107 +120,39 @@ export default function Checkout() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 600,
-        margin: '30px auto',
-        padding: '20px',
-        background: '#fff',
-        borderRadius: '10px',
-        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-      }}
-    >
-      <h1 style={{ fontSize: '1.4rem', marginBottom: 10 }}>
-        Checkout - {SERVICE_LABELS[service]}
-      </h1>
-      <p style={{ marginBottom: 20 }}>
-        <strong>Price:</strong> {price}
-      </p>
+    <div style={{ maxWidth: 600, margin: '30px auto', padding: 20, background: '#fff', borderRadius: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+      <h1 style={{ fontSize: '1.4rem', marginBottom: 10 }}>Checkout - {SERVICE_LABELS[service]}</h1>
+      <p style={{ marginBottom: 20 }}><strong>Price:</strong> {price}</p>
 
       <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
         <label style={{ display: 'block', marginBottom: 12 }}>
           Name*:
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
+          <input type="text" name="name" value={formData.name} onChange={handleChange} required style={inputStyle} />
         </label>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
           Email*:
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
+          <input type="email" name="email" value={formData.email} onChange={handleChange} required style={inputStyle} />
         </label>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
           Phone*:
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            pattern="03\d{9}"
-            placeholder="03XXXXXXXXX"
-            style={inputStyle}
-          />
+          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required pattern="03\d{9}" placeholder="03XXXXXXXXX" style={inputStyle} />
         </label>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
           CNIC (last 6 digits)*:
-          <input
-            type="text"
-            name="cnic"
-            value={formData.cnic}
-            onChange={handleChange}
-            required
-            maxLength={6}
-            pattern="\d{6}"
-            placeholder="Enter last 6 digits of CNIC"
-            style={inputStyle}
-          />
+          <input type="text" name="cnic" value={formData.cnic} onChange={handleChange} required maxLength={6} pattern="\d{6}" placeholder="Enter last 6 digits of CNIC" style={inputStyle} />
         </label>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
           Description (optional):
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            style={{ ...inputStyle, resize: 'vertical' }}
-          />
+          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} style={{ ...inputStyle, resize: 'vertical' }} />
         </label>
 
-        {errorMsg && (
-          <p style={{ color: 'red', marginBottom: 15 }}>{errorMsg}</p>
-        )}
+        {errorMsg && <p style={{ color: 'red', marginBottom: 15 }}>{errorMsg}</p>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            backgroundColor: '#ff6600',
-            color: '#fff',
-            padding: '12px',
-            fontSize: '1rem',
-            borderRadius: 6,
-            border: 'none',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontWeight: '600',
-            width: '100%', // full width on mobile
-          }}
-        >
+        <button type="submit" disabled={loading} style={{ backgroundColor: '#ff6600', color: '#fff', padding: 12, fontSize: '1rem', borderRadius: 6, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 600, width: '100%' }}>
           {loading ? 'Processing...' : 'Pay Now'}
         </button>
       </form>
@@ -237,4 +168,4 @@ const inputStyle = {
   border: '1px solid #ccc',
   fontSize: '1rem',
 };
-              
+    

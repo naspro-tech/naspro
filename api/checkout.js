@@ -1,10 +1,9 @@
 // /api/checkout.js
 import { createHmac } from "crypto";
 
-const INTEGRITY_SALT = "1g90sz31w2"; // your integrity salt
-const JAZZCASH_URL =
-  "https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/"; 
-// switch to live: https://payments.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/
+const INTEGRITY_SALT = "1g90sz31w2"; // Replace with your real salt
+const JAZZCASH_URL = "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction"; 
+// ⚠️ Change to production URL when going live
 
 function createJazzCashHash(params, integritySalt) {
   const keys = Object.keys(params)
@@ -27,64 +26,54 @@ function createJazzCashHash(params, integritySalt) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST")
-    return res.status(405).json({ message: "Method not allowed" });
-
-  try {
-    const data = req.body;
-
-    // Required JazzCash fields
-    const payload = {
-      pp_Version: "2.0",
-      pp_TxnType: "MWALLET",
-      pp_Language: "EN",
-      pp_MerchantID: "MC339532",
-      pp_UsageMode: "API",
-      pp_Password: "2282sxh9z8",
-      pp_TxnRefNo: data.txnRef || `T${Date.now()}`,
-      pp_Amount: data.amount, // in paisa
-      pp_TxnCurrency: "PKR",
-      pp_TxnDateTime: data.txnDateTime,
-      pp_TxnExpiryDateTime: data.txnExpiryDateTime,
-      pp_BillReference: data.billReference || "billRef",
-      pp_Description: data.description || "Payment",
-      pp_MobileNumber: data.phone,
-      pp_CNIC: data.cnic,
-      ppmpf_1: "",
-      ppmpf_2: "",
-      ppmpf_3: "",
-      ppmpf_4: "",
-      ppmpf_5: "",
-      DiscountProfileId: "",
-    };
-
-    // Secure hash
-    payload.pp_SecureHash = createJazzCashHash(payload, INTEGRITY_SALT);
-
-    // Build auto-submit HTML form
-    const formInputs = Object.entries(payload)
-      .map(
-        ([key, value]) =>
-          `<input type="hidden" name="${key}" value="${value || ""}" />`
-      )
-      .join("\n");
-
-    const html = `
-      <html>
-        <body onload="document.forms[0].submit()">
-          <form method="POST" action="${JAZZCASH_URL}">
-            ${formInputs}
-          </form>
-          <p>Redirecting to JazzCash...</p>
-        </body>
-      </html>
-    `;
-
-    res.setHeader("Content-Type", "text/html");
-    res.status(200).send(html);
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ success: false, error: error.message });
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
   }
+
+  const { amount, phone, cnic, billReference, description } = req.body;
+
+  // Build JazzCash request payload
+  const payload = {
+    pp_Version: "2.0",
+    pp_TxnType: "MWALLET",
+    pp_Language: "EN",
+    pp_MerchantID: "MC339532",
+    pp_UsageMode: "API",
+    pp_Password: "2282sxh9z8",
+    pp_TxnRefNo: `T${Date.now()}`,
+    pp_Amount: amount,
+    pp_TxnCurrency: "PKR",
+    pp_TxnDateTime: new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14),
+    pp_TxnExpiryDateTime: new Date(Date.now() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .replace(/[-:TZ.]/g, "")
+      .slice(0, 14),
+    pp_BillReference: billReference || "billRef",
+    pp_Description: description || "Payment",
+    pp_MobileNumber: phone,
+    pp_CNIC: cnic,
+    ppmpf_1: "",
+    ppmpf_2: "",
+    ppmpf_3: "",
+    ppmpf_4: "",
+    ppmpf_5: "",
+    DiscountProfileId: "",
+  };
+
+  payload.pp_SecureHash = createJazzCashHash(payload, INTEGRITY_SALT);
+
+  // Return auto-submit HTML form
+  res.setHeader("Content-Type", "text/html");
+  res.send(`
+    <html>
+      <body onload="document.forms[0].submit()">
+        <form method="POST" action="${JAZZCASH_URL}">
+          ${Object.entries(payload)
+            .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}" />`)
+            .join("\n")}
+        </form>
+        <p>Redirecting to JazzCash...</p>
+      </body>
+    </html>
+  `);
 }

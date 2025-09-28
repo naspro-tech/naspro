@@ -1,9 +1,9 @@
 // /api/ipn.js
 import { createHmac } from "crypto";
 
-const INTEGRITY_SALT = "1g90sz31w2"; // replace with your JazzCash salt
+const INTEGRITY_SALT = "1g90sz31w2"; // Replace with your salt
 
-function createJazzCashHash(params, integritySalt) {
+function createJazzCashHash(params, salt) {
   const keys = Object.keys(params)
     .filter(
       (k) =>
@@ -16,56 +16,43 @@ function createJazzCashHash(params, integritySalt) {
     .sort();
 
   const valuesString = keys.map((k) => params[k]).join("&");
-  const hashString = `${integritySalt}&${valuesString}`;
+  const hashString = `${salt}&${valuesString}`;
 
-  const hmac = createHmac("sha256", integritySalt);
+  const hmac = createHmac("sha256", salt);
   hmac.update(hashString, "utf8");
   return hmac.digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST")
+  if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
+  }
 
   try {
-    const data = req.body;
+    const response = req.body; // JazzCash will POST here
 
-    // Step 1: Extract received hash
-    const receivedHash = data.pp_SecureHash;
-
-    // Step 2: Recalculate hash from received params
-    const calculatedHash = createJazzCashHash(data, INTEGRITY_SALT);
-
-    if (receivedHash !== calculatedHash) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Secure Hash",
-      });
+    // Validate SecureHash
+    const expectedHash = createJazzCashHash(response, INTEGRITY_SALT);
+    if (response.pp_SecureHash !== expectedHash) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid secure hash" });
     }
 
-    // Step 3: Check JazzCash response code
-    if (data.pp_ResponseCode === "000") {
-      // Payment success
-      console.log("✅ Payment Success:", data);
-
-      // You can save transaction to DB here
-      // e.g. mark order as PAID
-
-      return res.status(200).json({
-        success: true,
-        message: "Payment verified successfully",
-      });
+    // Check payment response
+    if (response.pp_ResponseCode === "000") {
+      // Success
+      console.log("✅ Payment successful:", response);
+      // TODO: Save order in DB, send email, etc.
+      return res.status(200).json({ success: true, message: "Payment successful" });
     } else {
-      // Payment failed
-      console.log("❌ Payment Failed:", data);
-
-      return res.status(200).json({
-        success: false,
-        message: `Payment failed: ${data.pp_ResponseMessage}`,
-      });
+      // Failed
+      console.log("❌ Payment failed:", response);
+      return res
+        .status(200)
+        .json({ success: false, message: response.pp_ResponseMessage });
     }
-  } catch (error) {
-    console.error("IPN Error:", error);
-    return res.status(500).json({ success: false, error: error.message });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 }

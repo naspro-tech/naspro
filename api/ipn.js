@@ -1,17 +1,14 @@
+// /api/ipn.js
 import { createHmac } from "crypto";
 
 const INTEGRITY_SALT = "1g90sz31w2";
 
-function createJazzCashHash(params) {
+function createJazzCashHash(params, integritySalt) {
   const keys = Object.keys(params)
-    .filter(k => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k] !== undefined && params[k] !== null && params[k] !== "")
+    .filter((k) => k.startsWith("pp_") && k !== "pp_SecureHash" && params[k])
     .sort();
-
-  const valuesString = keys.map(k => params[k]).join("&");
-  const hashString = `${INTEGRITY_SALT}&${valuesString}`;
-  const hmac = createHmac("sha256", INTEGRITY_SALT);
-  hmac.update(hashString, "utf8");
-  return hmac.digest("hex").toUpperCase();
+  const valuesString = keys.map((k) => params[k]).join("&");
+  return createHmac("sha256", integritySalt).update(`${integritySalt}&${valuesString}`, "utf8").digest("hex").toUpperCase();
 }
 
 export default async function handler(req, res) {
@@ -20,16 +17,15 @@ export default async function handler(req, res) {
   try {
     const data = req.body;
     const receivedHash = data.pp_SecureHash;
-    const calculatedHash = createJazzCashHash(data);
+    const generatedHash = createJazzCashHash(data, INTEGRITY_SALT);
 
-    if (receivedHash !== calculatedHash) return res.status(400).json({ message: "Invalid secure hash" });
+    if (receivedHash !== generatedHash)
+      return res.status(400).json({ message: "Invalid secure hash" });
 
-    const { pp_TxnRefNo, pp_ResponseCode, pp_ResponseMessage, pp_Amount } = data;
-    const success = pp_ResponseCode === "000" || pp_ResponseCode === "121";
+    const success = data.pp_ResponseCode === "000" || data.pp_ResponseCode === "121";
 
-    console.log(`IPN: Ref=${pp_TxnRefNo}, Code=${pp_ResponseCode}, Msg=${pp_ResponseMessage}, Amt=${pp_Amount}`);
-    return res.status(200).json({ success, transactionStatus: success ? "success" : "failed" });
-  } catch (err) {
-    return res.status(500).json({ message: "Internal Server Error", error: err.message });
+    return res.status(200).json({ success, transactionId: data.pp_TxnRefNo });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 }

@@ -1,5 +1,5 @@
-import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useRouter } from 'next/router';
+import { useState } from 'react';
 
 const SERVICE_PRICES = {
   webapp: 30000,
@@ -11,12 +11,12 @@ const SERVICE_PRICES = {
 };
 
 const SERVICE_LABELS = {
-  webapp: "Web & App Development",
-  domainhosting: "Domain & Hosting",
-  branding: "Branding & Logo Design",
-  ecommerce: "E-Commerce Solutions",
-  cloudit: "Cloud & IT Infrastructure",
-  digitalmarketing: "Digital Marketing",
+  webapp: 'Web & App Development',
+  domainhosting: 'Domain & Hosting',
+  branding: 'Branding & Logo Design',
+  ecommerce: 'E-Commerce Solutions',
+  cloudit: 'Cloud & IT Infrastructure',
+  digitalmarketing: 'Digital Marketing',
 };
 
 export default function Checkout() {
@@ -24,183 +24,62 @@ export default function Checkout() {
   const { service } = router.query;
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    cnic: "",
-    description: "",
+    name: '',
+    email: '',
+    phone: '',
+    cnic: '',
+    description: '',
   });
-  const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const price =
-    service && SERVICE_PRICES.hasOwnProperty(service)
-      ? SERVICE_PRICES[service] === 0
-        ? "Custom Pricing - Please contact us"
-        : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
-      : "";
-
-  useEffect(() => {
-    if (!service) return;
-    if (!SERVICE_PRICES.hasOwnProperty(service)) {
-      setErrorMsg("Invalid service selected.");
-    } else {
-      setErrorMsg("");
-    }
-  }, [service]);
+  const price = service && SERVICE_PRICES[service]
+    ? `PKR ${SERVICE_PRICES[service].toLocaleString()}`
+    : '';
 
   function handleChange(e) {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setErrorMsg("");
-
+  function handleProceed() {
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
-      setErrorMsg("Please fill in all required fields.");
+      setErrorMsg('Please fill in all required fields.');
       return;
     }
-    if (!/^\d{6}$/.test(formData.cnic)) {
-      setErrorMsg("CNIC must be exactly 6 digits (last 6 digits).");
-      return;
-    }
-    if (service === "cloudit") {
-      setErrorMsg(
-        "Please contact us for custom pricing on Cloud & IT Infrastructure."
-      );
-      return;
-    }
-
-    setLoading(true);
-
-    // 👉 Directly go to Thank You page (skip JazzCash for now)
-    router.push(`/thankyou?service=${service}&name=${formData.name}&order=ORD${Date.now()}`);
+    router.push({
+      pathname: '/payment',
+      query: {
+        service,
+        ...formData,
+      },
+    });
   }
 
-  if (!service) {
-    return (
-      <p style={{ padding: 20, textAlign: "center" }}>
-        Loading service details...
-      </p>
-    );
-  }
+  if (!service) return <p>Loading service details...</p>;
 
   return (
-    <div
-      style={{
-        maxWidth: 600,
-        margin: "30px auto",
-        padding: "20px",
-        background: "#fff",
-        borderRadius: "10px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-      }}
-    >
-      <h1 style={{ fontSize: "1.4rem", marginBottom: 10 }}>
-        Checkout - {SERVICE_LABELS[service]}
-      </h1>
-      <p style={{ marginBottom: 20 }}>
-        <strong>Price:</strong> {price}
-      </p>
+    <div style={{ maxWidth: 600, margin: '30px auto', padding: 20, background: '#fff', borderRadius: 10 }}>
+      <h1>Checkout - {SERVICE_LABELS[service]}</h1>
+      <p><strong>Price:</strong> {price}</p>
 
-      <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
-        <label style={{ display: "block", marginBottom: 12 }}>
-          Name*:
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
-        </label>
+      <label>Name*:
+        <input type="text" name="name" value={formData.name} onChange={handleChange} />
+      </label>
+      <label>Email*:
+        <input type="email" name="email" value={formData.email} onChange={handleChange} />
+      </label>
+      <label>Phone*:
+        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} />
+      </label>
+      <label>CNIC (last 6 digits)*:
+        <input type="text" name="cnic" value={formData.cnic} onChange={handleChange} maxLength={6} />
+      </label>
+      <label>Description (optional):
+        <textarea name="description" value={formData.description} onChange={handleChange}></textarea>
+      </label>
 
-        <label style={{ display: "block", marginBottom: 12 }}>
-          Email*:
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
-        </label>
+      {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
 
-        <label style={{ display: "block", marginBottom: 12 }}>
-          Phone*:
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            pattern="03\d{9}"
-            placeholder="03XXXXXXXXX"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={{ display: "block", marginBottom: 12 }}>
-          CNIC (last 6 digits)*:
-          <input
-            type="text"
-            name="cnic"
-            value={formData.cnic}
-            onChange={handleChange}
-            required
-            maxLength={6}
-            pattern="\d{6}"
-            placeholder="Enter last 6 digits of CNIC"
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={{ display: "block", marginBottom: 12 }}>
-          Description (optional):
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            style={{ ...inputStyle, resize: "vertical" }}
-          />
-        </label>
-
-        {errorMsg && (
-          <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            backgroundColor: "#ff6600",
-            color: "#fff",
-            padding: "12px",
-            fontSize: "1rem",
-            borderRadius: 6,
-            border: "none",
-            cursor: loading ? "not-allowed" : "pointer",
-            fontWeight: "600",
-            width: "100%",
-          }}
-        >
-          {loading ? "Processing..." : "Pay Now"}
-        </button>
-      </form>
+      <button onClick={handleProceed}>Proceed to Payment</button>
     </div>
   );
-}
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  marginTop: 6,
-  borderRadius: 6,
-  border: "1px solid #ccc",
-  fontSize: "1rem",
-};
-    
+                                            }

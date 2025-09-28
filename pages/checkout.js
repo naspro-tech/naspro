@@ -3,11 +3,11 @@ import { useState, useEffect } from "react";
 
 const SERVICE_PRICES = {
   webapp: 30000,
-  domainhosting: 3500/Year,
+  domainhosting: 3500,
   branding: 5000,
   ecommerce: 50000,
   cloudit: 0,
-  digitalmarketing: 15000/Month,
+  digitalmarketing: 15000,
 };
 
 const SERVICE_LABELS = {

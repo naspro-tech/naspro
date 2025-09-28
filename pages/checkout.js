@@ -1,8 +1,7 @@
 // /pages/checkout.js
-import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 
-// Service prices (PKR)
 const SERVICE_PRICES = {
   webapp: 30000,
   domainhosting: 3500,
@@ -12,14 +11,13 @@ const SERVICE_PRICES = {
   digitalmarketing: 15000,
 };
 
-// Service labels
 const SERVICE_LABELS = {
-  webapp: "Web & App Development",
-  domainhosting: "Domain & Hosting",
-  branding: "Branding & Logo Design",
-  ecommerce: "E-Commerce Solutions",
-  cloudit: "Cloud & IT Infrastructure",
-  digitalmarketing: "Digital Marketing",
+  webapp: 'Web & App Development',
+  domainhosting: 'Domain & Hosting',
+  branding: 'Branding & Logo Design',
+  ecommerce: 'E-Commerce Solutions',
+  cloudit: 'Cloud & IT Infrastructure',
+  digitalmarketing: 'Digital Marketing',
 };
 
 export default function Checkout() {
@@ -27,27 +25,27 @@ export default function Checkout() {
   const { service } = router.query;
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    cnic: "",
-    description: "",
+    name: '',
+    email: '',
+    phone: '',
+    cnic: '',
+    description: '',
   });
-  const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const price =
-    service && SERVICE_PRICES[service] !== undefined
-      ? SERVICE_PRICES[service]
-      : null;
-
-  const label = service && SERVICE_LABELS[service];
+    service && SERVICE_PRICES.hasOwnProperty(service)
+      ? SERVICE_PRICES[service] === 0
+        ? 'Custom Pricing - Please contact us'
+        : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
+      : '';
 
   useEffect(() => {
-    if (service && SERVICE_PRICES[service] === undefined) {
-      setErrorMsg("Invalid service selected.");
+    if (!service) return;
+    if (!SERVICE_PRICES.hasOwnProperty(service)) {
+      setErrorMsg('Invalid service selected.');
     } else {
-      setErrorMsg("");
+      setErrorMsg('');
     }
   }, [service]);
 
@@ -55,79 +53,64 @@ export default function Checkout() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    setErrorMsg("");
 
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
-      setErrorMsg("Please fill in all required fields.");
+      setErrorMsg('Please fill in all required fields.');
       return;
     }
     if (!/^\d{6}$/.test(formData.cnic)) {
-      setErrorMsg("CNIC must be exactly 6 digits (last 6 digits).");
+      setErrorMsg('CNIC must be exactly 6 digits (last 6 digits).');
       return;
     }
-
-    if (service === "cloudit") {
+    if (service === 'cloudit') {
       setErrorMsg(
-        "Please contact us for custom pricing on Cloud & IT Infrastructure."
+        'Please contact us for custom pricing on Cloud & IT Infrastructure.'
       );
       return;
     }
 
-    setLoading(true);
+    // ✅ Redirect user to API checkout (which auto-redirects to JazzCash)
+    const params = new URLSearchParams({
+      amount: SERVICE_PRICES[service],
+      phone: formData.phone,
+      cnic: formData.cnic,
+      billReference: formData.name,
+      description: formData.description || 'Payment',
+    });
 
-    try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_key: service,
-          ...formData,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        setErrorMsg(result.error || "Payment initiation failed.");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ backend will handle JazzCash request
-      router.push(`/thankyou?txnRef=${result.jazzCashResponse.pp_TxnRefNo}`);
-    } catch (err) {
-      setErrorMsg("Network error. Please try again.");
-      setLoading(false);
-    }
+    window.location.href = `/api/checkout?${params.toString()}`;
   }
 
   if (!service) {
-    return <p style={{ textAlign: "center", padding: 20 }}>Loading...</p>;
+    return (
+      <p style={{ padding: 20, textAlign: 'center' }}>
+        Loading service details...
+      </p>
+    );
   }
 
   return (
     <div
       style={{
         maxWidth: 600,
-        margin: "30px auto",
-        padding: "20px",
-        background: "#fff",
-        borderRadius: "10px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+        margin: '30px auto',
+        padding: '20px',
+        background: '#fff',
+        borderRadius: '10px',
+        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
       }}
     >
-      <h1 style={{ fontSize: "1.5rem", marginBottom: 10 }}>
-        Checkout - {label}
+      <h1 style={{ fontSize: '1.4rem', marginBottom: 10 }}>
+        Checkout - {SERVICE_LABELS[service]}
       </h1>
       <p style={{ marginBottom: 20 }}>
-        <strong>Price:</strong>{" "}
-        {price === 0 ? "Custom Pricing (Contact us)" : `PKR ${price.toLocaleString()}`}
+        <strong>Price:</strong> {price}
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <label style={{ display: "block", marginBottom: 12 }}>
+      <form onSubmit={handleSubmit} style={{ marginTop: 10 }}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Name*:
           <input
             type="text"
@@ -139,7 +122,7 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={{ display: "block", marginBottom: 12 }}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Email*:
           <input
             type="email"
@@ -151,7 +134,7 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={{ display: "block", marginBottom: 12 }}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Phone*:
           <input
             type="tel"
@@ -165,7 +148,7 @@ export default function Checkout() {
           />
         </label>
 
-        <label style={{ display: "block", marginBottom: 12 }}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           CNIC (last 6 digits)*:
           <input
             type="text"
@@ -175,40 +158,41 @@ export default function Checkout() {
             required
             maxLength={6}
             pattern="\d{6}"
-            placeholder="Enter last 6 digits"
+            placeholder="Enter last 6 digits of CNIC"
             style={inputStyle}
           />
         </label>
 
-        <label style={{ display: "block", marginBottom: 12 }}>
+        <label style={{ display: 'block', marginBottom: 12 }}>
           Description (optional):
           <textarea
             name="description"
             value={formData.description}
             onChange={handleChange}
-            rows={3}
-            style={{ ...inputStyle, resize: "vertical" }}
+            rows={4}
+            style={{ ...inputStyle, resize: 'vertical' }}
           />
         </label>
 
-        {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
+        {errorMsg && (
+          <p style={{ color: 'red', marginBottom: 15 }}>{errorMsg}</p>
+        )}
 
         <button
           type="submit"
-          disabled={loading}
           style={{
-            width: "100%",
-            background: "#ff6600",
-            color: "#fff",
-            padding: "12px",
-            fontSize: "1rem",
-            border: "none",
+            backgroundColor: '#ff6600',
+            color: '#fff',
+            padding: '12px',
+            fontSize: '1rem',
             borderRadius: 6,
-            cursor: loading ? "not-allowed" : "pointer",
-            fontWeight: "600",
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: '600',
+            width: '100%',
           }}
         >
-          {loading ? "Processing..." : "Pay with JazzCash"}
+          Pay with JazzCash
         </button>
       </form>
     </div>
@@ -216,11 +200,11 @@ export default function Checkout() {
 }
 
 const inputStyle = {
-  width: "100%",
-  padding: "10px",
+  width: '100%',
+  padding: '10px',
   marginTop: 6,
   borderRadius: 6,
-  border: "1px solid #ccc",
-  fontSize: "1rem",
+  border: '1px solid #ccc',
+  fontSize: '1rem',
 };
-    
+              

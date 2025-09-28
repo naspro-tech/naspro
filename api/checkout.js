@@ -1,8 +1,8 @@
-// /api/checkout.js - JazzCash Checkout (PascalCase + proper HMAC-SHA256)
+// /api/checkout.js - JazzCash Checkout (fixed SecureHash)
 import { createHmac } from "crypto";
 
 function createJazzCashHash(params, integritySalt) {
-  // include only pp_ fields that have a non-empty value and exclude pp_SecureHash
+  // 1️⃣ Include only pp_ fields except pp_SecureHash
   const keys = Object.keys(params)
     .filter(
       (k) =>
@@ -12,20 +12,22 @@ function createJazzCashHash(params, integritySalt) {
         params[k] !== null &&
         params[k] !== ""
     )
-    .sort();
+    // 2️⃣ Sort keys alphabetically (case-sensitive) as per JazzCash guide
+    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
+  // 3️⃣ Concatenate values only, separated by &
   const valuesString = keys.map((k) => params[k]).join("&");
+
+  // 4️⃣ Prepend integrity salt
   const hashString = `${integritySalt}&${valuesString}`;
 
-  // Masked log (never log real salt in production)
-  console.log("🔑 Hash string (masked):", hashString.replace(integritySalt, "***"));
-
-  // ✅ Generate secure hash just like CryptoJS example
+  // 5️⃣ HMAC-SHA256 with integrity salt as key
   const hmac = createHmac("sha256", integritySalt);
   hmac.update(hashString, "utf8");
   const secureHash = hmac.digest("hex").toUpperCase();
 
-  return secureHash; // return this var
+  console.log("🔑 Hash string (masked):", hashString.replace(integritySalt, "***"));
+  return secureHash;
 }
 
 export default async function handler(req, res) {
@@ -54,30 +56,22 @@ export default async function handler(req, res) {
     const integritySalt = process.env.JAZZCASH_INTEGRITY_SALT;
     const returnUrl = process.env.JAZZCASH_RETURN_URL;
 
-    if (!merchantID || !password || !integritySalt) {
-      return res
-        .status(500)
-        .json({ message: "Missing JazzCash environment variables." });
+    if (!merchantID || !password || !integritySalt || !returnUrl) {
+      return res.status(500).json({ message: "Missing JazzCash environment variables." });
     }
 
     const now = new Date();
     const pad = (n) => ("0" + n).slice(-2);
 
-    const txnDateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
-      now.getDate()
-    )}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const txnDateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 
     const expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const txnExpiryDateTime = `${expiry.getFullYear()}${pad(
-      expiry.getMonth() + 1
-    )}${pad(expiry.getDate())}${pad(expiry.getHours())}${pad(
-      expiry.getMinutes()
-    )}${pad(expiry.getSeconds())}`;
+    const txnExpiryDateTime = `${expiry.getFullYear()}${pad(expiry.getMonth() + 1)}${pad(expiry.getDate())}${pad(expiry.getHours())}${pad(expiry.getMinutes())}${pad(expiry.getSeconds())}`;
 
     const txnRefNo = `T${Date.now()}`;
-    const formattedAmount = String(amount * 100); // JazzCash expects amount * 100 (last two digits = decimals)
+    const formattedAmount = String(amount * 100); // JazzCash expects amount*100
 
-    // ⚡ IMPORTANT: PascalCase keys (exact as per JazzCash spec)
+    // ⚡ Lowercase keys for hash calculation
     const payload = {
       pp_Language: "EN",
       pp_MerchantID: merchantID,
@@ -90,7 +84,6 @@ export default async function handler(req, res) {
       pp_BillReference: bill_reference || "billRef",
       pp_Description: description || "Service Payment",
       pp_TxnExpiryDateTime: txnExpiryDateTime,
-      pp_ReturnURL: returnUrl,
       pp_CNIC: cnic,
       pp_MobileNumber: phone,
       pp_BankID: "",
@@ -102,20 +95,15 @@ export default async function handler(req, res) {
       ppmpf_5: "",
     };
 
-    // ✅ Generate SecureHash (CryptoJS style variable)
-    const secureHash = createJazzCashHash(payload, integritySalt);
-    payload.pp_SecureHash = secureHash;
-
-    console.log("📦 Final payload keys sent:", Object.keys(payload).join(", "));
-
-    // JazzCash Sandbox Endpoint
-    const endpoint =
-      "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
+    // ✅ Generate secure hash correctly
+    payload.pp_SecureHash = createJazzCashHash(payload, integritySalt);
 
     const formData = new URLSearchParams();
     for (const key in payload) {
       formData.append(key, payload[key] ?? "");
     }
+
+    const endpoint = "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
 
     const apiResponse = await fetch(endpoint, {
       method: "POST",
@@ -127,7 +115,6 @@ export default async function handler(req, res) {
     });
 
     const result = await apiResponse.json();
-    console.log("📩 JazzCash Response:", result);
 
     return res.status(200).json({
       success: true,
@@ -137,8 +124,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error("Checkout API error:", error);
-    return res
-      .status(500)
-      .json({ message: "Internal Server Error", error: error.message });
+    return res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
-}
+      }
+    

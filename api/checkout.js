@@ -40,7 +40,6 @@ export default async function handler(req, res) {
     const payload = {
       pp_Language: "EN",
       pp_MerchantID: "MC339532",
-      pp_UsageMode: "API",
       pp_Password: "2282sxh9z8",
       pp_TxnRefNo: txnRefNo,
       pp_Amount: (amount * 100).toString(),

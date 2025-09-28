@@ -2,6 +2,8 @@
 import { createHmac } from "crypto";
 
 const INTEGRITY_SALT = "1g90sz31w2"; // Replace with your salt
+const JAZZCASH_URL =
+  "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction";
 
 function createJazzCashHash(params, integritySalt) {
   const keys = Object.keys(params)
@@ -23,23 +25,36 @@ function createJazzCashHash(params, integritySalt) {
   return hmac.digest("hex").toUpperCase();
 }
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" });
+export default function handler(req, res) {
+  if (req.method !== "POST")
+    return res.status(405).json({ message: "Method not allowed" });
 
   try {
     const data = req.body;
 
-    // Required parameters for JazzCash
+    const now = new Date();
+    const txnDateTime = now
+      .toISOString()
+      .replace(/[-:TZ.]/g, "")
+      .slice(0, 14); // YYYYMMDDHHMMSS
+    const expiryDateTime = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+      .toISOString()
+      .replace(/[-:TZ.]/g, "")
+      .slice(0, 14);
+
+    // JazzCash payload
     const payload = {
+      pp_Version: "2.0",
+      pp_TxnType: "MWALLET",
       pp_Language: "EN",
-      pp_MerchantID: "MC339532",
-      pp_UsageMode: "API",
-      pp_Password: "2282sxh9z8",
-      pp_TxnRefNo: data.txnRef || `TR${Date.now()}`,
-      pp_Amount: data.amount, // in paisa
+      pp_MerchantID: "MC339532", // your merchant ID
+      pp_SubMerchantID: "",
+      pp_Password: "2282sxh9z8", // your JazzCash password
+      pp_TxnRefNo: data.txnRef || `T${Date.now()}`,
+      pp_Amount: data.amount, // amount in paisa
       pp_TxnCurrency: "PKR",
-      pp_TxnDateTime: data.txnDateTime,
-      pp_TxnExpiryDateTime: data.txnExpiryDateTime,
+      pp_TxnDateTime: txnDateTime,
+      pp_TxnExpiryDateTime: expiryDateTime,
       pp_BillReference: data.billReference || "billRef",
       pp_Description: data.description || "Payment",
       pp_MobileNumber: data.phone,
@@ -54,10 +69,11 @@ export default async function handler(req, res) {
 
     payload.pp_SecureHash = createJazzCashHash(payload, INTEGRITY_SALT);
 
-    // Here you would send 'payload' to JazzCash API endpoint
-    // const response = await fetch(JAZZCASH_URL, { method: "POST", body: JSON.stringify(payload), headers: { 'Content-Type': 'application/json' } });
-
-    return res.status(200).json({ success: true, jazzCashRequest: payload });
+    return res.status(200).json({
+      success: true,
+      jazzCashUrl: JAZZCASH_URL,
+      jazzCashRequest: payload,
+    });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }

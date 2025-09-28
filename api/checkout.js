@@ -74,8 +74,6 @@ export default async function handler(req, res) {
 
     // ✅ Correct MWALLET payload
     const payload = {
-      pp_Version: "2.0",
-      pp_TxnType: "MWALLET",
       pp_Language: "EN",
       pp_MerchantID: merchantID,
       pp_Password: password,
@@ -88,14 +86,11 @@ export default async function handler(req, res) {
       pp_Description: description || "Service Payment",
       pp_CNIC: cnic,
       pp_MobileNumber: phone,
-      pp_BankID: "",
-      pp_ProductID: "",
       ppmpf_1: "",
       ppmpf_2: "",
       ppmpf_3: "",
       ppmpf_4: "",
       ppmpf_5: "",
-      pp_ReturnURL: returnUrl,
     };
 
     // Generate secure hash

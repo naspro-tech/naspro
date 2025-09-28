@@ -75,7 +75,7 @@ export default function Checkout() {
     setLoading(true);
 
     // 👉 Directly go to Thank You page (skip JazzCash for now)
-    router.push(`/thankyou?service=${service}&name=${formData.name}`);
+    router.push(`/thankyou?service=${service}&name=${formData.name}&order=ORD${Date.now()}`);
   }
 
   if (!service) {

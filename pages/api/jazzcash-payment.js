@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     const merchant_id = "MC339532";
     const password = "2282sxh9z8";
     const integrity_salt = "1g90sz31w2";
-    const return_url = `${process.env.NEXTAUTH_URL || 'https://your-app.vercel.app'}/api/jazzcash-response`;
+    const return_url = "https://naspro-nine.vercel.app/api/jazzcash-response";
     
     const { amount, description, customer_name, customer_phone, service } = req.body;
     const order_id = `NASPRO_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

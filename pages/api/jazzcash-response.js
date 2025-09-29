@@ -1,36 +1,31 @@
 // /pages/api/jazzcash-response.js
 import crypto from "crypto";
 
-export const config = {
-  api: {
-    bodyParser: true, // Make sure Next.js parses POST body
-  },
-};
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const integrity_salt = "1g90sz31w2"; // ⚠️ move to process.env in production
-
-    const response = req.body || {};
-    const receivedHash = response.pp_SecureHash;
-
-    if (!receivedHash) {
-      console.error("❌ Missing pp_SecureHash in response");
-      return res.redirect(302, "/payment?error=Missing secure hash");
+    const integrity_salt = 1g90sz31w2;
+    if (!integrity_salt) {
+      throw new Error("Integrity Salt missing in environment variables");
     }
 
-    // Remove hash before verifying
-    const responseWithoutHash = { ...response };
-    delete responseWithoutHash.pp_SecureHash;
+    const response = req.body;
+    console.log("🎯 JazzCash Response:", response);
 
-    // Sort keys and build hash string
-    const sortedKeys = Object.keys(responseWithoutHash).sort();
-    const hashString =
-      integrity_salt + "&" + sortedKeys.map((k) => responseWithoutHash[k]).join("&");
+    const receivedHash = response.pp_SecureHash;
+
+    // Remove SecureHash for verification
+    const { pp_SecureHash, ...withoutHash } = response;
+
+    // Build string for hash validation
+    const sortedKeys = Object.keys(withoutHash).sort();
+    let hashString = integrity_salt;
+    sortedKeys.forEach((key) => {
+      if (withoutHash[key] !== "") hashString += "&" + withoutHash[key];
+    });
 
     const calculatedHash = crypto
       .createHmac("sha256", integrity_salt)
@@ -38,41 +33,37 @@ export default async function handler(req, res) {
       .digest("hex");
 
     if (receivedHash !== calculatedHash) {
-      console.error("❌ Secure hash mismatch");
-      return res.redirect(302, "/payment?error=Security error: Invalid payment response");
+      console.error("❌ Hash mismatch:", { receivedHash, calculatedHash });
+      return res.redirect(
+        302,
+        `/payment?error=Security verification failed`
+      );
     }
 
-    // ✅ Hash verified
-    const responseCode = response.pp_ResponseCode;
-
-    if (responseCode === "000") {
-      // Payment successful
-      const amount = (parseInt(response.pp_Amount, 10) || 0) / 100; // convert paisa → PKR
-      const service = (response.pp_BillReference || "").replace("naspro_", "");
+    // Hash OK, now check payment response
+    if (response.pp_ResponseCode === "000") {
+      const amount = parseInt(response.pp_Amount, 10) / 100;
+      const service = response.pp_BillReference.replace("naspro_", "");
       const txnId = response.pp_TxnRefNo;
 
-      console.log("✅ Payment Success:", { service, amount, txnId });
-
       return res.redirect(
         302,
-        `/thankyou?service=${service}&amount=${amount}&payment_method=jazzcash&status=success&transaction_id=${txnId}`
+        `/thankyou?service=${service}&amount=${amount}&payment_method=JazzCash&transaction_id=${txnId}&status=success`
       );
     } else {
-      // Payment failed
-      const errorMsg = response.pp_ResponseMessage || "Unknown error";
-      console.error("❌ Payment Failed:", errorMsg);
-
+      console.error("❌ Payment Failed:", response.pp_ResponseMessage);
       return res.redirect(
         302,
-        `/payment?error=${encodeURIComponent("Payment failed: " + errorMsg)}&error_code=${responseCode}`
+        `/payment?error=${encodeURIComponent(
+          response.pp_ResponseMessage
+        )}&error_code=${response.pp_ResponseCode}`
       );
     }
   } catch (error) {
-    console.error("❌ JazzCash response handler error:", error);
+    console.error("⚠️ JazzCash Response Error:", error);
     return res.redirect(
       302,
-      "/payment?error=" + encodeURIComponent("Internal error: " + error.message)
+      `/payment?error=${encodeURIComponent("Server error: " + error.message)}`
     );
   }
 }
-  

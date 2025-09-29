@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const SERVICE_PRICES = {
   webapp: 30000,
@@ -32,9 +32,21 @@ export default function Checkout() {
   });
   const [errorMsg, setErrorMsg] = useState('');
 
-  const price = service && SERVICE_PRICES[service]
-    ? `PKR ${SERVICE_PRICES[service].toLocaleString()}`
-    : '';
+  const price =
+    service && SERVICE_PRICES[service]
+      ? SERVICE_PRICES[service] === 0
+        ? 'Custom Pricing - Contact Us'
+        : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
+      : '';
+
+  useEffect(() => {
+    if (!service) return;
+    if (!SERVICE_PRICES.hasOwnProperty(service)) {
+      setErrorMsg('Invalid service selected.');
+    } else {
+      setErrorMsg('');
+    }
+  }, [service]);
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -47,39 +59,99 @@ export default function Checkout() {
     }
     router.push({
       pathname: '/payment',
-      query: {
-        service,
-        ...formData,
-      },
+      query: { service, ...formData },
     });
   }
 
-  if (!service) return <p>Loading service details...</p>;
+  if (!service) return <p style={{ padding: 20, textAlign: 'center' }}>Loading service details...</p>;
 
   return (
-    <div style={{ maxWidth: 600, margin: '30px auto', padding: 20, background: '#fff', borderRadius: 10 }}>
-      <h1>Checkout - {SERVICE_LABELS[service]}</h1>
-      <p><strong>Price:</strong> {price}</p>
+    <div className="checkout-container">
+      <h1 className="checkout-title">Checkout - {SERVICE_LABELS[service]}</h1>
+      <p className="checkout-price"><strong>Price:</strong> {price}</p>
 
-      <label>Name*:
-        <input type="text" name="name" value={formData.name} onChange={handleChange} />
-      </label>
-      <label>Email*:
-        <input type="email" name="email" value={formData.email} onChange={handleChange} />
-      </label>
-      <label>Phone*:
-        <input type="tel" name="phone" value={formData.phone} onChange={handleChange} />
-      </label>
-      <label>CNIC (last 6 digits)*:
-        <input type="text" name="cnic" value={formData.cnic} onChange={handleChange} maxLength={6} />
-      </label>
-      <label>Description (optional):
-        <textarea name="description" value={formData.description} onChange={handleChange}></textarea>
-      </label>
+      <form className="checkout-form">
+        <label>Name*:
+          <input type="text" name="name" value={formData.name} onChange={handleChange} />
+        </label>
+        <label>Email*:
+          <input type="email" name="email" value={formData.email} onChange={handleChange} />
+        </label>
+        <label>Phone*:
+          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="03XXXXXXXXX" />
+        </label>
+        <label>CNIC (last 6 digits)*:
+          <input type="text" name="cnic" value={formData.cnic} onChange={handleChange} maxLength={6} />
+        </label>
+        <label>Description (optional):
+          <textarea name="description" value={formData.description} onChange={handleChange}></textarea>
+        </label>
 
-      {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
+        {errorMsg && <p className="error">{errorMsg}</p>}
 
-      <button onClick={handleProceed}>Proceed to Payment</button>
+        <button type="button" onClick={handleProceed}>Proceed to Payment</button>
+      </form>
+
+      <style jsx>{`
+        .checkout-container {
+          max-width: 600px;
+          margin: 30px auto;
+          padding: 20px;
+          background: #fdfdfd;
+          border-radius: 10px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+          font-family: Arial, sans-serif;
+        }
+        .checkout-title {
+          font-size: 1.6rem;
+          color: #333;
+          margin-bottom: 10px;
+        }
+        .checkout-price {
+          font-size: 1.1rem;
+          margin-bottom: 20px;
+        }
+        .checkout-form label {
+          display: block;
+          margin-bottom: 15px;
+          font-weight: 500;
+        }
+        .checkout-form input,
+        .checkout-form textarea {
+          width: 100%;
+          padding: 10px;
+          margin-top: 5px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          font-size: 1rem;
+        }
+        .checkout-form button {
+          margin-top: 20px;
+          width: 100%;
+          padding: 12px;
+          background-color: #ff6600;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 1rem;
+          cursor: pointer;
+          font-weight: 600;
+        }
+        .checkout-form button:hover {
+          background-color: #e65c00;
+        }
+        .error {
+          color: red;
+          margin-top: 5px;
+        }
+        @media (max-width: 600px) {
+          .checkout-container {
+            padding: 15px;
+            margin: 15px;
+          }
+        }
+      `}</style>
     </div>
   );
-                                            }
+                                                }
+    

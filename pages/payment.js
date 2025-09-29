@@ -16,67 +16,63 @@ export default function Payment() {
       setError("Easypaisa payment will be available soon!");
       return;
     }
-    
+
     if (method === "jazzcash") {
-      processJazzCashPayment();
+      handleJazzCashPayment();
       return;
     }
-    
+
     setSelectedMethod(method);
   };
 
-  const processJazzCashPayment = async () => {
-    setProcessingJazzCash(true);
-    setError("");
-
+  const handleJazzCashPayment = async () => {
     try {
-      const response = await fetch('/api/jazzcash-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      setProcessingJazzCash(true);
+      setError("");
+
+      const res = await fetch("/api/jazzcash-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: parseInt(amount),
-          description: `Payment for ${service} - ${name}`,
+          amount,
+          description,
           customer_name: name,
           customer_phone: phone,
-          service: service
+          service,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+      const result = await res.json();
+      console.log("🎯 JazzCash API response:", result);
+
+      if (!result.success) {
+        setError(result.error || "JazzCash API failed.");
+        setProcessingJazzCash(false);
+        return;
       }
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        // Create form dynamically
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.jazzcash_url;
-        form.style.display = 'none';
-        
-        // Add all parameters as hidden inputs
-        Object.entries(data.form_data).forEach(([key, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        });
-        
-        // Add form to page and submit
-        document.body.appendChild(form);
-        form.submit();
-        
-      } else {
-        throw new Error(data.error || 'Failed to initialize payment');
-      }
-    } catch (error) {
-      console.error('JazzCash payment failed:', error);
-      setError('Payment failed: ' + error.message);
-    } finally {
+
+      const { jazzcash_url, form_data } = result;
+
+      // ✅ Create hidden form and submit via POST
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = jazzcash_url;
+      form.style.display = "none";
+
+      Object.entries(form_data).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+
+    } catch (err) {
+      console.error("❌ JazzCash error:", err);
+      setError("Payment request failed: " + err.message);
       setProcessingJazzCash(false);
     }
   };
@@ -119,7 +115,7 @@ export default function Payment() {
           <button style={buttonStyle} onClick={() => handleMethodSelect("bank")}>
             Bank Transfer
           </button>
-          
+
           <button 
             style={buttonStyle} 
             onClick={() => handleMethodSelect("jazzcash")}
@@ -127,7 +123,7 @@ export default function Payment() {
           >
             {processingJazzCash ? "Processing..." : "JazzCash"}
           </button>
-          
+
           <button 
             style={{...buttonStyle, backgroundColor: '#ccc', cursor: 'not-allowed'}} 
             onClick={() => handleMethodSelect("easypaisa")}
@@ -262,3 +258,4 @@ const spinnerStyle = {
   animation: "spin 1s linear infinite",
   margin: "10px auto",
 };
+      

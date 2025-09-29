@@ -7,15 +7,15 @@ export default function ThankYou() {
   return (
     <div style={containerStyle}>
       <h1 style={{ fontSize: "1.5rem", marginBottom: 15 }}>Thank You!</h1>
-      <p>Your payment has been received.</p>
+      <p>Your order has been received.</p>
 
       <h3>Order Details:</h3>
       <p><strong>Service:</strong> {service}</p>
       <p><strong>Amount Paid:</strong> PKR {amount}</p>
 
       <h3>Contact Us:</h3>
-      <p>Email: support@naspro.com</p>
-      <p>Phone: +92 300 1234567</p>
+      <p>Email: naspropvt@gmail.com</p>
+      <p>Phone: +92 303 3792494</p>
 
       <button style={buttonStyle} onClick={() => router.push("/")}>Back to Home</button>
     </div>

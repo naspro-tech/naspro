@@ -9,6 +9,7 @@ export default function Payment() {
   const [paymentDone, setPaymentDone] = useState(false);
   const [proof, setProof] = useState({ txnNo: "", accountName: "", accountNumber: "", screenshot: null });
   const [processingJazzCash, setProcessingJazzCash] = useState(false);
+  const [error, setError] = useState("");
 
   const handleMethodSelect = (method) => {
     if (method === "easypaisa") {
@@ -17,7 +18,6 @@ export default function Payment() {
     }
     
     if (method === "jazzcash") {
-      // Process JazzCash payment immediately
       processJazzCashPayment();
       return;
     }
@@ -27,9 +27,9 @@ export default function Payment() {
 
   const processJazzCashPayment = async () => {
     setProcessingJazzCash(true);
-    
+    setError("");
+
     try {
-      // Call your API route to process JazzCash payment
       const response = await fetch('/api/jazzcash-payment', {
         method: 'POST',
         headers: {
@@ -64,11 +64,11 @@ export default function Payment() {
         document.body.appendChild(form);
         form.submit();
       } else {
-        alert('Failed to initialize JazzCash payment. Please try again.');
+        setError('Failed to initialize JazzCash payment. Please try again.');
       }
     } catch (error) {
       console.error('JazzCash payment error:', error);
-      alert('Payment initialization failed. Please try again.');
+      setError('Payment initialization failed. Please try again.');
     } finally {
       setProcessingJazzCash(false);
     }
@@ -84,7 +84,6 @@ export default function Payment() {
   };
 
   const handleSubmitProof = () => {
-    // Normally here you would send proof to your backend
     router.push({
       pathname: "/thankyou",
       query: {
@@ -101,13 +100,16 @@ export default function Payment() {
       <p><strong>Amount:</strong> PKR {amount}</p>
       <p><strong>Customer:</strong> {name} ({phone})</p>
 
+      {error && (
+        <div style={{ color: "red", marginBottom: 15, padding: "10px", background: "#ffe6e6", borderRadius: "6px" }}>
+          {error}
+        </div>
+      )}
+
       {!selectedMethod && (
         <div style={{ marginTop: 20 }}>
           <h3>Select Payment Method:</h3>
-          <button 
-            style={buttonStyle} 
-            onClick={() => handleMethodSelect("bank")}
-          >
+          <button style={buttonStyle} onClick={() => handleMethodSelect("bank")}>
             Bank Transfer
           </button>
           
@@ -223,11 +225,3 @@ const spinnerStyle = {
   animation: "spin 1s linear infinite",
   margin: "10px auto",
 };
-
-// Add this to your global CSS or style tag
-const globalStyles = `
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-`;

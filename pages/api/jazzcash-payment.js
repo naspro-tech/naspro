@@ -1,10 +1,20 @@
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
+  // Add CORS headers for mobile
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method === 'POST') {
     try {
-      console.log("JazzCash Payment API called");
-      
+      console.log("🎯 JazzCash Payment API called");
+      console.log("Request body:", req.body);
+
       // Your JazzCash credentials
       const merchant_id = "MC339532";
       const password = "2282sxh9z8";
@@ -12,9 +22,16 @@ export default async function handler(req, res) {
       const return_url = "https://naspro-nine.vercel.app/api/jazzcash-response";
       
       const { amount, description, customer_name, customer_phone, service } = req.body;
-      console.log("Payment details:", { amount, description, service });
       
-      const order_id = `NASPRO_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Validate required fields
+      if (!amount || !service) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required fields: amount and service"
+        });
+      }
+
+      const order_id = `NASPRO_${Date.now()}`;
       
       // Prepare transaction data
       const transactionData = {
@@ -27,7 +44,7 @@ export default async function handler(req, res) {
         "pp_ProductID": "RETL",
         "pp_Amount": (amount * 100).toString(), // Convert to paisa
         "pp_TxnRefNo": order_id,
-        "pp_Description": description.substring(0, 100), // Limit description length
+        "pp_Description": (description || `Payment for ${service}`).substring(0, 100),
         "pp_TxnDateTime": new Date().toISOString().replace(/[-:]/g, '').split('.')[0].replace('T', ''),
         "pp_BillReference": `naspro_${service}`.substring(0, 50),
         "pp_ReturnURL": return_url,
@@ -38,7 +55,7 @@ export default async function handler(req, res) {
         "ppmpf_5": "5"
       };
       
-      console.log("Transaction data prepared:", transactionData);
+      console.log("📦 Transaction data:", transactionData);
       
       // Generate Secure Hash
       const sortedData = {};
@@ -49,14 +66,14 @@ export default async function handler(req, res) {
       let hashString = integrity_salt + '&';
       hashString += Object.values(sortedData).join('&');
       
-      console.log("Hash string:", hashString);
+      console.log("🔐 Hash string prepared");
       
       const secureHash = crypto.createHmac('sha256', integrity_salt)
         .update(hashString)
         .digest('hex');
       
       transactionData.pp_SecureHash = secureHash;
-      console.log("Secure hash generated:", secureHash);
+      console.log("✅ Secure hash generated");
       
       res.status(200).json({
         success: true,
@@ -66,16 +83,16 @@ export default async function handler(req, res) {
       });
       
     } catch (error) {
-      console.error("JazzCash API error:", error);
+      console.error("❌ JazzCash API error:", error);
       res.status(500).json({
         success: false,
-        error: error.message
+        error: "Internal server error: " + error.message
       });
     }
   } else {
     res.status(405).json({ 
       success: false,
-      error: 'Method not allowed' 
+      error: 'Method not allowed. Use POST method.'
     });
   }
 }

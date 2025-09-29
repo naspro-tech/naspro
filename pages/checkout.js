@@ -1,5 +1,5 @@
-import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 
 const SERVICE_PRICES = {
   webapp: 30000,
@@ -11,12 +11,12 @@ const SERVICE_PRICES = {
 };
 
 const SERVICE_LABELS = {
-  webapp: "Web & App Development",
-  domainhosting: "Domain & Hosting",
-  branding: "Branding & Logo Design",
-  ecommerce: "E-Commerce Solutions",
-  cloudit: "Cloud & IT Infrastructure",
-  digitalmarketing: "Digital Marketing",
+  webapp: 'Web & App Development',
+  domainhosting: 'Domain & Hosting',
+  branding: 'Branding & Logo Design',
+  ecommerce: 'E-Commerce Solutions',
+  cloudit: 'Cloud & IT Infrastructure',
+  digitalmarketing: 'Digital Marketing',
 };
 
 export default function Checkout() {
@@ -24,127 +24,91 @@ export default function Checkout() {
   const { service } = router.query;
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    cnic: "",
-    description: "",
+    name: '',
+    email: '',
+    phone: '',
+    cnic: '',
+    description: '',
   });
-  const [errorMsg, setErrorMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const price =
-    service && SERVICE_PRICES.hasOwnProperty(service)
-      ? SERVICE_PRICES[service] === 0
-        ? "Custom Pricing - Please contact us"
-        : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
-      : "";
+  const price = service && SERVICE_PRICES[service]
+    ? SERVICE_PRICES[service] === 0
+      ? 'Custom Pricing - Please contact us'
+      : `PKR ${SERVICE_PRICES[service].toLocaleString()}`
+    : '';
 
   useEffect(() => {
     if (!service) return;
     if (!SERVICE_PRICES.hasOwnProperty(service)) {
-      setErrorMsg("Invalid service selected.");
-    } else {
-      setErrorMsg("");
-    }
+      setErrorMsg('Invalid service selected.');
+    } else setErrorMsg('');
   }, [service]);
 
   function handleChange(e) {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    setErrorMsg("");
+    setErrorMsg('');
 
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
-      setErrorMsg("Please fill in all required fields.");
+      setErrorMsg('Please fill in all required fields.');
       return;
     }
     if (!/^\d{6}$/.test(formData.cnic)) {
-      setErrorMsg("CNIC must be exactly 6 digits (last 6 digits).");
+      setErrorMsg('CNIC must be exactly 6 digits (last 6 digits).');
       return;
     }
 
-    // Redirect to payment page with query params
     router.push({
-      pathname: "/payment",
+      pathname: '/payment',
       query: {
-        service: SERVICE_LABELS[service],
-        amount: SERVICE_PRICES[service],
-        ...formData,
-      },
+        service,
+        ...formData
+      }
     });
   }
 
-  if (!service) {
-    return <p style={{ padding: 20, textAlign: "center" }}>Loading service details...</p>;
-  }
+  if (!service) return <p style={{ padding: 20, textAlign: 'center' }}>Loading service...</p>;
 
   return (
-    <div style={container}>
-      <h1 style={heading}>Checkout - {SERVICE_LABELS[service]}</h1>
-      <p style={{ marginBottom: 20 }}>
-        <strong>Price:</strong> {price}
-      </p>
-
+    <div className="container">
+      <h1>Checkout - {SERVICE_LABELS[service]}</h1>
+      <p><strong>Price:</strong> {price}</p>
       <form onSubmit={handleSubmit}>
-        <label style={label}>
-          Name*:
-          <input type="text" name="name" value={formData.name} onChange={handleChange} required style={input} />
-        </label>
-
-        <label style={label}>
-          Email*:
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required style={input} />
-        </label>
-
-        <label style={label}>
-          Phone*:
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            pattern="03\d{9}"
-            placeholder="03XXXXXXXXX"
-            style={input}
-          />
-        </label>
-
-        <label style={label}>
-          CNIC (last 6 digits)*:
-          <input
-            type="text"
-            name="cnic"
-            value={formData.cnic}
-            onChange={handleChange}
-            required
-            maxLength={6}
-            pattern="\d{6}"
-            placeholder="Enter last 6 digits of CNIC"
-            style={input}
-          />
-        </label>
-
-        <label style={label}>
-          Description (optional):
-          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} style={{ ...input, resize: "vertical" }} />
-        </label>
-
-        {errorMsg && <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>}
-
-        <button type="submit" style={submitButton}>
-          Proceed to Payment
-        </button>
+        {['name','email','phone','cnic','description'].map(field => (
+          <label key={field}>
+            {field === 'cnic' ? 'CNIC (last 6 digits)*:' : `${field.charAt(0).toUpperCase()+field.slice(1)}${field!=='description'?'*':''}:`}
+            {field === 'description' ? (
+              <textarea name={field} value={formData[field]} onChange={handleChange} rows={4} className="input"/>
+            ) : (
+              <input
+                type={field==='email'?'email':field==='phone'?'tel':'text'}
+                name={field}
+                value={formData[field]}
+                onChange={handleChange}
+                required={field!=='description'}
+                maxLength={field==='cnic'?6:undefined}
+                placeholder={field==='phone'?'03XXXXXXXXX':''}
+                className="input"
+              />
+            )}
+          </label>
+        ))}
+        {errorMsg && <p className="error">{errorMsg}</p>}
+        <button type="submit" className="button">Proceed to Payment</button>
       </form>
+
+      <style jsx>{`
+        .container { max-width: 600px; margin: 30px auto; padding: 20px; background: #f8f9fa; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .input { width:100%; padding:10px; margin-top:6px; margin-bottom:12px; border-radius:6px; border:1px solid #ccc; font-size:16px; }
+        .button { width:100%; padding:12px; background:#ff6600; color:#fff; font-size:16px; border:none; border-radius:6px; cursor:pointer; }
+        .error { color:red; margin-bottom:12px; }
+        @media (max-width: 600px) { .container { margin:15px; padding:15px; } }
+      `}</style>
     </div>
   );
-}
-
-const container = { maxWidth: 600, margin: "30px auto", padding: 20, background: "#fff", borderRadius: 10, boxShadow: "0 4px 10px rgba(0,0,0,0.1)" };
-const heading = { fontSize: "1.4rem", marginBottom: 10 };
-const label = { display: "block", marginBottom: 12, fontWeight: 500 };
-const input = { width: "100%", padding: 10, marginTop: 6, borderRadius: 6, border: "1px solid #ccc", fontSize: "1rem" };
-const submitButton = { backgroundColor: "#ff6600", color: "#fff", padding: 12, fontSize: "1rem", borderRadius: 6, border: "none", cursor: "pointer", fontWeight: 600, width: "100%" };
-              
+    }
+          

@@ -1,45 +1,39 @@
-import { useRouter } from "next/router";
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
 export default function ThankYou() {
   const router = useRouter();
-  const { service, name, order } = router.query;
+  const [data, setData] = useState(null);
 
-  const CONTACT = {
-    phone: "+92 303 3792494",
-    email: "naspropvt@gmail.com",
-  };
+  useEffect(() => {
+    if (router.query) setData(router.query);
+  }, [router.query]);
+
+  if (!data) return <p>Loading...</p>;
 
   return (
-    <div style={{ maxWidth: 600, margin: "50px auto", textAlign: "center", padding: 20, background: "#fff", borderRadius: 10, boxShadow: "0 4px 10px rgba(0,0,0,0.1)" }}>
-      <h1>🎉 Thank You, {name}!</h1>
-      <p>Your order for <strong>{service}</strong> has been received.</p>
+    <div style={{ maxWidth: 600, margin: '30px auto', padding: 20, background: '#fff', borderRadius: 10 }}>
+      <h1>Thank You!</h1>
+      <p>Your order has been submitted successfully.</p>
 
-      {order && (
-        <p>
-          <strong>Order Number:</strong> {order}
-        </p>
-      )}
+      <h3>Order Details:</h3>
+      <p><strong>Service:</strong> {data.service}</p>
+      <p><strong>Customer Name:</strong> {data.name}</p>
+      <p><strong>Email:</strong> {data.email}</p>
+      <p><strong>Phone:</strong> {data.phone}</p>
+      <p><strong>CNIC:</strong> {data.cnic}</p>
+      <p><strong>Description:</strong> {data.description}</p>
 
-      <p>We’ll contact you shortly. For any inquiries, you can reach us at:</p>
-      <p>
-        <strong>Phone:</strong> {CONTACT.phone} <br />
-        <strong>Email:</strong> {CONTACT.email}
-      </p>
+      <h3>Payment Details:</h3>
+      <p><strong>Method:</strong> {data.paymentMethod}</p>
+      <p><strong>Transaction Number:</strong> {data.txnNumber}</p>
+      <p><strong>Account Name:</strong> {data.accountName}</p>
+      <p><strong>Account Number:</strong> {data.accountNumber}</p>
+      {data.screenshot && <p><strong>Screenshot:</strong> {data.screenshot}</p>}
 
-      <button
-        onClick={() => router.push("/")}
-        style={{
-          marginTop: 20,
-          padding: "10px 20px",
-          background: "#ff6600",
-          color: "#fff",
-          border: "none",
-          borderRadius: 6,
-          cursor: "pointer",
-        }}
-      >
-        Back to Home
-      </button>
+      <h3>Contact Info:</h3>
+      <p>Email: naspropvt@gmail.com</p>
+      <p>Phone: +92 303 3792494</p>
     </div>
   );
-          }
+}

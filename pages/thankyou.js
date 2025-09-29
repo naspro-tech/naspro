@@ -1,39 +1,47 @@
-import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useRouter } from "next/router";
 
 export default function ThankYou() {
   const router = useRouter();
-  const { service, name, phone, cnic, email, amount, method, proof } = router.query;
-
-  useEffect(() => {
-    if (!service || !name) router.push('/');
-  }, [service, name]);
+  const { service, amount } = router.query;
 
   return (
-    <div className="container">
-      <h1>Thank You for Your Order!</h1>
-      <p><strong>Service:</strong> {service}</p>
-      <p><strong>Amount:</strong> PKR {amount}</p>
-      {method==='bank' && proof && (
-        <div className="proof">
-          <h3>Bank Transfer Proof:</h3>
-          <p>Transaction Number: {proof.txnNumber}</p>
-          <p>Account Name: {proof.accName}</p>
-          <p>Account Number: {proof.accNumber}</p>
-          <p>Uploaded Screenshot: {proof.screenshot}</p>
-        </div>
-      )}
-      <h4>Our Contact Info</h4>
-      <p>Email: info@naspro.com</p>
-      <p>Phone: 0312-3456789</p>
-      <button onClick={()=>router.push('/')} className="button">Back to Home</button>
+    <div style={containerStyle}>
+      <h1 style={{ fontSize: "1.5rem", marginBottom: 15 }}>Thank You!</h1>
+      <p>Your payment has been received.</p>
 
-      <style jsx>{`
-        .container { max-width:600px; margin:30px auto; padding:20px; background:#f8f9fa; border-radius:10px; text-align:center; }
-        .button { padding:12px; background:#ff6600; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-top:15px; }
-        .proof { background:#fff3e0; padding:15px; border-radius:8px; margin-top:15px; }
-      `}</style>
+      <h3>Order Details:</h3>
+      <p><strong>Service:</strong> {service}</p>
+      <p><strong>Amount Paid:</strong> PKR {amount}</p>
+
+      <h3>Contact Us:</h3>
+      <p>Email: support@naspro.com</p>
+      <p>Phone: +92 300 1234567</p>
+
+      <button style={buttonStyle} onClick={() => router.push("/")}>Back to Home</button>
     </div>
   );
-    }
-    
+}
+
+const containerStyle = {
+  maxWidth: 600,
+  margin: "30px auto",
+  padding: 20,
+  background: "#f9f9f9",
+  borderRadius: 12,
+  boxShadow: "0 6px 15px rgba(0,0,0,0.1)",
+  fontFamily: "'Inter', sans-serif",
+  color: "#333",
+  textAlign: "center",
+};
+
+const buttonStyle = {
+  backgroundColor: "#ff6600",
+  color: "#fff",
+  padding: "12px 20px",
+  borderRadius: 8,
+  border: "none",
+  cursor: "pointer",
+  fontWeight: 600,
+  marginTop: 20,
+  fontSize: "1rem",
+};

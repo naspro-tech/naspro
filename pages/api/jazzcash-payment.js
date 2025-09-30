@@ -10,9 +10,9 @@ export default async function handler(req, res) {
   try {
     const { amount, service, customerName, customerMobile } = req.body;
 
-    const integrity_salt = 1g90sz31w2;
-    const merchant_id = MC339532;
-    const password = 2282sxh9z8;
+    const integrity_salt = "1g90sz31w2";
+    const merchant_id = "MC339532";
+    const password = "2282sxh9z8";
 
     if (!integrity_salt || !merchant_id || !password) {
       throw new Error("JazzCash credentials missing in environment variables");

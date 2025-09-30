@@ -1,6 +1,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
+const SERVICE_LABELS = {
+  webapp: 'Web & App Development',
+  domainhosting: 'Domain & Hosting',
+  branding: 'Branding & Logo Design',
+  ecommerce: 'E-Commerce Solutions',
+  cloudit: 'Cloud & IT Infrastructure',
+  digitalmarketing: 'Digital Marketing',
+};
+
 const containerStyle = {
   maxWidth: 600,
   margin: "30px auto",
@@ -35,6 +44,15 @@ const inputStyle = {
 };
 
 const labelStyle = { display: "block", marginBottom: 12 };
+
+const summaryBoxStyle = {
+  backgroundColor: "#fff",
+  padding: 15,
+  borderRadius: 10,
+  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+  marginBottom: 20,
+  lineHeight: 1.6,
+};
 
 export default function PaymentPage() {
   const [method, setMethod] = useState(null);
@@ -79,13 +97,22 @@ export default function PaymentPage() {
     router.push("/thankyou");
   };
 
+  const serviceLabel = SERVICE_LABELS[order.service] || order.service;
+
   return (
     <div style={containerStyle}>
-      <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: 15, textAlign: "center" }}>Payment - {order.service}</h2>
+      <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: 15, textAlign: "center" }}>Payment</h2>
 
-      <p style={{ marginBottom: 20, textAlign: "center" }}>
-        <b>Amount:</b> PKR {Number(order.amount).toLocaleString()}
-      </p>
+      {/* Customer Summary Box */}
+      <div style={summaryBoxStyle}>
+        <p><b>Service:</b> {serviceLabel}</p>
+        <p><b>Name:</b> {order.name}</p>
+        <p><b>Email:</b> {order.email}</p>
+        <p><b>Phone:</b> {order.phone}</p>
+        <p><b>CNIC (last 6 digits):</b> {order.cnic}</p>
+        <p><b>Description:</b> {order.description || "N/A"}</p>
+        <p><b>Amount:</b> PKR {Number(order.amount).toLocaleString()}</p>
+      </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button onClick={handleJazzCash} style={{ ...buttonStyle, backgroundColor: "#d32f2f" }}>
@@ -137,5 +164,5 @@ export default function PaymentPage() {
       )}
     </div>
   );
-        }
+      }
         

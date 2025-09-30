@@ -7,17 +7,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 🔴 Hardcoded sandbox credentials (testing only!)
     const integrity_salt = "1g90sz31w2";
-    if (!integrity_salt) {
-      throw new Error("Integrity Salt missing in environment variables");
-    }
 
+    const debugMode = req.query.debug === "true"; // enable debug
     const response = req.body;
+
     console.log("🎯 JazzCash Response:", response);
 
     const receivedHash = response.pp_SecureHash;
-
-    // Remove SecureHash for verification
     const { pp_SecureHash, ...withoutHash } = response;
 
     // Build string for hash validation
@@ -32,7 +30,20 @@ export default async function handler(req, res) {
       .update(hashString)
       .digest("hex");
 
-    if (receivedHash !== calculatedHash) {
+    const hashMatch = receivedHash === calculatedHash;
+
+    if (debugMode) {
+      return res.status(200).json({
+        debug: true,
+        hashMatch,
+        receivedHash,
+        calculatedHash,
+        response,
+      });
+    }
+
+    // Normal flow
+    if (!hashMatch) {
       console.error("❌ Hash mismatch:", { receivedHash, calculatedHash });
       return res.redirect(
         302,
@@ -40,7 +51,6 @@ export default async function handler(req, res) {
       );
     }
 
-    // Hash OK, now check payment response
     if (response.pp_ResponseCode === "000") {
       const amount = parseInt(response.pp_Amount, 10) / 100;
       const service = response.pp_BillReference.replace("naspro_", "");

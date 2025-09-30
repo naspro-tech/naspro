@@ -1,87 +1,89 @@
 // /pages/payment.js
 import { useState } from "react";
+import { useRouter } from "next/router";
 
 export default function PaymentPage() {
-  const [service, setService] = useState("Basic Plan");
-  const [amount, setAmount] = useState(1000);
-  const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState(null);
+  const [proof, setProof] = useState(null);
+  const router = useRouter();
 
-  const handleJazzCashPayment = async () => {
-    try {
-      setLoading(true);
+  const handleJazzCash = () => {
+    router.push("/api/jazzcash-payment");
+  };
 
-      const response = await fetch("/api/jazzcash-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount,
-          description: `Payment for ${service}`,
-          customer_name: "Test User",
-          customer_phone: "03001234567",
-          service,
-        }),
-      });
+  const handleProofSubmit = async (e) => {
+    e.preventDefault();
 
-      const data = await response.json();
+    if (!proof) {
+      alert("Please upload payment proof first.");
+      return;
+    }
 
-      if (data.success) {
-        // Build a hidden form and auto-submit to JazzCash
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = data.jazzcash_url;
+    const formData = new FormData();
+    formData.append("file", proof);
 
-        Object.entries(data.form_data).forEach(([key, value]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        });
+    const res = await fetch("/api/upload-proof", {
+      method: "POST",
+      body: formData,
+    });
 
-        document.body.appendChild(form);
-        form.submit(); // 🚀 Auto-submit to JazzCash
-      } else {
-        alert("Failed to initiate JazzCash payment: " + data.error);
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Payment error: " + error.message);
-    } finally {
-      setLoading(false);
+    if (res.ok) {
+      alert("✅ Proof submitted successfully! We will verify and contact you.");
+      router.push("/thankyou?payment_method=bank_transfer");
+    } else {
+      alert("❌ Failed to submit proof. Try again.");
     }
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Make a Payment</h1>
+    <div className="p-6 max-w-lg mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Choose Payment Method</h1>
 
-      <div className="mb-4">
-        <label className="block mb-2">Service:</label>
-        <input
-          className="border p-2 w-full"
-          value={service}
-          onChange={(e) => setService(e.target.value)}
-        />
+      <div className="space-y-4">
+        {/* JazzCash Option */}
+        <button
+          className="w-full bg-purple-600 text-white px-6 py-3 rounded shadow hover:bg-purple-700"
+          onClick={handleJazzCash}
+        >
+          Pay with JazzCash
+        </button>
+
+        {/* Bank Transfer Option */}
+        <button
+          className="w-full bg-gray-200 text-gray-800 px-6 py-3 rounded shadow hover:bg-gray-300"
+          onClick={() => setMethod("bank")}
+        >
+          Pay via Bank Transfer
+        </button>
       </div>
 
-      <div className="mb-4">
-        <label className="block mb-2">Amount (PKR):</label>
-        <input
-          type="number"
-          className="border p-2 w-full"
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
-        />
-      </div>
+      {method === "bank" && (
+        <div className="mt-6 p-4 border rounded bg-gray-50">
+          <h2 className="text-lg font-semibold mb-2">Bank Transfer Details</h2>
+          <p><strong>Bank Name:</strong> JS Bank</p>
+          <p><strong>Account Title:</strong> NASPRO PRIVATE LIMITED</p>
+          <p><strong>Account Number:</strong> 00028010102</p>
+          <p className="mt-2 text-sm text-gray-600">
+            After transferring, please upload your payment proof below:
+          </p>
 
-      <button
-        className="bg-purple-600 text-white px-6 py-2 rounded disabled:opacity-50"
-        onClick={handleJazzCashPayment}
-        disabled={loading}
-      >
-        {loading ? "Processing..." : "Pay with JazzCash"}
-      </button>
+          {/* Proof Upload Form */}
+          <form onSubmit={handleProofSubmit} className="mt-4 space-y-3">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setProof(e.target.files[0])}
+              className="block w-full text-sm"
+            />
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-6 py-2 rounded shadow hover:bg-green-700"
+            >
+              I have completed the payment
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
-            }
-          
+                }

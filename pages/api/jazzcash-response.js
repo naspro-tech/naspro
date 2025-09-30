@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const integrity_salt = 1g90sz31w2;
+    const integrity_salt = "1g90sz31w2";
     if (!integrity_salt) {
       throw new Error("Integrity Salt missing in environment variables");
     }

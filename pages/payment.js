@@ -1,261 +1,87 @@
+// /pages/payment.js
 import { useState } from "react";
-import { useRouter } from "next/router";
 
-export default function Payment() {
-  const router = useRouter();
-  const { service, amount, name, email, phone, cnic, description } = router.query;
-
-  const [selectedMethod, setSelectedMethod] = useState("");
-  const [paymentDone, setPaymentDone] = useState(false);
-  const [proof, setProof] = useState({ txnNo: "", accountName: "", accountNumber: "", screenshot: null });
-  const [processingJazzCash, setProcessingJazzCash] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleMethodSelect = (method) => {
-    if (method === "easypaisa") {
-      setError("Easypaisa payment will be available soon!");
-      return;
-    }
-
-    if (method === "jazzcash") {
-      handleJazzCashPayment();
-      return;
-    }
-
-    setSelectedMethod(method);
-  };
+export default function PaymentPage() {
+  const [service, setService] = useState("Basic Plan");
+  const [amount, setAmount] = useState(1000);
+  const [loading, setLoading] = useState(false);
 
   const handleJazzCashPayment = async () => {
     try {
-      setProcessingJazzCash(true);
-      setError("");
+      setLoading(true);
 
-      const res = await fetch("/api/jazzcash-payment", {
+      const response = await fetch("/api/jazzcash-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount,
-          description,
-          customer_name: name,
-          customer_phone: phone,
+          description: `Payment for ${service}`,
+          customer_name: "Test User",
+          customer_phone: "03001234567",
           service,
         }),
       });
 
-      const result = await res.json();
-      console.log("🎯 JazzCash API response:", result);
+      const data = await response.json();
 
-      if (!result.success) {
-        setError(result.error || "JazzCash API failed.");
-        setProcessingJazzCash(false);
-        return;
+      if (data.success) {
+        // Build a hidden form and auto-submit to JazzCash
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = data.jazzcash_url;
+
+        Object.entries(data.form_data).forEach(([key, value]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit(); // 🚀 Auto-submit to JazzCash
+      } else {
+        alert("Failed to initiate JazzCash payment: " + data.error);
       }
-
-      const { jazzcash_url, form_data } = result;
-
-      // ✅ Create hidden form and submit via POST
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = jazzcash_url;
-      form.style.display = "none";
-
-      Object.entries(form_data).forEach(([key, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
-
-    } catch (err) {
-      console.error("❌ JazzCash error:", err);
-      setError("Payment request failed: " + err.message);
-      setProcessingJazzCash(false);
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("Payment error: " + error.message);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleProofChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === "screenshot") {
-      setProof((prev) => ({ ...prev, screenshot: files[0] }));
-    } else {
-      setProof((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmitProof = () => {
-    router.push({
-      pathname: "/thankyou",
-      query: {
-        service: service,
-        amount: amount,
-        payment_method: selectedMethod
-      },
-    });
   };
 
   return (
-    <div style={containerStyle}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: 15 }}>Payment - {service}</h1>
-      <p><strong>Amount:</strong> PKR {amount}</p>
-      <p><strong>Customer:</strong> {name} ({phone})</p>
+    <div className="p-6">
+      <h1 className="text-xl font-bold mb-4">Make a Payment</h1>
 
-      {error && (
-        <div style={{ color: "red", marginBottom: 15, padding: "10px", background: "#ffe6e6", borderRadius: "6px" }}>
-          {error}
-        </div>
-      )}
+      <div className="mb-4">
+        <label className="block mb-2">Service:</label>
+        <input
+          className="border p-2 w-full"
+          value={service}
+          onChange={(e) => setService(e.target.value)}
+        />
+      </div>
 
-      {!selectedMethod && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Select Payment Method:</h3>
-          <button style={buttonStyle} onClick={() => handleMethodSelect("bank")}>
-            Bank Transfer
-          </button>
+      <div className="mb-4">
+        <label className="block mb-2">Amount (PKR):</label>
+        <input
+          type="number"
+          className="border p-2 w-full"
+          value={amount}
+          onChange={(e) => setAmount(Number(e.target.value))}
+        />
+      </div>
 
-          <button 
-            style={buttonStyle} 
-            onClick={() => handleMethodSelect("jazzcash")}
-            disabled={processingJazzCash}
-          >
-            {processingJazzCash ? "Processing..." : "JazzCash"}
-          </button>
-
-          <button 
-            style={{...buttonStyle, backgroundColor: '#ccc', cursor: 'not-allowed'}} 
-            onClick={() => handleMethodSelect("easypaisa")}
-          >
-            Easypaisa (Coming Soon)
-          </button>
-
-          {processingJazzCash && (
-            <div style={{ marginTop: 15, textAlign: 'center' }}>
-              <p>Redirecting to JazzCash...</p>
-              <div style={spinnerStyle}></div>
-            </div>
-          )}
-
-          {/* Debug Section */}
-          <div style={{ marginTop: '20px', padding: '15px', background: '#f0f8ff', borderRadius: '8px' }}>
-            <h4>🔧 Debug JazzCash</h4>
-            <button 
-              style={{...buttonStyle, backgroundColor: 'green', margin: '5px'}}
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/jazzcash-payment', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                      amount: 10,
-                      description: 'Test Payment',
-                      customer_name: 'Test User',
-                      customer_phone: '03123456789',
-                      service: 'test'
-                    })
-                  });
-                  
-                  const result = await response.json();
-                  setError(`API Test: Status ${response.status}, Success: ${result.success}, Error: ${result.error || 'None'}`);
-                } catch (error) {
-                  setError('API Test Error: ' + error.message);
-                }
-              }}
-            >
-              Test API Connection
-            </button>
-          </div>
-        </div>
-      )}
-
-      {selectedMethod === "bank" && !paymentDone && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Bank Transfer Details:</h3>
-          <p><strong>Bank Name:</strong> JS Bank</p>
-          <p><strong>Account Title:</strong> NASPRO PRIVATE LIMITED</p>
-          <p><strong>Account Number:</strong> 0002810102</p>
-          <button style={buttonStyle} onClick={() => setPaymentDone(true)}>
-            I have completed the payment
-          </button>
-        </div>
-      )}
-
-      {paymentDone && (
-        <div style={{ marginTop: 20 }}>
-          <h3>Submit Payment Proof:</h3>
-          <label style={labelStyle}>
-            Transaction Number*:
-            <input type="text" name="txnNo" value={proof.txnNo} onChange={handleProofChange} style={inputStyle} />
-          </label>
-          <label style={labelStyle}>
-            Account Name*:
-            <input type="text" name="accountName" value={proof.accountName} onChange={handleProofChange} style={inputStyle} />
-          </label>
-          <label style={labelStyle}>
-            Account Number*:
-            <input type="text" name="accountNumber" value={proof.accountNumber} onChange={handleProofChange} style={inputStyle} />
-          </label>
-          <label style={labelStyle}>
-            Upload Screenshot*:
-            <input type="file" name="screenshot" onChange={handleProofChange} style={inputStyle} />
-          </label>
-          <button style={buttonStyle} onClick={handleSubmitProof}>
-            Submit Proof
-          </button>
-        </div>
-      )}
+      <button
+        className="bg-purple-600 text-white px-6 py-2 rounded disabled:opacity-50"
+        onClick={handleJazzCashPayment}
+        disabled={loading}
+      >
+        {loading ? "Processing..." : "Pay with JazzCash"}
+      </button>
     </div>
   );
-}
-
-const containerStyle = {
-  maxWidth: 600,
-  margin: "20px auto",
-  padding: 20,
-  background: "#f9f9f9",
-  borderRadius: 12,
-  boxShadow: "0 6px 15px rgba(0,0,0,0.1)",
-  fontFamily: "'Inter', sans-serif",
-  color: "#333",
-};
-
-const buttonStyle = {
-  backgroundColor: "#ff6600",
-  color: "#fff",
-  padding: "12px 20px",
-  margin: "10px 5px 0 0",
-  borderRadius: 8,
-  border: "none",
-  cursor: "pointer",
-  fontWeight: 600,
-  fontSize: "1rem",
-  minWidth: "150px",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: 10,
-  marginTop: 6,
-  marginBottom: 15,
-  borderRadius: 6,
-  border: "1px solid #ccc",
-  fontSize: "1rem",
-};
-
-const labelStyle = {
-  display: "block",
-  marginBottom: 15,
-};
-
-const spinnerStyle = {
-  border: "4px solid #f3f3f3",
-  borderTop: "4px solid #ff6600",
-  borderRadius: "50%",
-  width: "30px",
-  height: "30px",
-  animation: "spin 1s linear infinite",
-  margin: "10px auto",
-};
-      
+            }
+          

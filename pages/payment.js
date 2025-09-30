@@ -67,15 +67,26 @@ export default function PaymentPage() {
     cnic: "",
     description: "",
   });
+  const [orderId, setOrderId] = useState("");
 
   const router = useRouter();
   const { service, amount, name, email, phone, cnic, description } = router.query;
 
+  // Set order from query params
   useEffect(() => {
     if (service && amount) {
       setOrder({ service, amount, name, email, phone, cnic, description });
     }
   }, [service, amount, name, email, phone, cnic, description]);
+
+  // Generate unique Order ID
+  useEffect(() => {
+    if (!orderId && order.service) {
+      const timestamp = Date.now().toString().slice(-5);
+      const randomNum = Math.floor(Math.random() * 900 + 100);
+      setOrderId(`NASPRO-${timestamp}-${randomNum}`);
+    }
+  }, [order.service]);
 
   const handleJazzCash = () => alert("JazzCash payment is coming soon!");
   const handleEasypaisa = () => alert("Easypaisa payment is coming soon!");
@@ -93,6 +104,22 @@ export default function PaymentPage() {
       alert("Please complete all fields before submitting.");
       return;
     }
+
+    // Save order info in localStorage
+    const orderData = {
+      orderId,
+      service: order.service,
+      amount: order.amount,
+      payment_method: "Bank Transfer",
+      transaction_id: proof.transactionNumber,
+      name: order.name,
+      email: order.email,
+      phone: order.phone,
+      cnic: order.cnic,
+      description: order.description,
+    };
+    localStorage.setItem("lastOrder", JSON.stringify(orderData));
+
     alert("Payment proof submitted successfully!");
     router.push("/thankyou");
   };
@@ -105,6 +132,7 @@ export default function PaymentPage() {
 
       {/* Customer Summary Box */}
       <div style={summaryBoxStyle}>
+        <p><strong>Order ID:</strong> {orderId}</p>
         <p><b>Service:</b> {serviceLabel}</p>
         <p><b>Name:</b> {order.name}</p>
         <p><b>Email:</b> {order.email}</p>
@@ -126,7 +154,7 @@ export default function PaymentPage() {
         </button>
       </div>
 
-      {/* Bank Step 1: Show details */}
+      {/* Bank Step 1 */}
       {method === "bank" && bankStep === 0 && (
         <div style={{ marginTop: 20 }}>
           <h3 style={{ fontWeight: 600, marginBottom: 10 }}>Bank Transfer Details</h3>
@@ -139,7 +167,7 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {/* Bank Step 2: Submit proof */}
+      {/* Bank Step 2 */}
       {method === "bank" && bankStep === 1 && (
         <form style={{ marginTop: 20 }} onSubmit={handleBankSubmit}>
           <h3 style={{ fontWeight: 600, marginBottom: 10 }}>Submit Payment Proof</h3>
@@ -164,5 +192,5 @@ export default function PaymentPage() {
       )}
     </div>
   );
-      }
+        }
         

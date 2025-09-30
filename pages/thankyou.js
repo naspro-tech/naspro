@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 const SERVICE_LABELS = {
   webapp: 'Web & App Development',
@@ -50,19 +51,54 @@ const buttonStyle = {
 
 export default function ThankYou() {
   const router = useRouter();
-  const {
-    service,
-    amount,
-    payment_method,
-    transaction_id,
-    name,
-    email,
-    phone,
-    cnic,
-    description,
-  } = router.query;
+  const [order, setOrder] = useState({
+    orderId: "",
+    service: "",
+    amount: "",
+    payment_method: "",
+    transaction_id: "",
+    name: "",
+    email: "",
+    phone: "",
+    cnic: "",
+    description: "",
+  });
 
-  const serviceLabel = SERVICE_LABELS[service] || service;
+  useEffect(() => {
+    const {
+      orderId,
+      service,
+      amount,
+      payment_method,
+      transaction_id,
+      name,
+      email,
+      phone,
+      cnic,
+      description,
+    } = router.query;
+
+    if (service && amount) {
+      setOrder({
+        orderId,
+        service,
+        amount,
+        payment_method: payment_method || "Bank Transfer",
+        transaction_id,
+        name,
+        email,
+        phone,
+        cnic,
+        description,
+      });
+    } else {
+      // Fallback to localStorage
+      const storedOrder = localStorage.getItem("lastOrder");
+      if (storedOrder) setOrder(JSON.parse(storedOrder));
+    }
+  }, [router.query]);
+
+  const serviceLabel = SERVICE_LABELS[order.service] || order.service;
 
   return (
     <div style={containerStyle}>
@@ -74,16 +110,17 @@ export default function ThankYou() {
       {/* Order Summary */}
       <div style={detailsBox}>
         <h3>Order Details:</h3>
+        <p><strong>Order ID:</strong> {order.orderId}</p>
         <p><strong>Service:</strong> {serviceLabel}</p>
-        <p><strong>Amount Paid:</strong> PKR {amount}</p>
-        <p><strong>Payment Method:</strong> {payment_method || 'Bank Transfer'}</p>
-        {transaction_id && <p><strong>Transaction ID:</strong> {transaction_id}</p>}
+        <p><strong>Amount Paid:</strong> PKR {order.amount}</p>
+        <p><strong>Payment Method:</strong> {order.payment_method || 'Bank Transfer'}</p>
+        {order.transaction_id && <p><strong>Transaction ID:</strong> {order.transaction_id}</p>}
         <hr style={{ margin: "10px 0" }} />
-        <p><strong>Name:</strong> {name}</p>
-        <p><strong>Email:</strong> {email}</p>
-        <p><strong>Phone:</strong> {phone}</p>
-        <p><strong>CNIC (last 6 digits):</strong> {cnic}</p>
-        <p><strong>Description:</strong> {description || 'N/A'}</p>
+        <p><strong>Name:</strong> {order.name}</p>
+        <p><strong>Email:</strong> {order.email}</p>
+        <p><strong>Phone:</strong> {order.phone}</p>
+        <p><strong>CNIC (last 6 digits):</strong> {order.cnic}</p>
+        <p><strong>Description:</strong> {order.description || 'N/A'}</p>
       </div>
 
       {/* Contact Information */}
@@ -99,4 +136,4 @@ export default function ThankYou() {
     </div>
   );
         }
-      
+        

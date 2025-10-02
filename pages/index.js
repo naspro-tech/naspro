@@ -1,4 +1,4 @@
-        import Head from 'next/head';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
@@ -15,9 +15,37 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>NASPRO IT Services</title>
+        {/* Basic SEO */}
+        <title>NasPro Pvt | IT Services & Solutions</title>
+        <meta
+          name="description"
+          content="NasPro Pvt (naspropvt) offers IT services, software development, cloud solutions, branding, and digital marketing. Trusted IT company in Pakistan."
+        />
+        <meta
+          name="keywords"
+          content="naspropvt, naspro, IT service, IT solutions, IT company, software development, digital marketing, cloud hosting"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="stylesheet" href="/style.css" />
+
+        {/* Open Graph (Facebook, LinkedIn) */}
+        <meta property="og:title" content="NasPro Pvt | IT Services & Solutions" />
+        <meta
+          property="og:description"
+          content="Professional IT services by NasPro Pvt. From web development to cloud infrastructure and digital marketing, we help your business grow."
+        />
+        <meta property="og:url" content="https://naspropvt.vercel.app" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="NasPro Pvt" />
+        <meta property="og:locale" content="en_US" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="NasPro Pvt | IT Services & Solutions" />
+        <meta
+          name="twitter:description"
+          content="NasPro Pvt provides IT services, software solutions, branding, and digital marketing."
+        />
       </Head>
 
       <div className="top-right-menu">
@@ -190,5 +218,5 @@ export default function Home() {
       </footer>
     </>
   );
-              }
-              
+                  }
+                  

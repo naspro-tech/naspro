@@ -1,121 +1,74 @@
-// pages/api/jazzcash-payment.js
-import crypto from "crypto";
-
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+export default function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      success: false,
-      error: "Method not allowed. Use POST method.",
-    });
-  }
+  const { amount, description, orderId } = req.body;
+  
+  // Your JazzCash credentials
+  const merchantId = 'MC339532';
+  const password = '2282sxh9z8';
+  const salt = '1g90sz31w2';
+  
+  // Generate unique transaction reference if not provided
+  const transactionRef = orderId || 'TXN' + Date.now() + Math.random().toString(36).substr(2, 9);
+  
+  // Current timestamp in required format (YYYYMMDDHHMMSS)
+  const now = new Date();
+  const dateTime = now.toISOString().replace(/[-:]/g, '').split('.')[0];
+  const expiryDateTime = new Date(now.getTime() + 30 * 60000).toISOString().replace(/[-:]/g, '').split('.')[0];
+  
+  // Prepare data for hash generation
+  const postData = {
+    'pp_Version': '1.1',
+    'pp_TxnType': '',
+    'pp_Language': 'EN',
+    'pp_MerchantID': merchantId,
+    'pp_Password': password,
+    'pp_TxnRefNo': transactionRef,
+    'pp_Amount': (amount * 100).toString(), // Convert to paisa
+    'pp_TxnCurrency': 'PKR',
+    'pp_TxnDateTime': dateTime,
+    'pp_BillReference': transactionRef,
+    'pp_Description': description.substring(0, 100), // Limit to 100 chars
+    'pp_TxnExpiryDateTime': expiryDateTime,
+    'pp_ReturnURL': `https://naspropvt.vercel.app/api/jazzcash_response`,
+    'pp_SecureHash': '',
+    'ppmpf_1': '1',
+    'ppmpf_2': '2',
+    'ppmpf_3': '3',
+    'ppmpf_4': '4',
+    'ppmpf_5': '5'
+  };
 
   try {
-    console.log("🎯 JazzCash Payment API called");
-
-    // JazzCash credentials (sandbox)
-    const merchant_id = "MC339532";
-    const password = "2282sxh9z8";
-    const integrity_salt = "1g90sz31w2";
-    const return_url = "https://naspro-nine.vercel.app/api/jazzcash-response";
-
-    const { amount, description, service } = req.body;
-
-    if (!amount || !service) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required fields: amount and service",
-      });
-    }
-
-    const order_id = `NASPRO_${Date.now()}`;
-
-    // Helper: format current date as YYYYMMDDHHmmss
-    function formatDateTime(date) {
-      return date
-        .toISOString()
-        .replace(/[-:TZ.]/g, "")
-        .slice(0, 14);
-    }
-
-    const now = new Date();
-    const txnDateTime = formatDateTime(now);
-
-    // Expiry = +1 day
-    const expiryDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const txnExpiryDateTime = formatDateTime(expiryDate);
-
-    // Prepare transaction data
-    const transactionData = {
-      pp_Version: "1.1",
-      pp_TxnType: "MWALLET",
-      pp_Language: "EN",
-      pp_MerchantID: merchant_id,
-      pp_Password: password,
-      pp_BankID: "TBANK",
-      pp_ProductID: "RETL",
-      pp_Amount: (amount * 100).toString(), // Paisa
-      pp_TxnRefNo: order_id,
-      pp_TxnCurrency: "PKR",
-      pp_TxnDateTime: txnDateTime,
-      pp_TxnExpiryDateTime: txnExpiryDateTime,
-      pp_BillReference: `naspro_${service}`.substring(0, 50),
-      pp_Description: (description || `Payment for ${service}`).substring(0, 100),
-      pp_ReturnURL: return_url,
-      ppmpf_1: "1",
-      ppmpf_2: "2",
-      ppmpf_3: "3",
-      ppmpf_4: "4",
-      ppmpf_5: "5",
-    };
-
-    // Sort keys for hashing
-    const sorted = {};
-    Object.keys(transactionData)
-      .sort()
-      .forEach((k) => (sorted[k] = transactionData[k]));
-
-    let hashString = integrity_salt + "&" + Object.values(sorted).join("&");
-
-    const secureHash = crypto
-      .createHmac("sha256", integrity_salt)
+    // Generate secure hash
+    const hashData = { ...postData };
+    delete hashData.pp_SecureHash;
+    
+    // Sort keys alphabetically and create hash string
+    const sortedKeys = Object.keys(hashData).sort();
+    const hashString = salt + '&' + sortedKeys.map(key => hashData[key]).join('&');
+    
+    const secureHash = require('crypto')
+      .createHmac('sha256', salt)
       .update(hashString)
-      .digest("hex");
+      .digest('hex');
+    
+    postData.pp_SecureHash = secureHash;
 
-    transactionData.pp_SecureHash = secureHash;
+    res.status(200).json({
+      success: true,
+      paymentData: postData,
+      orderId: transactionRef,
+      redirectUrl: 'https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/'
+    });
 
-    // 🔀 Return an auto-submitting HTML form so user goes to JazzCash
-    const formHtml = `
-      <html>
-        <body onload="document.forms[0].submit()">
-          <form method="post" action="https://sandbox.jazzcash.com.pk/CustomerPortal/transactionmanagement/merchantform/">
-            ${Object.entries(transactionData)
-              .map(
-                ([k, v]) =>
-                  `<input type="hidden" name="${k}" value="${v}" />`
-              )
-              .join("")}
-            <noscript><input type="submit" value="Continue to JazzCash"></noscript>
-          </form>
-        </body>
-      </html>
-    `;
-
-    res.setHeader("Content-Type", "text/html");
-    res.send(formHtml);
   } catch (error) {
-    console.error("❌ JazzCash API error:", error);
+    console.error('JazzCash payment initiation error:', error);
     res.status(500).json({
       success: false,
-      error: "Internal server error: " + error.message,
+      error: 'Failed to initiate payment'
     });
   }
 }
-      

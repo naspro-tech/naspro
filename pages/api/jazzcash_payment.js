@@ -1,30 +1,38 @@
-export default async function handler(req, res) {
+export default function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { amount, description, orderId, mobileNumber, cnic } = req.body;
 
-  // Your JazzCash credentials (keep these on server only!)
+  // JazzCash credentials
   const merchantId = 'MC339532';
   const password = '2282sxh9z8';
   const salt = '1g90sz31w2';
 
-  // Current timestamp in required format (YYYYMMDDHHMMSS)
-  const now = new Date();
-  const dateTime = now.toISOString().replace(/[-:]/g, '').split('.')[0];
-  const expiryDateTime = new Date(now.getTime() + 24 * 60 * 60000)
-    .toISOString()
-    .replace(/[-:]/g, '')
-    .split('.')[0];
+  // Helper function to format datetime -> YYYYMMDDHHMMSS
+  function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const MM = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+    return `${yyyy}${MM}${dd}${hh}${mm}${ss}`;
+  }
 
-  // Generate transaction reference starting with 'T'
+  // Generate timestamps
+  const now = new Date();
+  const dateTime = formatDate(now);
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+
+  // Generate transaction reference
   const txnRefNo = 'T' + Date.now().toString().slice(-11);
   const billReference = 'billRef' + Date.now().toString().slice(-6);
 
-  // Prepare payload
+  // Prepare REST API payload
   const payload = {
-    'pp_Amount': (amount * 100).toString(), // Convert to paisa
+    'pp_Amount': (amount * 100).toString(), // in paisa
     'pp_BillReference': billReference,
     'pp_CNIC': cnic,
     'pp_Description': description.substring(0, 200),
@@ -45,7 +53,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    // ✅ Use your existing hash logic
+    // Generate secure hash (excluding empty fields)
     const hashData = { ...payload };
     delete hashData.pp_SecureHash;
 
@@ -56,8 +64,8 @@ export default async function handler(req, res) {
     });
 
     const sortedKeys = Object.keys(hashData).sort();
-    const sortedValues = sortedKeys.map(key => hashData[key]);
-    const hashString = salt + '&' + sortedValues.join('&');
+    const hashValues = sortedKeys.map(key => hashData[key]);
+    const hashString = salt + '&' + hashValues.join('&');
 
     const secureHash = require('crypto')
       .createHmac('sha256', salt)
@@ -67,34 +75,21 @@ export default async function handler(req, res) {
 
     payload.pp_SecureHash = secureHash;
 
-    console.log('🔵 JazzCash Payload:', payload);
+    console.log('JazzCash Payload:', payload);
+    console.log('Hash String:', hashString);
+    console.log('Generated Hash:', secureHash);
 
-    // ✅ Call JazzCash REST API server-to-server
-    const apiUrl =
-      'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction';
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-    console.log('🟢 JazzCash Response:', result);
-
-    // ✅ Return safe response to frontend
     res.status(200).json({
-      success: result.pp_ResponseCode === '000',
-      transactionId: result.pp_TxnRefNo,
-      responseCode: result.pp_ResponseCode,
-      responseMessage: result.pp_ResponseMessage,
+      success: true,
+      payload: payload,
+      apiUrl: 'https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction'
     });
 
   } catch (error) {
-    console.error('🔴 JazzCash REST API initiation error:', error);
+    console.error('JazzCash REST API initiation error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to initiate payment',
+      error: 'Failed to initiate payment'
     });
   }
 }

@@ -31,7 +31,6 @@ export default function Checkout() {
     description: "",
   });
   const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!service) return;
@@ -43,198 +42,77 @@ export default function Checkout() {
   }, [service]);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleJazzCashPayment = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setErrorMsg("");
-    setLoading(true);
 
-    // Basic validation
+    // Validation
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
       setErrorMsg("Please fill in all required fields.");
-      setLoading(false);
       return;
     }
     if (!/^\d{6}$/.test(formData.cnic)) {
       setErrorMsg("CNIC must be exactly 6 digits (last 6 digits).");
-      setLoading(false);
       return;
     }
     if (SERVICE_PRICES[service] === 0) {
       setErrorMsg("Please contact us for custom pricing on this service.");
-      setLoading(false);
       return;
     }
 
-    try {
-      // Generate unique Order ID
-      const timestamp = Date.now().toString().slice(-5);
-      const randomNum = Math.floor(Math.random() * 900 + 100);
-      const orderId = `NASPRO-${timestamp}-${randomNum}`;
+    // Redirect to Payment page with query params
+    const query = {
+      service,
+      amount: SERVICE_PRICES[service],
+      ...formData,
+    };
 
-      const serviceLabel = SERVICE_LABELS[service] || service;
-
-      console.log("🟡 Sending checkout data to backend...");
-
-      // Step 1: Get payload from backend
-      const response = await fetch("/api/jazzcash_payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Number(SERVICE_PRICES[service]),
-          description: `Payment for ${serviceLabel} - ${formData.name}`,
-          orderId,
-          mobileNumber: formData.phone,
-          cnic: formData.cnic,
-          name: formData.name,
-          email: formData.email,
-          service,
-        }),
-      });
-
-      const data = await response.json();
-      console.log("🟡 Backend Response:", data);
-
-      if (data.success && data.apiUrl && data.payload) {
-        // Step 2: Store order in localStorage for /thankyou fallback
-        const orderData = {
-          orderId,
-          service,
-          amount: SERVICE_PRICES[service],
-          payment_method: "JazzCash",
-          transaction_id: "", // will be updated on success callback
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          cnic: formData.cnic,
-          description: formData.description,
-          responseCode: "",
-          responseMessage: "",
-        };
-        localStorage.setItem("lastOrder", JSON.stringify(orderData));
-
-        // Step 3: Create hidden form and submit to JazzCash
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = data.apiUrl;
-
-        Object.keys(data.payload).forEach((key) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = data.payload[key];
-          form.appendChild(input);
-        });
-
-        document.body.appendChild(form);
-        form.submit();
-      } else {
-        alert("Failed to initiate payment: " + (data.error || "Unknown error"));
-      }
-    } catch (error) {
-      console.error("🔴 JazzCash Error:", error);
-      alert("Error initiating JazzCash payment. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    router.push({
+      pathname: "/payment",
+      query,
+    });
   };
 
   if (!service) {
-    return (
-      <p style={{ padding: 20, textAlign: "center" }}>
-        Loading service details...
-      </p>
-    );
+    return <p style={{ padding: 20, textAlign: "center" }}>Loading service details...</p>;
   }
 
   return (
     <div style={containerStyle}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: 10 }}>
-        Checkout - {SERVICE_LABELS[service]}
-      </h1>
-      <p style={{ marginBottom: 20 }}>
-        <strong>Price:</strong> PKR {SERVICE_PRICES[service].toLocaleString()}
-      </p>
+      <h1>Checkout - {SERVICE_LABELS[service]}</h1>
+      <p><strong>Price:</strong> PKR {SERVICE_PRICES[service].toLocaleString()}</p>
 
-      <form onSubmit={handleJazzCashPayment}>
+      <form onSubmit={handleSubmit}>
         <label style={labelStyle}>
           Name*:
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
+          <input type="text" name="name" value={formData.name} onChange={handleChange} style={inputStyle} required />
         </label>
 
         <label style={labelStyle}>
           Email*:
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={inputStyle}
-          />
+          <input type="email" name="email" value={formData.email} onChange={handleChange} style={inputStyle} required />
         </label>
 
         <label style={labelStyle}>
           Phone*:
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            pattern="03\d{9}"
-            maxLength={11}
-            placeholder="03XXXXXXXXX"
-            style={inputStyle}
-          />
+          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} style={inputStyle} required placeholder="03XXXXXXXXX" pattern="03\d{9}" maxLength={11} />
         </label>
 
         <label style={labelStyle}>
           CNIC (last 6 digits)*:
-          <input
-            type="text"
-            name="cnic"
-            value={formData.cnic}
-            onChange={handleChange}
-            required
-            maxLength={6}
-            pattern="\d{6}"
-            placeholder="Enter last 6 digits of CNIC"
-            style={inputStyle}
-          />
+          <input type="text" name="cnic" value={formData.cnic} onChange={handleChange} style={inputStyle} required maxLength={6} pattern="\d{6}" placeholder="Enter last 6 digits of CNIC" />
         </label>
 
         <label style={labelStyle}>
           Description (optional):
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows={4}
-            style={{ ...inputStyle, resize: "vertical" }}
-          />
+          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} style={{ ...inputStyle, resize: "vertical" }} />
         </label>
 
-        {errorMsg && (
-          <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>
-        )}
+        {errorMsg && <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={loading ? loadingButtonStyle : buttonStyle}
-        >
-          {loading ? "Processing Payment..." : "Pay with JazzCash"}
-        </button>
+        <button type="submit" style={buttonStyle}>Proceed to Payment</button>
       </form>
     </div>
   );
@@ -263,7 +141,7 @@ const inputStyle = {
 };
 
 const buttonStyle = {
-  backgroundColor: "#d32f2f",
+  backgroundColor: "#ff6600",
   color: "#fff",
   padding: "12px",
   borderRadius: 8,
@@ -272,11 +150,6 @@ const buttonStyle = {
   fontSize: "1rem",
   width: "100%",
   cursor: "pointer",
+  marginTop: 10,
 };
-
-const loadingButtonStyle = {
-  ...buttonStyle,
-  backgroundColor: "#6c757d",
-  cursor: "not-allowed",
-};
-      
+    

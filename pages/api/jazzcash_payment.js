@@ -6,7 +6,7 @@ export default function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { amount, description, mobileNumber, cnic, name, email, service } = req.body;
+  const { amount, description, mobileNumber, cnic, name, email, service, orderId } = req.body;
 
   // JazzCash credentials
   const merchantId = "MC302132";
@@ -28,12 +28,12 @@ export default function handler(req, res) {
   const dateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
-  const txnRefNo = "T" + Date.now().toString().slice(-11);
+  const txnRefNo = orderId || "T" + Date.now().toString().slice(-11);
   const billReference = "billRef" + Date.now().toString().slice(-6);
 
-  // Payload with empty ppmpf fields
+  // Payload with empty ppmpf fields (JazzCash requires these)
   const payload = {
-    pp_Amount: (amount * 100).toString(), // paisa
+    pp_Amount: (amount * 100).toString(), // amount in paisa
     pp_BillReference: billReference,
     pp_CNIC: cnic,
     pp_Description: description ? description.substring(0, 200) : "",
@@ -46,10 +46,15 @@ export default function handler(req, res) {
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_TxnRefNo: txnRefNo,
     pp_SecureHash: "",
+    ppmpf_1: "",
+    ppmpf_2: "",
+    ppmpf_3: "",
+    ppmpf_4: "",
+    ppmpf_5: "",
   };
 
   try {
-    // Remove empty fields for hash calculation
+    // Remove empty fields before hash calculation
     const hashData = { ...payload };
     delete hashData.pp_SecureHash;
     Object.keys(hashData).forEach((key) => {
@@ -82,3 +87,4 @@ export default function handler(req, res) {
     res.status(500).json({ success: false, error: "Failed to initiate payment" });
   }
     }
+    

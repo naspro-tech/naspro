@@ -28,7 +28,7 @@ export default function handler(req, res) {
   const dateTime = formatDate(now);
   const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
-  const txnRefNo = orderId || "T" + Date.now().toString().slice(-11);
+  const txnRefNo = "T" + Date.now().toString().slice(-11);
   const billReference = "billRef" + Date.now().toString().slice(-6);
 
   // Payload with empty ppmpf fields (JazzCash requires these)

@@ -82,7 +82,7 @@ export default function ThankYou() {
     description: "",
     responseCode: "",
     responseMessage: "",
-    success: true
+    success: true,
   });
 
   useEffect(() => {
@@ -103,17 +103,17 @@ export default function ThankYou() {
       error
     } = router.query;
 
-    // ❌ Failed payment
+    // Failed payment or hash verification
     if (success === 'false' || error) {
-      setOrder(prev => ({
+      setOrder((prev) => ({
         ...prev,
         success: false,
-        responseMessage: error || 'Payment failed'
+        responseMessage: error || 'Payment failed',
       }));
       return;
     }
 
-    // ✅ Successful flow
+    // Successful payment query params
     if (service && amount) {
       setOrder({
         orderId,
@@ -128,17 +128,17 @@ export default function ThankYou() {
         description,
         responseCode,
         responseMessage,
-        success: responseCode === '000'
+        success: responseCode === '000',
       });
     } else {
-      // fallback localStorage
+      // fallback to localStorage
       const storedOrder = localStorage.getItem("lastOrder");
       if (storedOrder) {
         const parsedOrder = JSON.parse(storedOrder);
-        setOrder(prev => ({
+        setOrder((prev) => ({
           ...prev,
           ...parsedOrder,
-          success: parsedOrder.responseCode === '000'
+          success: parsedOrder.responseCode === '000',
         }));
       }
     }
@@ -224,7 +224,7 @@ export default function ThankYou() {
         {!order.success && (
           <button
             style={{ ...buttonStyle, backgroundColor: '#dc2626' }}
-            onClick={() => router.push("/payment")}
+            onClick={() => router.push("/checkout")}
           >
             Try Again
           </button>
@@ -232,5 +232,5 @@ export default function ThankYou() {
       </div>
     </div>
   );
-                     }
-    
+        }
+              

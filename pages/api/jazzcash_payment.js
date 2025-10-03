@@ -46,11 +46,6 @@ export default function handler(req, res) {
     pp_TxnExpiryDateTime: expiryDateTime,
     pp_TxnRefNo: txnRefNo,
     pp_SecureHash: "",
-    ppmpf_1: "",
-    ppmpf_2: "",
-    ppmpf_3: "",
-    ppmpf_4: "",
-    ppmpf_5: ""
   };
 
   try {

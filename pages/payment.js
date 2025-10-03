@@ -30,7 +30,7 @@ const buttonStyle = {
   fontWeight: 600,
   fontSize: "1rem",
   width: "100%",
-  cursor: "not-allowed",
+  cursor: "pointer",
   marginTop: 10,
 };
 
@@ -71,6 +71,7 @@ export default function PaymentPage() {
   const [method, setMethod] = useState(null);
   const [bankStep, setBankStep] = useState(0);
   const [proof, setProof] = useState({ transactionNumber: "", accountTitle: "", accountNumber: "", screenshot: null });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (service && amount) {
@@ -81,8 +82,79 @@ export default function PaymentPage() {
     }
   }, [service, amount, name, email, phone, cnic, description]);
 
-  const handleComingSoon = () => alert("This payment method is coming soon!");
+  const handleJazzCashPayment = async () => {
+    if (!order.cnic || order.cnic.length !== 6) {
+      alert("Please provide valid CNIC (last 6 digits) for JazzCash payment.");
+      return;
+    }
+    if (!order.phone || order.phone.length !== 11) {
+      alert("Please provide valid phone number for JazzCash payment.");
+      return;
+    }
 
+    setLoading(true);
+    try {
+      // Step 1: Get payload from backend
+      const response = await fetch("/api/jazzcash_payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(order.amount),
+          description: `Payment for ${SERVICE_LABELS[order.service] || order.service} - ${order.name}`,
+          orderId,
+          mobileNumber: order.phone,
+          cnic: order.cnic,
+          name: order.name,
+          email: order.email,
+          service: order.service,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.apiUrl && data.payload) {
+        // Step 2: Store order in localStorage for /thankyou fallback
+        const orderData = {
+          orderId,
+          service: order.service,
+          amount: order.amount,
+          payment_method: "JazzCash",
+          transaction_id: "", 
+          name: order.name,
+          email: order.email,
+          phone: order.phone,
+          cnic: order.cnic,
+          description: order.description,
+        };
+        localStorage.setItem("lastOrder", JSON.stringify(orderData));
+
+        // Step 3: Create hidden form and submit to JazzCash
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = data.apiUrl;
+
+        Object.keys(data.payload).forEach((key) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = data.payload[key];
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        alert("Failed to initiate JazzCash payment: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("JazzCash Error:", error);
+      alert("Error initiating JazzCash payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleComingSoon = () => alert("This payment method is coming soon!");
   const handleBankStep1 = () => setBankStep(1);
 
   const handleChange = (e) => {
@@ -98,7 +170,6 @@ export default function PaymentPage() {
       return;
     }
 
-    // Save order info in localStorage
     const orderData = {
       orderId,
       service: order.service,
@@ -137,12 +208,18 @@ export default function PaymentPage() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button onClick={handleComingSoon} style={buttonStyle}>
-          Pay with JazzCash (Coming Soon)
+        <button 
+          onClick={handleJazzCashPayment} 
+          disabled={loading}
+          style={loading ? { ...buttonStyle, backgroundColor: "#6c757d", cursor: "not-allowed" } : buttonStyle}
+        >
+          {loading ? "Processing..." : "Pay with JazzCash"}
         </button>
+
         <button onClick={handleComingSoon} style={{ ...buttonStyle, backgroundColor: "#388e3c" }}>
           Pay with Easypaisa (Coming Soon)
         </button>
+
         <button
           onClick={() => setMethod("bank")}
           style={{ ...buttonStyle, backgroundColor: "#ccc", color: "#333", cursor: "pointer" }}

@@ -72,12 +72,12 @@ export default function Checkout() {
       const timestamp = Date.now().toString().slice(-5);
       const randomNum = Math.floor(Math.random() * 900 + 100);
       const orderId = `NASPRO-${timestamp}-${randomNum}`;
-      
+
       const serviceLabel = SERVICE_LABELS[service] || service;
 
-      console.log('🟡 Initiating JazzCash payment directly from checkout...');
+      console.log('🟡 Sending checkout data to backend...');
 
-      // Call JazzCash API directly
+      // Send data to backend API (backend handles JazzCash request)
       const response = await fetch('/api/jazzcash_payment', {
         method: 'POST',
         headers: {
@@ -88,53 +88,36 @@ export default function Checkout() {
           description: `Payment for ${serviceLabel} - ${formData.name}`,
           orderId: orderId,
           mobileNumber: formData.phone,
-          cnic: formData.cnic
+          cnic: formData.cnic,
+          name: formData.name,
+          email: formData.email,
         }),
       });
 
       const data = await response.json();
-      console.log('🟡 JazzCash API Response:', data);
+      console.log('🟡 Backend Response:', data);
 
       if (data.success) {
-        console.log('🟡 Calling JazzCash REST API...');
-        
-        // Call JazzCash REST API directly
-        const jazzcashResponse = await fetch(data.apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data.payload),
-        });
+        // Payment successful - Save order and redirect
+        const orderData = {
+          orderId: orderId,
+          service: service,
+          amount: SERVICE_PRICES[service],
+          payment_method: "JazzCash",
+          transaction_id: data.transactionId,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          cnic: formData.cnic,
+          description: formData.description,
+          responseCode: data.responseCode,
+          responseMessage: data.responseMessage,
+        };
+        localStorage.setItem("lastOrder", JSON.stringify(orderData));
 
-        const result = await jazzcashResponse.json();
-        console.log('🟡 JazzCash Payment Result:', result);
-
-        if (result.pp_ResponseCode === '000') {
-          // Payment successful - Save order and redirect to thank you
-          const orderData = {
-            orderId: orderId,
-            service: service,
-            amount: SERVICE_PRICES[service],
-            payment_method: "JazzCash",
-            transaction_id: result.pp_RetreivBufferenceNo || result.pp_TxnRefNo,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            cnic: formData.cnic,
-            description: formData.description,
-            responseCode: result.pp_ResponseCode,
-            responseMessage: result.pp_ResponseMessage
-          };
-          localStorage.setItem("lastOrder", JSON.stringify(orderData));
-          
-          router.push("/thankyou");
-        } else {
-          // Payment failed
-          alert(`Payment failed: ${result.pp_ResponseMessage} (Code: ${result.pp_ResponseCode})`);
-        }
+        router.push("/thankyou");
       } else {
-        alert('Failed to initiate JazzCash payment: ' + (data.error || 'Unknown error'));
+        alert('Payment failed: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('🔴 JazzCash Error:', error);
@@ -189,8 +172,8 @@ export default function Checkout() {
 
         {errorMsg && <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>}
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading}
           style={loading ? loadingButtonStyle : buttonStyle}
         >
@@ -240,3 +223,4 @@ const loadingButtonStyle = {
   backgroundColor: "#6c757d",
   cursor: "not-allowed"
 };
+        

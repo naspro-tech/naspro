@@ -80,8 +80,6 @@ export default function ThankYou() {
     phone: "",
     cnic: "",
     description: "",
-    responseCode: "",
-    responseMessage: "",
     success: true,
   });
 
@@ -97,38 +95,34 @@ export default function ThankYou() {
       phone,
       cnic,
       description,
-      responseCode,
-      responseMessage,
       success,
       error
     } = router.query;
 
-    // Failed payment or hash verification
+    // Failed payment or error
     if (success === 'false' || error) {
       setOrder((prev) => ({
         ...prev,
         success: false,
-        responseMessage: error || 'Payment failed',
+        transaction_id: transaction_id || "",
       }));
       return;
     }
 
-    // Successful payment query params
+    // Query params exist
     if (service && amount) {
       setOrder({
         orderId,
         service,
         amount,
-        payment_method: payment_method || "JazzCash",
+        payment_method: payment_method || "Bank Transfer",
         transaction_id,
         name,
         email,
         phone,
         cnic,
         description,
-        responseCode,
-        responseMessage,
-        success: responseCode === '000',
+        success: true,
       });
     } else {
       // fallback to localStorage
@@ -138,32 +132,13 @@ export default function ThankYou() {
         setOrder((prev) => ({
           ...prev,
           ...parsedOrder,
-          success: parsedOrder.responseCode === '000',
+          success: true,
         }));
       }
     }
   }, [router.query]);
 
   const serviceLabel = SERVICE_LABELS[order.service] || order.service;
-
-  const getResponseMessage = (code) => {
-    const messages = {
-      '000': 'Transaction Successful',
-      '001': 'Transaction Failed',
-      '002': 'Transaction Cancelled',
-      '003': 'Invalid Merchant ID',
-      '004': 'Invalid Password',
-      '005': 'Invalid OTP',
-      '006': 'Transaction Timeout',
-      '007': 'Invalid Transaction Amount',
-      '008': 'Insufficient Balance',
-      '009': 'Transaction Not Permitted',
-      '010': 'Invalid Currency',
-      '011': 'Invalid TxnRefNo',
-      '012': 'Duplicate TxnRefNo'
-    };
-    return messages[code] || order.responseMessage || 'Thank you for your payment!';
-  };
 
   return (
     <div style={containerStyle}>
@@ -173,14 +148,6 @@ export default function ThankYou() {
             ✅ Payment Successful!
           </h1>
           <p>Thank you for your order. Our team will confirm your payment and get back to you shortly.</p>
-
-          <div style={successBox}>
-            <h3>Payment Confirmed</h3>
-            <p>{getResponseMessage(order.responseCode)}</p>
-            {order.responseCode && (
-              <p><strong>Response Code:</strong> {order.responseCode}</p>
-            )}
-          </div>
         </>
       ) : (
         <>
@@ -189,8 +156,7 @@ export default function ThankYou() {
           </h1>
           <div style={errorBox}>
             <h3>Payment Not Completed</h3>
-            <p>{order.responseMessage || 'There was an issue processing your payment.'}</p>
-            <p>Please try again or contact support if the problem persists.</p>
+            <p>There was an issue processing your payment. Please try again or contact support.</p>
           </div>
         </>
       )}
@@ -200,7 +166,7 @@ export default function ThankYou() {
         <p><strong>Order ID:</strong> {order.orderId}</p>
         <p><strong>Service:</strong> {serviceLabel}</p>
         <p><strong>Amount:</strong> PKR {order.amount}</p>
-        <p><strong>Payment Method:</strong> {order.payment_method || 'JazzCash'}</p>
+        <p><strong>Payment Method:</strong> {order.payment_method || 'Bank Transfer'}</p>
         {order.transaction_id && <p><strong>Transaction ID:</strong> {order.transaction_id}</p>}
         <hr style={{ margin: "10px 0" }} />
         <p><strong>Name:</strong> {order.name}</p>
@@ -232,5 +198,5 @@ export default function ThankYou() {
       </div>
     </div>
   );
-        }
-              
+      }
+        

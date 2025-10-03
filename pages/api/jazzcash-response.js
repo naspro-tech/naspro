@@ -1,85 +1,56 @@
-// /pages/api/jazzcash-response.js
-import crypto from "crypto";
+export default function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const integrity_salt = "1g90sz31w2";
-    const response = req.body;
-    const receivedHash = response.pp_SecureHash;
+  const responseData = req.body;
+  const salt = '1g90sz31w2';
 
-    // Build hash string in the same order JazzCash expects
-    let hashString = integrity_salt + "&";
-    hashString +=
-      (response.pp_Amount || "") +
-      "&" +
-      (response.pp_BillReference || "") +
-      "&" +
-      (response.pp_Description || "") +
-      "&" +
-      (response.pp_Language || "") +
-      "&" +
-      (response.pp_MerchantID || "") +
-      "&" +
-      (response.pp_Password || "") +
-      "&" +
-      (response.pp_ReturnURL || "") +
-      "&" +
-      (response.pp_SubMerchantID || "") +
-      "&" +
-      (response.pp_TxnCurrency || "") +
-      "&" +
-      (response.pp_TxnDateTime || "") +
-      "&" +
-      (response.pp_TxnExpiryDateTime || "") +
-      "&" +
-      (response.pp_TxnRefNo || "") +
-      "&" +
-      (response.pp_TxnType || "") +
-      "&" +
-      (response.pp_Version || "") +
-      "&" +
-      (response.ppmpf_1 || "") +
-      "&" +
-      (response.ppmpf_2 || "") +
-      "&" +
-      (response.ppmpf_3 || "") +
-      "&" +
-      (response.ppmpf_4 || "") +
-      "&" +
-      (response.ppmpf_5 || "");
+  // Log the response for debugging
+  console.log('JazzCash Response:', responseData);
 
-    const calculatedHash = crypto
-      .createHmac("sha256", integrity_salt)
+  try {
+    // Verify hash
+    const receivedHash = responseData.pp_SecureHash;
+    const verifyData = { ...responseData };
+    delete verifyData.pp_SecureHash;
+
+    // Sort keys alphabetically and create hash string for verification
+    const sortedKeys = Object.keys(verifyData).sort();
+    const hashString = salt + '&' + sortedKeys.map(key => verifyData[key]).join('&');
+    
+    const calculatedHash = require('crypto')
+      .createHmac('sha256', salt)
       .update(hashString)
-      .digest("hex");
+      .digest('hex');
 
     if (receivedHash === calculatedHash) {
-      const responseCode = response.pp_ResponseCode;
+      // Hash verification successful
+      const result = {
+        success: true,
+        orderId: responseData.pp_TxnRefNo,
+        transactionId: responseData.pp_BankTxnID || responseData.pp_TxnRefNo,
+        amount: (responseData.pp_Amount / 100).toString(), // Convert back from paisa
+        responseCode: responseData.pp_ResponseCode,
+        responseMessage: responseData.pp_ResponseMessage,
+        payment_method: 'JazzCash',
+        bankTransactionId: responseData.pp_BankTxnID || ''
+      };
 
-      if (responseCode === "000") {
-        // ✅ Payment successful
-        const amount = response.pp_Amount / 100; // convert back from paisa
-        const service = response.pp_BillReference.replace("naspro_", "");
-
-        return res.redirect(
-          302,
-          `/thankyou?service=${service}&amount=${amount}&payment_method=jazzcash&status=success&transaction_id=${response.pp_TxnRefNo}`
-        );
-      } else {
-        // ❌ Payment failed
-        return res.redirect(
-          302,
-          `/payment?error=Payment failed: ${response.pp_ResponseMessage}&error_code=${responseCode}`
-        );
-      }
+      // Store in localStorage via query params (will be picked up by thankyou page)
+      const redirectUrl = `https://naspropvt.vercel.app/thankyou?${new URLSearchParams(result).toString()}`;
+      
+      console.log('JazzCash Payment Successful, redirecting to:', redirectUrl);
+      res.redirect(302, redirectUrl);
     } else {
-      // ❌ Hash mismatch = security error
-      return res.redirect(
-        302,
-        "/payment?error=Security error: Invalid payment response"
-      );
+      // Hash verification failed
+      console.error('JazzCash Hash verification failed');
+      const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment verification failed`;
+      res.redirect(302, redirectUrl);
     }
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    console.error('JazzCash response processing error:', error);
+    const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment processing error`;
+    res.redirect(302, redirectUrl);
   }
 }

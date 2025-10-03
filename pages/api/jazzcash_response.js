@@ -36,12 +36,12 @@ export default function handler(req, res) {
     console.log('Hash String:', hashString);
 
     if (receivedHash === calculatedHash) {
-      // Hash OK → success
+      // ✅ Success
       const result = {
         success: true,
         orderId: responseData.pp_TxnRefNo,
-        transactionId: responseData.pp_RetreivalReferenceNo || responseData.pp_TxnRefNo, // ✅ fixed typo
-        amount: (parseInt(responseData.pp_Amount, 10) / 100).toString(), // ✅ safe parse
+        transaction_id: responseData.pp_RetreivalReferenceNo || responseData.pp_TxnRefNo,
+        amount: (responseData.pp_Amount / 100).toString(), // back to PKR
         responseCode: responseData.pp_ResponseCode,
         responseMessage: responseData.pp_ResponseMessage,
         payment_method: 'JazzCash',
@@ -50,21 +50,17 @@ export default function handler(req, res) {
 
       console.log('JazzCash Payment Successful:', result);
 
-      // ✅ Use env var or fallback for redirect
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-      const redirectUrl = `${baseUrl}/thankyou?${new URLSearchParams(result).toString()}`;
+      const redirectUrl = `https://naspropvt.vercel.app/thankyou?${new URLSearchParams(result).toString()}`;
       res.redirect(302, redirectUrl);
     } else {
-      // Hash mismatch
+      // ❌ Hash mismatch
       console.error('JazzCash Hash verification failed');
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-      const redirectUrl = `${baseUrl}/thankyou?success=false&error=Payment verification failed`;
+      const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment verification failed`;
       res.redirect(302, redirectUrl);
     }
   } catch (error) {
     console.error('JazzCash response processing error:', error);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const redirectUrl = `${baseUrl}/thankyou?success=false&error=Payment processing error`;
+    const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment processing error`;
     res.redirect(302, redirectUrl);
   }
-        }
+}

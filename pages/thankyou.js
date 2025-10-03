@@ -92,7 +92,6 @@ export default function ThankYou() {
       amount,
       payment_method,
       transaction_id,
-      transactionId,
       name,
       email,
       phone,
@@ -104,7 +103,7 @@ export default function ThankYou() {
       error
     } = router.query;
 
-    // Failed payment
+    // ❌ Failed payment
     if (success === 'false' || error) {
       setOrder(prev => ({
         ...prev,
@@ -114,13 +113,14 @@ export default function ThankYou() {
       return;
     }
 
+    // ✅ Successful flow
     if (service && amount) {
       setOrder({
-        orderId: orderId || transactionId,
+        orderId,
         service,
         amount,
         payment_method: payment_method || "JazzCash",
-        transaction_id: transaction_id || transactionId,
+        transaction_id,
         name,
         email,
         phone,
@@ -128,17 +128,17 @@ export default function ThankYou() {
         description,
         responseCode,
         responseMessage,
-        success: responseCode === '000' // ✅ fixed
+        success: responseCode === '000'
       });
     } else {
-      // Fallback to localStorage
+      // fallback localStorage
       const storedOrder = localStorage.getItem("lastOrder");
       if (storedOrder) {
         const parsedOrder = JSON.parse(storedOrder);
         setOrder(prev => ({
           ...prev,
           ...parsedOrder,
-          success: parsedOrder.responseCode === '000' // ✅ fixed
+          success: parsedOrder.responseCode === '000'
         }));
       }
     }
@@ -232,4 +232,5 @@ export default function ThankYou() {
       </div>
     </div>
   );
-}
+                     }
+    

@@ -75,53 +75,49 @@ export default function Checkout() {
 
       const serviceLabel = SERVICE_LABELS[service] || service;
 
-      console.log('🟡 Sending checkout data to backend...');
+      console.log("🟡 Sending checkout data to backend...");
 
-      // Send data to backend API (backend handles JazzCash request)
-      const response = await fetch('/api/jazzcash_payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Step 1: Send to backend to get JazzCash payload
+      const response = await fetch("/api/jazzcash_payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: Number(SERVICE_PRICES[service]),
           description: `Payment for ${serviceLabel} - ${formData.name}`,
-          orderId: orderId,
+          orderId,
           mobileNumber: formData.phone,
           cnic: formData.cnic,
           name: formData.name,
           email: formData.email,
+          service,
         }),
       });
 
       const data = await response.json();
-      console.log('🟡 Backend Response:', data);
+      console.log("🟡 Backend Response:", data);
 
-      if (data.success) {
-        // Payment successful - Save order and redirect
-        const orderData = {
-          orderId: orderId,
-          service: service,
-          amount: SERVICE_PRICES[service],
-          payment_method: "JazzCash",
-          transaction_id: data.transactionId,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          cnic: formData.cnic,
-          description: formData.description,
-          responseCode: data.responseCode,
-          responseMessage: data.responseMessage,
-        };
-        localStorage.setItem("lastOrder", JSON.stringify(orderData));
+      if (data.success && data.apiUrl && data.payload) {
+        // Step 2: Auto-submit hidden form to JazzCash
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = data.apiUrl;
 
-        router.push("/thankyou");
+        Object.keys(data.payload).forEach((key) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = data.payload[key];
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
       } else {
-        alert('Payment failed: ' + (data.error || 'Unknown error'));
+        alert("Failed to initiate payment: " + (data.error || "Unknown error"));
       }
     } catch (error) {
-      console.error('🔴 JazzCash Error:', error);
-      alert('Error initiating JazzCash payment. Please try again.');
+      console.error("🔴 JazzCash Error:", error);
+      alert("Error initiating JazzCash payment. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -147,30 +143,71 @@ export default function Checkout() {
       <form onSubmit={handleJazzCashPayment}>
         <label style={labelStyle}>
           Name*:
-          <input type="text" name="name" value={formData.name} onChange={handleChange} required style={inputStyle} />
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            style={inputStyle}
+          />
         </label>
 
         <label style={labelStyle}>
           Email*:
-          <input type="email" name="email" value={formData.email} onChange={handleChange} required style={inputStyle} />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            style={inputStyle}
+          />
         </label>
 
         <label style={labelStyle}>
           Phone*:
-          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required pattern="03\d{9}" placeholder="03XXXXXXXXX" style={inputStyle} />
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+            pattern="03\d{9}"
+            placeholder="03XXXXXXXXX"
+            style={inputStyle}
+          />
         </label>
 
         <label style={labelStyle}>
           CNIC (last 6 digits)*:
-          <input type="text" name="cnic" value={formData.cnic} onChange={handleChange} required maxLength={6} pattern="\d{6}" placeholder="Enter last 6 digits of CNIC" style={inputStyle} />
+          <input
+            type="text"
+            name="cnic"
+            value={formData.cnic}
+            onChange={handleChange}
+            required
+            maxLength={6}
+            pattern="\d{6}"
+            placeholder="Enter last 6 digits of CNIC"
+            style={inputStyle}
+          />
         </label>
 
         <label style={labelStyle}>
           Description (optional):
-          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={4}
+            style={{ ...inputStyle, resize: "vertical" }}
+          />
         </label>
 
-        {errorMsg && <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>}
+        {errorMsg && (
+          <p style={{ color: "red", marginBottom: 15 }}>{errorMsg}</p>
+        )}
 
         <button
           type="submit"
@@ -221,6 +258,6 @@ const buttonStyle = {
 const loadingButtonStyle = {
   ...buttonStyle,
   backgroundColor: "#6c757d",
-  cursor: "not-allowed"
+  cursor: "not-allowed",
 };
-        
+              

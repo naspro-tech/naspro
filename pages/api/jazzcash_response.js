@@ -6,17 +6,6 @@ export default function handler(req, res) {
   const responseData = req.body;
   const salt = '1g90sz31w2';
 
-  // Helper function for consistency (not used in verification but available if needed)
-  function formatDate(date) {
-    const yyyy = date.getFullYear();
-    const MM = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const mm = String(date.getMinutes()).padStart(2, '0');
-    const ss = String(date.getSeconds()).padStart(2, '0');
-    return `${yyyy}${MM}${dd}${hh}${mm}${ss}`;
-  }
-
   console.log('JazzCash Response Received:', responseData);
 
   try {
@@ -51,27 +40,31 @@ export default function handler(req, res) {
       const result = {
         success: true,
         orderId: responseData.pp_TxnRefNo,
-        transactionId: responseData.pp_RetreivBufferenceNo || responseData.pp_TxnRefNo,
-        amount: (responseData.pp_Amount / 100).toString(), // back to PKR
+        transactionId: responseData.pp_RetreivalReferenceNo || responseData.pp_TxnRefNo, // ✅ fixed typo
+        amount: (parseInt(responseData.pp_Amount, 10) / 100).toString(), // ✅ safe parse
         responseCode: responseData.pp_ResponseCode,
         responseMessage: responseData.pp_ResponseMessage,
         payment_method: 'JazzCash',
-        bankTransactionId: responseData.pp_RetreivBufferenceNo || ''
+        bankTransactionId: responseData.pp_RetreivalReferenceNo || ''
       };
 
       console.log('JazzCash Payment Successful:', result);
 
-      const redirectUrl = `https://naspropvt.vercel.app/thankyou?${new URLSearchParams(result).toString()}`;
+      // ✅ Use env var or fallback for redirect
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const redirectUrl = `${baseUrl}/thankyou?${new URLSearchParams(result).toString()}`;
       res.redirect(302, redirectUrl);
     } else {
       // Hash mismatch
       console.error('JazzCash Hash verification failed');
-      const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment verification failed`;
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const redirectUrl = `${baseUrl}/thankyou?success=false&error=Payment verification failed`;
       res.redirect(302, redirectUrl);
     }
   } catch (error) {
     console.error('JazzCash response processing error:', error);
-    const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment processing error`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const redirectUrl = `${baseUrl}/thankyou?success=false&error=Payment processing error`;
     res.redirect(302, redirectUrl);
   }
-}
+        }

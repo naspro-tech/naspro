@@ -30,7 +30,7 @@ const buttonStyle = {
   fontWeight: 600,
   fontSize: "1rem",
   width: "100%",
-  cursor: "pointer",
+  cursor: "not-allowed",
   marginTop: 10,
 };
 
@@ -54,16 +54,10 @@ const summaryBoxStyle = {
   lineHeight: 1.6,
 };
 
-const loadingStyle = {
-  ...buttonStyle,
-  backgroundColor: "#6c757d",
-  cursor: "not-allowed"
-};
-
 export default function PaymentPage() {
-  const [method, setMethod] = useState(null);
-  const [bankStep, setBankStep] = useState(0);
-  const [proof, setProof] = useState({ transactionNumber: "", accountTitle: "", accountNumber: "", screenshot: null });
+  const router = useRouter();
+  const { service, amount, name, email, phone, cnic, description } = router.query;
+
   const [order, setOrder] = useState({
     service: "",
     amount: 0,
@@ -74,116 +68,21 @@ export default function PaymentPage() {
     description: "",
   });
   const [orderId, setOrderId] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState(null);
+  const [bankStep, setBankStep] = useState(0);
+  const [proof, setProof] = useState({ transactionNumber: "", accountTitle: "", accountNumber: "", screenshot: null });
 
-  const router = useRouter();
-  const { service, amount, name, email, phone, cnic, description } = router.query;
-
-  // Set order from query params
   useEffect(() => {
     if (service && amount) {
       setOrder({ service, amount, name, email, phone, cnic, description });
-    }
-  }, [service, amount, name, email, phone, cnic, description]);
-
-  // Generate unique Order ID
-  useEffect(() => {
-    if (!orderId && order.service) {
       const timestamp = Date.now().toString().slice(-5);
       const randomNum = Math.floor(Math.random() * 900 + 100);
       setOrderId(`NASPRO-${timestamp}-${randomNum}`);
     }
-  }, [order.service]);
+  }, [service, amount, name, email, phone, cnic, description]);
 
-  const handleJazzCash = async () => {
-    const serviceLabel = SERVICE_LABELS[order.service] || order.service;
-    
-    // Validate required fields for JazzCash
-    if (!order.cnic || order.cnic.length !== 6) {
-      alert("Please provide valid CNIC (last 6 digits) for JazzCash payment.");
-      return;
-    }
+  const handleComingSoon = () => alert("This payment method is coming soon!");
 
-    if (!order.phone || order.phone.length !== 11) {
-      alert("Please provide valid phone number for JazzCash payment.");
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      console.log('🟡 Initiating JazzCash payment...');
-      
-      const response = await fetch('/api/jazzcash_payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: Number(order.amount),
-          description: `Payment for ${serviceLabel} - ${order.name}`,
-          orderId: orderId,
-          mobileNumber: order.phone,
-          cnic: order.cnic
-        }),
-      });
-
-      const data = await response.json();
-      console.log('🟡 JazzCash API Response:', data);
-
-      if (data.success) {
-        console.log('🟡 Calling JazzCash REST API...');
-        
-        // Call JazzCash REST API directly
-        const jazzcashResponse = await fetch(data.apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data.payload),
-        });
-
-        const result = await jazzcashResponse.json();
-        console.log('🟡 JazzCash Payment Result:', result);
-
-        if (result.pp_ResponseCode === '000') {
-          // Payment successful
-          const orderData = {
-            orderId: orderId,
-            service: order.service,
-            amount: order.amount,
-            payment_method: "JazzCash",
-            transaction_id: result.pp_RetreivBufferenceNo || result.pp_TxnRefNo,
-            name: order.name,
-            email: order.email,
-            phone: order.phone,
-            cnic: order.cnic,
-            description: order.description,
-            responseCode: result.pp_ResponseCode,
-            responseMessage: result.pp_ResponseMessage
-          };
-          localStorage.setItem("lastOrder", JSON.stringify(orderData));
-          
-          console.log('🟢 Payment successful, redirecting to thank you page...');
-          router.push("/thankyou");
-        } else {
-          // Payment failed
-          console.error('🔴 Payment failed:', result.pp_ResponseMessage);
-          alert(`Payment failed: ${result.pp_ResponseMessage} (Code: ${result.pp_ResponseCode})`);
-        }
-      } else {
-        console.error('🔴 API Error:', data.error);
-        alert('Failed to initiate JazzCash payment: ' + (data.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('🔴 JazzCash Error:', error);
-      alert('Error initiating JazzCash payment. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEasypaisa = () => alert("Easypaisa payment is coming soon!");
   const handleBankStep1 = () => setBankStep(1);
 
   const handleChange = (e) => {
@@ -222,9 +121,10 @@ export default function PaymentPage() {
 
   return (
     <div style={containerStyle}>
-      <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: 15, textAlign: "center" }}>Payment</h2>
+      <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: 15, textAlign: "center" }}>
+        Payment
+      </h2>
 
-      {/* Customer Summary Box */}
       <div style={summaryBoxStyle}>
         <p><strong>Order ID:</strong> {orderId}</p>
         <p><b>Service:</b> {serviceLabel}</p>
@@ -237,22 +137,21 @@ export default function PaymentPage() {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button 
-          onClick={handleJazzCash} 
-          disabled={loading}
-          style={loading ? loadingStyle : { ...buttonStyle, backgroundColor: "#d32f2f" }}
-        >
-          {loading ? "Processing..." : "Pay with JazzCash"}
+        <button onClick={handleComingSoon} style={buttonStyle}>
+          Pay with JazzCash (Coming Soon)
         </button>
-        <button onClick={handleEasypaisa} style={{ ...buttonStyle, backgroundColor: "#388e3c" }}>
+        <button onClick={handleComingSoon} style={{ ...buttonStyle, backgroundColor: "#388e3c" }}>
           Pay with Easypaisa (Coming Soon)
         </button>
-        <button onClick={() => setMethod("bank")} style={{ ...buttonStyle, backgroundColor: "#ccc", color: "#333" }}>
+        <button
+          onClick={() => setMethod("bank")}
+          style={{ ...buttonStyle, backgroundColor: "#ccc", color: "#333", cursor: "pointer" }}
+        >
           Pay via Bank Transfer
         </button>
       </div>
 
-      {/* Bank Step 1 */}
+      {/* Bank Transfer Step 1 */}
       {method === "bank" && bankStep === 0 && (
         <div style={{ marginTop: 20 }}>
           <h3 style={{ fontWeight: 600, marginBottom: 10 }}>Bank Transfer Details</h3>
@@ -265,7 +164,7 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {/* Bank Step 2 */}
+      {/* Bank Transfer Step 2 */}
       {method === "bank" && bankStep === 1 && (
         <form style={{ marginTop: 20 }} onSubmit={handleBankSubmit}>
           <h3 style={{ fontWeight: 600, marginBottom: 10 }}>Submit Payment Proof</h3>
@@ -291,3 +190,4 @@ export default function PaymentPage() {
     </div>
   );
     }
+    

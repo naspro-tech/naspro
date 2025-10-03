@@ -88,7 +88,46 @@ export default function PaymentPage() {
     }
   }, [order.service]);
 
-  const handleJazzCash = () => alert("JazzCash payment is coming soon!");
+  const handleJazzCash = async () => {
+  try {
+    const response = await fetch('/api/jazzcash_payment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: Number(order.amount),
+        description: `Payment for ${serviceLabel} - ${order.name}`,
+        orderId: orderId
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Create and submit form to JazzCash
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.redirectUrl;
+
+      Object.keys(data.paymentData).forEach(key => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = data.paymentData[key];
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } else {
+      alert('Failed to initiate JazzCash payment: ' + (data.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('JazzCash Error:', error);
+    alert('Error initiating JazzCash payment. Please try again.');
+  }
+};
   const handleEasypaisa = () => alert("Easypaisa payment is coming soon!");
   const handleBankStep1 = () => setBankStep(1);
 
@@ -144,7 +183,7 @@ export default function PaymentPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <button onClick={handleJazzCash} style={{ ...buttonStyle, backgroundColor: "#d32f2f" }}>
-          Pay with JazzCash (Coming Soon)
+          Pay with JazzCash 
         </button>
         <button onClick={handleEasypaisa} style={{ ...buttonStyle, backgroundColor: "#388e3c" }}>
           Pay with Easypaisa (Coming Soon)

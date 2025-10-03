@@ -1,3 +1,4 @@
+// /pages/api/jazzcash_payment.js
 import crypto from "crypto";
 
 export default function handler(req, res) {
@@ -5,23 +6,14 @@ export default function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const {
-    amount,
-    description,
-    orderId,
-    mobileNumber,
-    cnic,
-    name,
-    email,
-    service,
-  } = req.body;
+  const { amount, description, mobileNumber, cnic, name, email, service } = req.body;
 
-  // JazzCash sandbox credentials (hardcoded for testing)
+  // JazzCash credentials
   const merchantId = "MC339532";
   const password = "2282sxh9z8";
   const salt = "1g90sz31w2";
 
-  // Helper: YYYYMMDDHHMMSS
+  // Helper to format date as YYYYMMDDHHMMSS
   const formatDate = (date) => {
     const yyyy = date.getFullYear();
     const MM = String(date.getMonth() + 1).padStart(2, "0");
@@ -34,16 +26,17 @@ export default function handler(req, res) {
 
   const now = new Date();
   const dateTime = formatDate(now);
-  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000)); // 24h later
+  const expiryDateTime = formatDate(new Date(now.getTime() + 24 * 60 * 60 * 1000));
 
   const txnRefNo = "T" + Date.now().toString().slice(-11);
   const billReference = "billRef" + Date.now().toString().slice(-6);
 
+  // Payload with empty ppmpf fields
   const payload = {
     pp_Amount: (amount * 100).toString(), // paisa
     pp_BillReference: billReference,
     pp_CNIC: cnic,
-    pp_Description: description.substring(0, 200),
+    pp_Description: description ? description.substring(0, 200) : "",
     pp_Language: "EN",
     pp_MerchantID: merchantId,
     pp_MobileNumber: mobileNumber,
@@ -57,14 +50,13 @@ export default function handler(req, res) {
     ppmpf_2: "",
     ppmpf_3: "",
     ppmpf_4: "",
-    ppmpf_5: "",
+    ppmpf_5: ""
   };
 
   try {
-    // Generate secure hash
+    // Remove empty fields for hash calculation
     const hashData = { ...payload };
     delete hashData.pp_SecureHash;
-
     Object.keys(hashData).forEach((key) => {
       if (hashData[key] === "") delete hashData[key];
     });
@@ -81,19 +73,17 @@ export default function handler(req, res) {
 
     payload.pp_SecureHash = secureHash;
 
-    // ✅ Return payload for frontend hidden form submission
+    console.log("JazzCash Payload:", payload);
+    console.log("Hash String:", hashString);
+    console.log("Generated Hash:", secureHash);
+
     res.status(200).json({
       success: true,
       payload,
-      apiUrl:
-        "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction",
+      apiUrl: "https://sandbox.jazzcash.com.pk/ApplicationAPI/API/2.0/Purchase/DoMWalletTransaction"
     });
   } catch (error) {
-    console.error("JazzCash payload generation error:", error.message);
-    res.status(500).json({
-      success: false,
-      error: "Failed to initiate payment",
-    });
+    console.error("JazzCash initiation error:", error);
+    res.status(500).json({ success: false, error: "Failed to initiate payment" });
   }
     }
-        

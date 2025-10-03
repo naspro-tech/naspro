@@ -68,23 +68,17 @@ export default function Checkout() {
     }
 
     try {
-      // Generate unique Order ID
-      const timestamp = Date.now().toString().slice(-5);
-      const randomNum = Math.floor(Math.random() * 900 + 100);
-      const orderId = `NASPRO-${timestamp}-${randomNum}`;
-
       const serviceLabel = SERVICE_LABELS[service] || service;
 
       console.log("🟡 Sending checkout data to backend...");
 
-      // Step 1: Send to backend to get JazzCash payload
+      // Step 1: Get JazzCash payload from backend
       const response = await fetch("/api/jazzcash_payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: Number(SERVICE_PRICES[service]),
           description: `Payment for ${serviceLabel} - ${formData.name}`,
-          orderId,
           mobileNumber: formData.phone,
           cnic: formData.cnic,
           name: formData.name,
@@ -97,21 +91,44 @@ export default function Checkout() {
       console.log("🟡 Backend Response:", data);
 
       if (data.success && data.apiUrl && data.payload) {
-        // Step 2: Auto-submit hidden form to JazzCash
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = data.apiUrl;
-
-        Object.keys(data.payload).forEach((key) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = data.payload[key];
-          form.appendChild(input);
+        console.log("🟡 Calling JazzCash REST API...");
+        
+        // Step 2: Call JazzCash REST API directly
+        const jazzcashResponse = await fetch(data.apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data.payload),
         });
 
-        document.body.appendChild(form);
-        form.submit();
+        const result = await jazzcashResponse.json();
+        console.log("🟡 JazzCash API Result:", result);
+
+        // Step 3: Handle JazzCash response
+        if (result.pp_ResponseCode === '000') {
+          // Payment successful
+          const orderData = {
+            orderId: data.payload.pp_TxnRefNo,
+            service: service,
+            amount: SERVICE_PRICES[service],
+            payment_method: "JazzCash",
+            transaction_id: result.pp_RetreivalReferenceNo || result.pp_TxnRefNo,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            cnic: formData.cnic,
+            description: formData.description,
+            responseCode: result.pp_ResponseCode,
+            responseMessage: result.pp_ResponseMessage
+          };
+          localStorage.setItem("lastOrder", JSON.stringify(orderData));
+          
+          console.log('🟢 Payment successful, redirecting to thank you page...');
+          router.push("/thankyou");
+        } else {
+          // Payment failed
+          console.error('🔴 Payment failed:', result.pp_ResponseMessage);
+          alert(`Payment failed: ${result.pp_ResponseMessage} (Code: ${result.pp_ResponseCode})`);
+        }
       } else {
         alert("Failed to initiate payment: " + (data.error || "Unknown error"));
       }
@@ -260,4 +277,3 @@ const loadingButtonStyle = {
   backgroundColor: "#6c757d",
   cursor: "not-allowed",
 };
-              

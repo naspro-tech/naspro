@@ -104,7 +104,7 @@ export default function ThankYou() {
       error
     } = router.query;
 
-    // Check if this is a failed payment
+    // Failed payment
     if (success === 'false' || error) {
       setOrder(prev => ({
         ...prev,
@@ -128,7 +128,7 @@ export default function ThankYou() {
         description,
         responseCode,
         responseMessage,
-        success: responseCode === '000' || true
+        success: responseCode === '000' // ✅ fixed
       });
     } else {
       // Fallback to localStorage
@@ -138,7 +138,7 @@ export default function ThankYou() {
         setOrder(prev => ({
           ...prev,
           ...parsedOrder,
-          success: true
+          success: parsedOrder.responseCode === '000' // ✅ fixed
         }));
       }
     }
@@ -146,7 +146,6 @@ export default function ThankYou() {
 
   const serviceLabel = SERVICE_LABELS[order.service] || order.service;
 
-  // Get response message based on code
   const getResponseMessage = (code) => {
     const messages = {
       '000': 'Transaction Successful',
@@ -175,7 +174,6 @@ export default function ThankYou() {
           </h1>
           <p>Thank you for your order. Our team will confirm your payment and get back to you shortly.</p>
 
-          {/* Success Message Box */}
           <div style={successBox}>
             <h3>Payment Confirmed</h3>
             <p>{getResponseMessage(order.responseCode)}</p>
@@ -189,8 +187,6 @@ export default function ThankYou() {
           <h1 style={{ fontSize: "1.5rem", marginBottom: 15, color: '#dc2626' }}>
             ❌ Payment Failed
           </h1>
-          
-          {/* Error Message Box */}
           <div style={errorBox}>
             <h3>Payment Not Completed</h3>
             <p>{order.responseMessage || 'There was an issue processing your payment.'}</p>
@@ -199,7 +195,6 @@ export default function ThankYou() {
         </>
       )}
 
-      {/* Order Summary */}
       <div style={detailsBox}>
         <h3>Order Details:</h3>
         <p><strong>Order ID:</strong> {order.orderId}</p>
@@ -215,7 +210,6 @@ export default function ThankYou() {
         <p><strong>Description:</strong> {order.description || 'N/A'}</p>
       </div>
 
-      {/* Contact Information */}
       <div style={contactBox}>
         <h3>Contact Us:</h3>
         <p>📧 Email: naspropvt@gmail.com</p>
@@ -228,8 +222,8 @@ export default function ThankYou() {
           Back to Home
         </button>
         {!order.success && (
-          <button 
-            style={{ ...buttonStyle, backgroundColor: '#dc2626' }} 
+          <button
+            style={{ ...buttonStyle, backgroundColor: '#dc2626' }}
             onClick={() => router.push("/payment")}
           >
             Try Again
@@ -238,4 +232,4 @@ export default function ThankYou() {
       </div>
     </div>
   );
-    }
+}

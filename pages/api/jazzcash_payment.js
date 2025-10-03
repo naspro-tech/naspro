@@ -9,9 +9,9 @@ export default function handler(req, res) {
   const { amount, description, mobileNumber, cnic, name, email, service } = req.body;
 
   // JazzCash credentials
-  const merchantId = "MC339532";
-  const password = "2282sxh9z8";
-  const salt = "1g90sz31w2";
+  const merchantId = "MC302132";
+  const password = "53v2z2u302";
+  const salt = "z60gb5u008";
 
   // Helper to format date as YYYYMMDDHHMMSS
   const formatDate = (date) => {

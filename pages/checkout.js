@@ -51,6 +51,7 @@ export default function Checkout() {
     setErrorMsg("");
     setLoading(true);
 
+    // Basic validation
     if (!formData.name || !formData.email || !formData.phone || !formData.cnic) {
       setErrorMsg("Please fill in all required fields.");
       setLoading(false);
@@ -68,17 +69,23 @@ export default function Checkout() {
     }
 
     try {
+      // Generate unique Order ID
+      const timestamp = Date.now().toString().slice(-5);
+      const randomNum = Math.floor(Math.random() * 900 + 100);
+      const orderId = `NASPRO-${timestamp}-${randomNum}`;
+
       const serviceLabel = SERVICE_LABELS[service] || service;
 
       console.log("🟡 Sending checkout data to backend...");
 
-      // Step 1: Get JazzCash payload from backend
+      // Step 1: Get payload from backend
       const response = await fetch("/api/jazzcash_payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: Number(SERVICE_PRICES[service]),
           description: `Payment for ${serviceLabel} - ${formData.name}`,
+          orderId,
           mobileNumber: formData.phone,
           cnic: formData.cnic,
           name: formData.name,
@@ -91,44 +98,38 @@ export default function Checkout() {
       console.log("🟡 Backend Response:", data);
 
       if (data.success && data.apiUrl && data.payload) {
-        console.log("🟡 Calling JazzCash REST API...");
-        
-        // Step 2: Call JazzCash REST API directly
-        const jazzcashResponse = await fetch(data.apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data.payload),
+        // Step 2: Store order in localStorage for /thankyou fallback
+        const orderData = {
+          orderId,
+          service,
+          amount: SERVICE_PRICES[service],
+          payment_method: "JazzCash",
+          transaction_id: "", // will be updated on success callback
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          cnic: formData.cnic,
+          description: formData.description,
+          responseCode: "",
+          responseMessage: "",
+        };
+        localStorage.setItem("lastOrder", JSON.stringify(orderData));
+
+        // Step 3: Create hidden form and submit to JazzCash
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = data.apiUrl;
+
+        Object.keys(data.payload).forEach((key) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = data.payload[key];
+          form.appendChild(input);
         });
 
-        const result = await jazzcashResponse.json();
-        console.log("🟡 JazzCash API Result:", result);
-
-        // Step 3: Handle JazzCash response
-        if (result.pp_ResponseCode === '000') {
-          // Payment successful
-          const orderData = {
-            orderId: data.payload.pp_TxnRefNo,
-            service: service,
-            amount: SERVICE_PRICES[service],
-            payment_method: "JazzCash",
-            transaction_id: result.pp_RetreivalReferenceNo || result.pp_TxnRefNo,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            cnic: formData.cnic,
-            description: formData.description,
-            responseCode: result.pp_ResponseCode,
-            responseMessage: result.pp_ResponseMessage
-          };
-          localStorage.setItem("lastOrder", JSON.stringify(orderData));
-          
-          console.log('🟢 Payment successful, redirecting to thank you page...');
-          router.push("/thankyou");
-        } else {
-          // Payment failed
-          console.error('🔴 Payment failed:', result.pp_ResponseMessage);
-          alert(`Payment failed: ${result.pp_ResponseMessage} (Code: ${result.pp_ResponseCode})`);
-        }
+        document.body.appendChild(form);
+        form.submit();
       } else {
         alert("Failed to initiate payment: " + (data.error || "Unknown error"));
       }
@@ -191,6 +192,7 @@ export default function Checkout() {
             onChange={handleChange}
             required
             pattern="03\d{9}"
+            maxLength={11}
             placeholder="03XXXXXXXXX"
             style={inputStyle}
           />
@@ -277,3 +279,4 @@ const loadingButtonStyle = {
   backgroundColor: "#6c757d",
   cursor: "not-allowed",
 };
+      

@@ -89,6 +89,8 @@ export default function PaymentPage() {
   }, [order.service]);
 
   const handleJazzCash = async () => {
+  const serviceLabel = SERVICE_LABELS[order.service] || order.service; // Add this line
+  
   try {
     const response = await fetch('/api/jazzcash_payment', {
       method: 'POST',

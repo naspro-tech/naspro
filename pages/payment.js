@@ -1,79 +1,103 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+
+const SERVICE_LABELS = {
+  webapp: "Web & App Development",
+  domainhosting: "Domain & Hosting",
+  branding: "Branding & Logo Design",
+  ecommerce: "E-Commerce Solutions",
+  cloudit: "Cloud & IT Infrastructure",
+  digitalmarketing: "Digital Marketing",
+};
 
 export default function PaymentPage() {
   const router = useRouter();
   const { service, amount, name, email, phone, description } = router.query;
+
+  const [order, setOrder] = useState({
+    service: "",
+    amount: 0,
+    name: "",
+    email: "",
+    phone: "",
+    description: "",
+  });
+  const [orderId, setOrderId] = useState("");
   const [payload, setPayload] = useState(null);
   const [apiUrl, setApiUrl] = useState("");
-  const [orderId, setOrderId] = useState("");
 
   useEffect(() => {
     if (service && amount) {
+      setOrder({ service, amount, name, email, phone, description });
       const timestamp = Date.now().toString().slice(-5);
       const randomNum = Math.floor(Math.random() * 900 + 100);
       setOrderId(`NASPRO-${timestamp}-${randomNum}`);
+    }
+  }, [service, amount, name, email, phone, description]);
 
+  useEffect(() => {
+    // Call backend to get payload
+    if (order.amount && orderId) {
       fetch("/api/jazzcash_payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: Number(amount),
-          description: description || "",
-          mobileNumber: phone,
-          name,
-          email,
-          service,
+          amount: Number(order.amount),
+          description: order.description || "",
+          orderId,
+          mobileNumber: order.phone,
+          name: order.name,
+          email: order.email,
+          service: order.service,
         }),
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.success && data.payload) {
+          if (data.success) {
             setPayload(data.payload);
             setApiUrl(data.apiUrl);
-          } else alert("Failed to generate JazzCash payment.");
+          } else {
+            alert("Failed to initiate JazzCash payment: " + (data.error || ""));
+          }
         })
-        .catch((err) => {
-          console.error(err);
-          alert("Error generating JazzCash payment.");
-        });
+        .catch((err) => alert("Error initiating JazzCash payment"));
     }
-  }, [service, amount, name, email, phone, description]);
+  }, [order, orderId]);
 
-  const handleJazzCashPayment = (e) => {
-    e.preventDefault();
-    if (!payload || !apiUrl) return alert("Payment is not ready yet.");
-    document.getElementById("jazzcashForm").submit();
-  };
-
-  if (!payload) return <p>Loading payment...</p>;
+  const serviceLabel = SERVICE_LABELS[order.service] || order.service;
 
   return (
-    <div style={{ maxWidth: 600, margin: "30px auto", padding: 20, fontFamily: "'Inter', sans-serif" }}>
-      <h2 style={{ textAlign: "center" }}>Payment</h2>
-      <div style={{ background: "#f9f9f9", padding: 20, borderRadius: 12 }}>
-        <p><strong>Order ID:</strong> {orderId}</p>
-        <p><strong>Service:</strong> {service}</p>
-        <p><strong>Name:</strong> {name}</p>
-        <p><strong>Email:</strong> {email}</p>
-        <p><strong>Phone:</strong> {phone}</p>
-        <p><strong>Description:</strong> {description || "N/A"}</p>
-        <p><strong>Amount:</strong> PKR {Number(amount).toLocaleString()}</p>
-      </div>
+    <div style={{ maxWidth: 600, margin: "30px auto", fontFamily: "Inter,sans-serif" }}>
+      <h2>Payment for {serviceLabel}</h2>
+      <p>Name: {order.name}</p>
+      <p>Email: {order.email}</p>
+      <p>Phone: {order.phone}</p>
+      <p>Description: {order.description}</p>
+      <p>Amount: PKR {Number(order.amount).toLocaleString()}</p>
 
-      <form id="jazzcashForm" method="POST" action={apiUrl}>
-        {Object.keys(payload).map((key) => (
-          <input key={key} type="hidden" name={key} value={payload[key]} />
-        ))}
-      </form>
-
-      <button
-        onClick={handleJazzCashPayment}
-        style={{ marginTop: 20, padding: "12px", width: "100%", backgroundColor: "#ff6600", color: "#fff", fontSize: "1rem", borderRadius: 8, border: "none", cursor: "pointer" }}
-      >
-        Pay with JazzCash
-      </button>
+      {/* Only render form if payload is ready */}
+      {payload && apiUrl && (
+        <form id="jazzcashForm" method="POST" action={apiUrl}>
+          {Object.keys(payload).map((key) => (
+            <input key={key} type="hidden" name={key} value={payload[key]} />
+          ))}
+          <button
+            type="submit"
+            style={{
+              padding: "12px 20px",
+              backgroundColor: "#ff6600",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              marginTop: 20,
+            }}
+          >
+            Pay with JazzCash
+          </button>
+        </form>
+      )}
     </div>
   );
-    }
-  
+        }
+              

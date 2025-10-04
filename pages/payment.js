@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
 const SERVICE_LABELS = {
@@ -14,41 +14,33 @@ export default function PaymentPage() {
   const router = useRouter();
   const { service, amount, name, email, phone, description } = router.query;
 
-  const [order, setOrder] = useState({
-    service: "",
-    amount: 0,
-    name: "",
-    email: "",
-    phone: "",
-    description: "",
-  });
   const [orderId, setOrderId] = useState("");
   const [payload, setPayload] = useState(null);
   const [apiUrl, setApiUrl] = useState("");
 
+  // Generate orderId once
   useEffect(() => {
     if (service && amount) {
-      setOrder({ service, amount, name, email, phone, description });
       const timestamp = Date.now().toString().slice(-5);
       const randomNum = Math.floor(Math.random() * 900 + 100);
       setOrderId(`NASPRO-${timestamp}-${randomNum}`);
     }
-  }, [service, amount, name, email, phone, description]);
+  }, [service, amount]);
 
+  // Fetch JazzCash payload from backend
   useEffect(() => {
-    // Call backend to get payload
-    if (order.amount && orderId) {
+    if (amount && orderId) {
       fetch("/api/jazzcash_payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: Number(order.amount),
-          description: order.description || "",
+          amount: Number(amount),
+          description: description || "",
           orderId,
-          mobileNumber: order.phone,
-          name: order.name,
-          email: order.email,
-          service: order.service,
+          mobileNumber: phone,
+          name,
+          email,
+          service,
         }),
       })
         .then((res) => res.json())
@@ -62,20 +54,19 @@ export default function PaymentPage() {
         })
         .catch((err) => alert("Error initiating JazzCash payment"));
     }
-  }, [order, orderId]);
+  }, [amount, orderId, service, name, email, phone, description]);
 
-  const serviceLabel = SERVICE_LABELS[order.service] || order.service;
+  const serviceLabel = SERVICE_LABELS[service] || service;
 
   return (
     <div style={{ maxWidth: 600, margin: "30px auto", fontFamily: "Inter,sans-serif" }}>
       <h2>Payment for {serviceLabel}</h2>
-      <p>Name: {order.name}</p>
-      <p>Email: {order.email}</p>
-      <p>Phone: {order.phone}</p>
-      <p>Description: {order.description}</p>
-      <p>Amount: PKR {Number(order.amount).toLocaleString()}</p>
+      <p>Name: {name}</p>
+      <p>Email: {email}</p>
+      <p>Phone: {phone}</p>
+      <p>Description: {description}</p>
+      <p>Amount: PKR {Number(amount).toLocaleString()}</p>
 
-      {/* Only render form if payload is ready */}
       {payload && apiUrl && (
         <form id="jazzcashForm" method="POST" action={apiUrl}>
           {Object.keys(payload).map((key) => (
@@ -99,5 +90,4 @@ export default function PaymentPage() {
       )}
     </div>
   );
-        }
-              
+              }

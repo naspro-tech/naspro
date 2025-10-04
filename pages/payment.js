@@ -82,13 +82,16 @@ export default function PaymentPage() {
     }
   }, [service, amount, name, email, phone, description]);
 
+  // ------------------- JazzCash Payment -------------------
   const handleJazzCashPayment = async () => {
     if (!order.phone || order.phone.length !== 11) {
       alert("Please provide a valid phone number for JazzCash payment.");
       return;
     }
+
     setLoading(true);
     try {
+      // Step 1: get payload from backend
       const response = await fetch("/api/jazzcash_payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,8 +106,11 @@ export default function PaymentPage() {
           service: order.service,
         }),
       });
+
       const data = await response.json();
+
       if (data.success && data.payload) {
+        // Step 2: submit hidden form to JazzCash hosted page
         const form = document.createElement("form");
         form.method = "POST";
         form.action =
@@ -119,7 +125,7 @@ export default function PaymentPage() {
         });
 
         document.body.appendChild(form);
-        form.submit();
+        form.submit(); // <-- redirects user to JazzCash
       } else {
         alert("Failed to initiate JazzCash payment.");
       }
@@ -131,6 +137,7 @@ export default function PaymentPage() {
     }
   };
 
+  // ------------------- Bank Transfer -------------------
   const handleComingSoon = () => alert("This payment method is coming soon!");
   const handleBankStep1 = () => setBankStep(1);
 
@@ -146,6 +153,7 @@ export default function PaymentPage() {
       alert("Please complete all fields before submitting.");
       return;
     }
+
     const orderData = {
       orderId,
       service: order.service,
@@ -240,5 +248,5 @@ export default function PaymentPage() {
       )}
     </div>
   );
-          }
-          
+  }
+    

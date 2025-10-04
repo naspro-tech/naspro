@@ -9,9 +9,9 @@ export default function handler(req, res) {
   const { amount, description, mobileNumber, name, email, service } = req.body;
 
   // ------------------ JazzCash sandbox credentials ------------------
-  const merchantId = "MC302132";
-  const password = "53v2z2u302";
-  const salt = "z60gb5u008";
+  const merchantId = "MC339532";
+  const password = "2282sxh9z8";
+  const salt = "1g90sz31w2";
   const version = "1.1";
   const txnType = "MWALLET";
   const language = "EN";

@@ -9,7 +9,7 @@ export default function handler(req, res) {
   const responseData = req.body;
 
   // ------------------ JazzCash sandbox salt ------------------
-  const salt = "z60gb5u008";
+  const salt = "1g90sz31w2";
 
   console.log("JazzCash Response Received:", responseData);
 

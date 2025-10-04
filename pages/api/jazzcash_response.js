@@ -1,3 +1,4 @@
+// /pages/api/jazzcash_response.js
 import crypto from "crypto";
 
 export default function handler(req, res) {
@@ -7,24 +8,25 @@ export default function handler(req, res) {
 
   const responseData = req.body;
 
-  // JazzCash sandbox salt (hardcoded for testing)
+  // Hardcoded sandbox salt
   const salt = "z60gb5u008";
 
-  console.log("JazzCash Response Received:", responseData);
-
   try {
-    // Verify hash
+    // Extract received hash
     const receivedHash = responseData.pp_SecureHash;
 
+    // Recalculate secure hash
     const verifyData = { ...responseData };
     delete verifyData.pp_SecureHash;
 
-    Object.keys(verifyData).forEach((key) => {
+    // Remove empty fields
+    Object.keys(verifyData).forEach(key => {
       if (verifyData[key] === "") delete verifyData[key];
     });
 
+    // Sort keys alphabetically and join values
     const sortedKeys = Object.keys(verifyData).sort();
-    const hashValues = sortedKeys.map((key) => verifyData[key]);
+    const hashValues = sortedKeys.map(key => verifyData[key]);
     const hashString = salt + "&" + hashValues.join("&");
 
     const calculatedHash = crypto
@@ -33,14 +35,10 @@ export default function handler(req, res) {
       .digest("hex")
       .toUpperCase();
 
-    console.log("Hash Verification:");
-    console.log("Received Hash:", receivedHash);
-    console.log("Calculated Hash:", calculatedHash);
-
     if (receivedHash === calculatedHash) {
       // ✅ Payment verified
       const result = {
-        success: true,
+        success: responseData.pp_ResponseCode === "000" ? true : false,
         orderId: responseData.pp_TxnRefNo,
         transaction_id: responseData.pp_RetreivalReferenceNo || responseData.pp_TxnRefNo,
         amount: (responseData.pp_Amount / 100).toString(),
@@ -50,21 +48,18 @@ export default function handler(req, res) {
         bankTransactionId: responseData.pp_RetreivalReferenceNo || "",
       };
 
-      console.log("JazzCash Payment Verified:", result);
-
-      const redirectUrl = `https://naspropvt.vercel.app/thankyou?${new URLSearchParams(
-        result
-      ).toString()}`;
+      // Redirect user to frontend thank-you page with transaction details
+      const redirectUrl = `https://naspropvt.vercel.app/thankyou?${new URLSearchParams(result).toString()}`;
       return res.redirect(302, redirectUrl);
     } else {
       // ❌ Hash mismatch
-      console.error("JazzCash Hash verification failed");
       const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment verification failed`;
       return res.redirect(302, redirectUrl);
     }
   } catch (error) {
-    console.error("JazzCash response processing error:", error.message);
+    // ❌ Any processing error
     const redirectUrl = `https://naspropvt.vercel.app/thankyou?success=false&error=Payment processing error`;
     return res.redirect(302, redirectUrl);
   }
 }
+  

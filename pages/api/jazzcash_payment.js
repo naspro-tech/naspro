@@ -2,47 +2,29 @@
 import crypto from "crypto";
 
 export default function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { amount, description, mobileNumber, name, email, service } = req.body;
 
-  // ------------------ JazzCash sandbox credentials ------------------
-  const merchantId = "MC339532";
-  const password = "2282sxh9z8";
-  const salt = "1g90sz31w2";
+  // ------------------ Sandbox credentials ------------------
+  const merchantId = "MC302132";
+  const password = "53v2z2u302";
+  const salt = "z60gb5u008";
   const version = "1.1";
   const txnType = "MWALLET";
   const language = "EN";
   const currency = "PKR";
   const bankId = "TBANK";
   const productId = "RETL";
-  const returnUrl = "https://naspropvt.vercel.app/api/jazzcash_response"; // your response handler
+  const returnUrl = "https://naspropvt.vercel.app/api/jazzcash_response";
 
-  // ------------------ Generate transaction timestamps ------------------
   const now = new Date();
-  const formatDate = (date) => {
-    const yyyy = date.getFullYear();
-    const MM = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    const hh = String(date.getHours()).padStart(2, "0");
-    const mm = String(date.getMinutes()).padStart(2, "0");
-    const ss = String(date.getSeconds()).padStart(2, "0");
-    return `${yyyy}${MM}${dd}${hh}${mm}${ss}`;
-  };
-
+  const formatDate = (d) => `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}${String(d.getHours()).padStart(2,"0")}${String(d.getMinutes()).padStart(2,"0")}${String(d.getSeconds()).padStart(2,"0")}`;
   const pp_TxnDateTime = formatDate(now);
-  const expiry = new Date(now.getTime() + 1 * 60 * 60 * 1000); // +1 hour
-  const pp_TxnExpiryDateTime = formatDate(expiry);
-
-  // ------------------ Amount in paisa ------------------
-  const pp_Amount = Math.round(amount * 100).toString();
-
-  // ------------------ Unique transaction reference ------------------
+  const pp_TxnExpiryDateTime = formatDate(new Date(now.getTime() + 1*60*60*1000)); // +1 hour
+  const pp_Amount = Math.round(amount*100).toString();
   const pp_TxnRefNo = "T" + pp_TxnDateTime;
 
-  // ------------------ Payload for JazzCash v1.1 ------------------
   const payload = {
     pp_Version: version,
     pp_TxnType: txnType,
@@ -57,7 +39,7 @@ export default function handler(req, res) {
     pp_TxnCurrency: currency,
     pp_TxnDateTime,
     pp_BillReference: "billRef",
-    pp_Description: description ? description.substring(0, 200) : "Payment",
+    pp_Description: description ? description.substring(0,200) : "Payment",
     pp_TxnExpiryDateTime,
     pp_ReturnURL: returnUrl,
     pp_SecureHash: "",
@@ -69,34 +51,17 @@ export default function handler(req, res) {
   };
 
   try {
-    // ------------------ Calculate secure hash ------------------
     const hashData = { ...payload };
     delete hashData.pp_SecureHash;
-
-    Object.keys(hashData).forEach((key) => {
-      if (hashData[key] === "") delete hashData[key];
-    });
-
+    Object.keys(hashData).forEach(k => { if(hashData[k]==="") delete hashData[k]; });
     const sortedKeys = Object.keys(hashData).sort();
-    const hashValues = sortedKeys.map((key) => hashData[key]);
-    const hashString = salt + "&" + hashValues.join("&");
+    const hashString = salt + "&" + sortedKeys.map(k => hashData[k]).join("&");
+    payload.pp_SecureHash = crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
 
-    const secureHash = crypto
-      .createHmac("sha256", salt)
-      .update(hashString)
-      .digest("hex")
-      .toUpperCase();
-
-    payload.pp_SecureHash = secureHash;
-
-    console.log("JazzCash Payload:", payload);
-
-    res.status(200).json({
-      success: true,
-      payload,
-    });
-  } catch (error) {
-    console.error("JazzCash initiation error:", error);
+    res.status(200).json({ success: true, payload, apiUrl: "https://sandbox.jazzcash.com.pk/CustomerPortal/Transactionmanagement/merchantform/" });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false, error: "Failed to initiate payment" });
   }
 }
+  

@@ -1,110 +1,270 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
-export default function PaymentPage({ payload, apiUrl }) {
-  useEffect(() => {
-    // Auto-submit the form when page loads
-    if (payload && apiUrl) {
-      document.getElementById("jazzcashForm").submit();
-    }
-  }, [payload, apiUrl]);
+const SERVICE_LABELS = {
+  webapp: 'Web & App Development',
+  domainhosting: 'Domain & Hosting',
+  branding: 'Branding & Logo Design',
+  ecommerce: 'E-Commerce Solutions',
+  cloudit: 'Cloud & IT Infrastructure',
+  digitalmarketing: 'Digital Marketing',
+};
 
-  if (!payload || !apiUrl) {
-    return <p>Loading payment details...</p>;
-  }
+const containerStyle = {
+  maxWidth: 600,
+  margin: "30px auto",
+  padding: 20,
+  background: "#f9f9f9",
+  borderRadius: 12,
+  boxShadow: "0 6px 15px rgba(0,0,0,0.1)",
+  fontFamily: "'Inter', sans-serif",
+  color: "#333",
+};
 
-  return (
-    <div style={{ maxWidth: 600, margin: "50px auto", fontFamily: "Inter,sans-serif" }}>
-      <h2>Redirecting to JazzCash...</h2>
-      <form id="jazzcashForm" method="POST" action={apiUrl}>
-        {Object.keys(payload).map((key) => (
-          <input key={key} type="hidden" name={key} value={payload[key]} />
-        ))}
-        <button
-          type="submit"
-          style={{
-            padding: "12px 20px",
-            backgroundColor: "#ff6600",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-            marginTop: 20,
-          }}
-        >
-          Click here if you are not redirected
-        </button>
-      </form>
-    </div>
-  );
-}
+const buttonStyle = {
+  backgroundColor: "#ff6600",
+  color: "#fff",
+  padding: "12px",
+  borderRadius: 8,
+  border: "none",
+  fontWeight: 600,
+  fontSize: "1rem",
+  width: "100%",
+  cursor: "pointer",
+  marginTop: 10,
+};
 
-// Server-side props to generate payload
-export async function getServerSideProps(context) {
-  const { service, amount, name, email, phone, description } = context.query;
+const inputStyle = {
+  width: "100%",
+  padding: 10,
+  marginTop: 6,
+  borderRadius: 6,
+  border: "1px solid #ccc",
+  fontSize: "1rem",
+};
 
-  // Hardcoded JazzCash credentials for sandbox
-  const merchantId = "MC302132";
-  const password = "53v2z2u302";
-  const salt = "z60gb5u008";
+const labelStyle = { display: "block", marginBottom: 12 };
 
-  // Helper to format date YYYYMMDDHHMMSS
-  const formatDate = (date) => {
-    const yyyy = date.getFullYear();
-    const MM = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    const hh = String(date.getHours()).padStart(2, "0");
-    const mm = String(date.getMinutes()).padStart(2, "0");
-    const ss = String(date.getSeconds()).padStart(2, "0");
-    return `${yyyy}${MM}${dd}${hh}${mm}${ss}`;
-  };
+const summaryBoxStyle = {
+  backgroundColor: "#fff",
+  padding: 15,
+  borderRadius: 10,
+  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+  marginBottom: 20,
+  lineHeight: 1.6,
+};
 
-  const now = new Date();
-  const pp_TxnDateTime = formatDate(now);
-  const pp_TxnExpiryDateTime = formatDate(new Date(now.getTime() + 1 * 60 * 60 * 1000)); // +1 hour
+export default function PaymentPage() {
+  const router = useRouter();
+  const { service, amount, name, email, phone, cnic, description } = router.query;
 
-  const pp_TxnRefNo = "T" + pp_TxnDateTime;
-  const pp_BillReference = "billRef";
+  const [order, setOrder] = useState({
+    service: "",
+    amount: 0,
+    name: "",
+    email: "",
+    phone: "",
+    cnic: "",
+    description: "",
+  });
+  const [orderId, setOrderId] = useState("");
+  const [method, setMethod] = useState(null);
+  const [bankStep, setBankStep] = useState(0);
+  const [proof, setProof] = useState({ transactionNumber: "", accountTitle: "", accountNumber: "", screenshot: null });
+  const [loading, setLoading] = useState(false);
 
-  const pp_Amount = (Number(amount) * 100).toString(); // amount in paisa
+  useEffect(() => {
+    if (service && amount) {
+      setOrder({ service, amount, name, email, phone, cnic, description });
+      const timestamp = Date.now().toString().slice(-5);
+      const randomNum = Math.floor(Math.random() * 900 + 100);
+      setOrderId(`NASPRO-${timestamp}-${randomNum}`);
+    }
+  }, [service, amount, name, email, phone, cnic, description]);
 
-  // Build payload
-  const payloadData = {
-    pp_Version: "1.1",
-    pp_TxnType: "MWALLET",
-    pp_Language: "EN",
-    pp_MerchantID: merchantId,
-    pp_SubMerchantID: "",
-    pp_Password: password,
-    pp_BankID: "TBANK",
-    pp_ProductID: "RETL",
-    pp_TxnRefNo,
-    pp_Amount,
-    pp_TxnCurrency: "PKR",
-    pp_TxnDateTime,
-    pp_BillReference,
-    pp_Description: description || "",
-    pp_TxnExpiryDateTime,
-    pp_ReturnURL: "https://naspropvt.vercel.app/api/jazzcash_response",
-    ppmpf_1: "1",
-    ppmpf_2: "2",
-    ppmpf_3: "3",
-    ppmpf_4: "4",
-    ppmpf_5: "5",
-    pp_SecureHash: "",
-  };
+  const handleJazzCashPayment = async () => {
+    if (!order.cnic || order.cnic.length !== 6) {
+      alert("Please provide valid CNIC (last 6 digits) for JazzCash payment.");
+      return;
+    }
+    if (!order.phone || order.phone.length !== 11) {
+      alert("Please provide valid phone number for JazzCash payment.");
+      return;
+    }
 
-  // Generate hash
-  const crypto = require("crypto");
-  const hashKeys = Object.keys(payloadData).filter((k) => k !== "pp_SecureHash").sort();
-  const hashString = salt + "&" + hashKeys.map((k) => payloadData[k]).join("&");
-  const secureHash = crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
+    setLoading(true);
+    try {
+      // Step 1: Get payload from backend
+      const response = await fetch("/api/jazzcash_payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(order.amount),
+          description: `Payment for ${SERVICE_LABELS[order.service] || order.service} - ${order.name}`,
+          orderId,
+          mobileNumber: order.phone,
+          cnic: order.cnic,
+          name: order.name,
+          email: order.email,
+          service: order.service,
+        }),
+      });
 
-  payloadData.pp_SecureHash = secureHash;
+      const data = await response.json();
 
-  return {
-    props: {
-      payload: payloadData,
-      apiUrl: "https://sandbox.jazzcash.com.pk/CustomerPortal/Transactionmanagement/merchantform/",
-    },
-  };
-}
+      if (data.success && data.apiUrl && data.payload) {
+        // Step 2: Store order in localStorage for /thankyou fallback
+        const orderData = {
+          orderId,
+          service: order.service,
+          amount: order.amount,
+          payment_method: "JazzCash",
+          transaction_id: "", 
+          name: order.name,
+          email: order.email,
+          phone: order.phone,
+          cnic: order.cnic,
+          description: order.description,
+        };
+        localStorage.setItem("lastOrder", JSON.stringify(orderData));
+
+        // Step 3: Create hidden form and submit to JazzCash
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = data.apiUrl;
+
+        Object.keys(data.payload).forEach((key) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = key;
+          input.value = data.payload[key];
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      } else {
+        alert("Failed to initiate JazzCash payment: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("JazzCash Error:", error);
+      alert("Error initiating JazzCash payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleComingSoon = () => alert("This payment method is coming soon!");
+  const handleBankStep1 = () => setBankStep(1);
+
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    if (files) setProof({ ...proof, screenshot: files[0] });
+    else setProof({ ...proof, [name]: value });
+  };
+
+  const handleBankSubmit = (e) => {
+    e.preventDefault();
+    if (!proof.transactionNumber || !proof.accountTitle || !proof.accountNumber || !proof.screenshot) {
+      alert("Please complete all fields before submitting.");
+      return;
+    }
+
+    const orderData = {
+      orderId,
+      service: order.service,
+      amount: order.amount,
+      payment_method: "Bank Transfer",
+      transaction_id: proof.transactionNumber,
+      name: order.name,
+      email: order.email,
+      phone: order.phone,
+      cnic: order.cnic,
+      description: order.description,
+    };
+    localStorage.setItem("lastOrder", JSON.stringify(orderData));
+
+    alert("Payment proof submitted successfully!");
+    router.push("/thankyou");
+  };
+
+  const serviceLabel = SERVICE_LABELS[order.service] || order.service;
+
+  return (
+    <div style={containerStyle}>
+      <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: 15, textAlign: "center" }}>
+        Payment
+      </h2>
+
+      <div style={summaryBoxStyle}>
+        <p><strong>Order ID:</strong> {orderId}</p>
+        <p><b>Service:</b> {serviceLabel}</p>
+        <p><b>Name:</b> {order.name}</p>
+        <p><b>Email:</b> {order.email}</p>
+        <p><b>Phone:</b> {order.phone}</p>
+        <p><b>CNIC (last 6 digits):</b> {order.cnic}</p>
+        <p><b>Description:</b> {order.description || "N/A"}</p>
+        <p><b>Amount:</b> PKR {Number(order.amount).toLocaleString()}</p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <button 
+          onClick={handleJazzCashPayment} 
+          disabled={loading}
+          style={loading ? { ...buttonStyle, backgroundColor: "#6c757d", cursor: "not-allowed" } : buttonStyle}
+        >
+          {loading ? "Processing..." : "Pay with JazzCash"}
+        </button>
+
+        <button onClick={handleComingSoon} style={{ ...buttonStyle, backgroundColor: "#388e3c" }}>
+          Pay with Easypaisa (Coming Soon)
+        </button>
+
+        <button
+          onClick={() => setMethod("bank")}
+          style={{ ...buttonStyle, backgroundColor: "#ccc", color: "#333", cursor: "pointer" }}
+        >
+          Pay via Bank Transfer
+        </button>
+      </div>
+
+      {/* Bank Transfer Step 1 */}
+      {method === "bank" && bankStep === 0 && (
+        <div style={{ marginTop: 20 }}>
+          <h3 style={{ fontWeight: 600, marginBottom: 10 }}>Bank Transfer Details</h3>
+          <p>Bank Name: <b>JS Bank</b></p>
+          <p>Account Title: <b>NASPRO PRIVATE LIMITED</b></p>
+          <p>Account Number: <b>00028010102</b></p>
+          <button onClick={handleBankStep1} style={{ ...buttonStyle, backgroundColor: "#ff6600" }}>
+            I Have Completed the Payment
+          </button>
+        </div>
+      )}
+
+      {/* Bank Transfer Step 2 */}
+      {method === "bank" && bankStep === 1 && (
+        <form style={{ marginTop: 20 }} onSubmit={handleBankSubmit}>
+          <h3 style={{ fontWeight: 600, marginBottom: 10 }}>Submit Payment Proof</h3>
+          <label style={labelStyle}>
+            Transaction Number:
+            <input type="text" name="transactionNumber" value={proof.transactionNumber} onChange={handleChange} style={inputStyle} />
+          </label>
+          <label style={labelStyle}>
+            Account Title:
+            <input type="text" name="accountTitle" value={proof.accountTitle} onChange={handleChange} style={inputStyle} />
+          </label>
+          <label style={labelStyle}>
+            Account Number:
+            <input type="text" name="accountNumber" value={proof.accountNumber} onChange={handleChange} style={inputStyle} />
+          </label>
+          <label style={labelStyle}>
+            Screenshot:
+            <input type="file" name="screenshot" accept="image/*" onChange={handleChange} style={inputStyle} />
+          </label>
+          <button type="submit" style={buttonStyle}>Submit Proof & Complete Payment</button>
+        </form>
+      )}
+    </div>
+  );
+    }
+    

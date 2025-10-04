@@ -1,73 +1,40 @@
-// /pages/api/jazzcash_response.js
 import crypto from "crypto";
 
 export default function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if(req.method!=="POST") return res.status(405).json({ error:"Method not allowed" });
 
   const responseData = req.body;
-
-  // ------------------ JazzCash sandbox salt ------------------
-  const salt = "1g90sz31w2";
-
-  console.log("JazzCash Response Received:", responseData);
+  const salt = "z60gb5u008";
 
   try {
-    // ------------------ Verify secure hash ------------------
     const receivedHash = responseData.pp_SecureHash;
-
-    const verifyData = { ...responseData };
+    const verifyData = {...responseData};
     delete verifyData.pp_SecureHash;
-
-    Object.keys(verifyData).forEach((key) => {
-      if (verifyData[key] === "") delete verifyData[key];
-    });
-
+    Object.keys(verifyData).forEach(k=>{ if(verifyData[k]==="") delete verifyData[k]; });
     const sortedKeys = Object.keys(verifyData).sort();
-    const hashValues = sortedKeys.map((key) => verifyData[key]);
-    const hashString = salt + "&" + hashValues.join("&");
+    const hashString = salt + "&" + sortedKeys.map(k=>verifyData[k]).join("&");
+    const calculatedHash = crypto.createHmac("sha256", salt).update(hashString).digest("hex").toUpperCase();
 
-    const calculatedHash = crypto
-      .createHmac("sha256", salt)
-      .update(hashString)
-      .digest("hex")
-      .toUpperCase();
-
-    console.log("Hash Verification:");
-    console.log("Received Hash:", receivedHash);
-    console.log("Calculated Hash:", calculatedHash);
-
-    let redirectUrl = "https://naspropvt.vercel.app/thankyou";
-
-    if (receivedHash === calculatedHash) {
-      // ✅ Payment verified
-      const result = {
-        success: responseData.pp_ResponseCode === "000", // 000 = success
+    let result = {};
+    if(receivedHash === calculatedHash){
+      result = {
+        success: responseData.pp_ResponseCode==="000",
         orderId: responseData.pp_TxnRefNo,
         transaction_id: responseData.pp_RetreivalReferenceNo || responseData.pp_TxnRefNo,
-        amount: (responseData.pp_Amount / 100).toString(),
+        amount: responseData.pp_Amount/100,
         responseCode: responseData.pp_ResponseCode,
         responseMessage: responseData.pp_ResponseMessage,
         payment_method: "JazzCash",
-        bankTransactionId: responseData.pp_RetreivalReferenceNo || "",
+        bankTransactionId: responseData.pp_RetreivalReferenceNo || ""
       };
-
-      console.log("JazzCash Payment Verified:", result);
-
-      redirectUrl += `?${new URLSearchParams(result).toString()}`;
     } else {
-      // ❌ Hash mismatch
-      console.error("JazzCash Hash verification failed");
-      redirectUrl += "?success=false&error=Payment verification failed";
+      result = { success:false, error:"Hash verification failed", responseData };
     }
 
-    // Redirect user to thankyou page
-    res.redirect(302, redirectUrl);
-  } catch (error) {
-    console.error("JazzCash response processing error:", error.message);
-    const redirectUrl =
-      "https://naspropvt.vercel.app/thankyou?success=false&error=Payment processing error";
-    res.redirect(302, redirectUrl);
+    // Return JSON array/object
+    res.status(200).json(result);
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ success:false, error:"Payment processing error", details:err.message });
   }
 }

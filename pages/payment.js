@@ -56,7 +56,7 @@ const summaryBoxStyle = {
 
 export default function PaymentPage() {
   const router = useRouter();
-  const { service, amount, name, email, phone, cnic, description } = router.query;
+  const { service, amount, name, email, phone, description } = router.query;
 
   const [order, setOrder] = useState({
     service: "",
@@ -64,7 +64,6 @@ export default function PaymentPage() {
     name: "",
     email: "",
     phone: "",
-    cnic: "",
     description: "",
   });
   const [orderId, setOrderId] = useState("");
@@ -75,76 +74,45 @@ export default function PaymentPage() {
 
   useEffect(() => {
     if (service && amount) {
-      setOrder({ service, amount, name, email, phone, cnic, description });
+      setOrder({ service, amount, name, email, phone, description });
       const timestamp = Date.now().toString().slice(-5);
       const randomNum = Math.floor(Math.random() * 900 + 100);
       setOrderId(`NASPRO-${timestamp}-${randomNum}`);
     }
-  }, [service, amount, name, email, phone, cnic, description]);
+  }, [service, amount, name, email, phone, description]);
 
+  // === JazzCash v1.1 Hosted Payment ===
   const handleJazzCashPayment = async () => {
-    if (!order.cnic || order.cnic.length !== 6) {
-      alert("Please provide valid CNIC (last 6 digits) for JazzCash payment.");
-      return;
-    }
     if (!order.phone || order.phone.length !== 11) {
-      alert("Please provide valid phone number for JazzCash payment.");
+      alert("Please provide a valid phone number for JazzCash payment.");
       return;
     }
 
     setLoading(true);
     try {
-      // Step 1: Get payload from backend
+      // Call backend to generate payload
       const response = await fetch("/api/jazzcash_payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: Number(order.amount),
           description: `Payment for ${SERVICE_LABELS[order.service] || order.service} - ${order.name}`,
-          orderId,
           mobileNumber: order.phone,
-          cnic: order.cnic,
           name: order.name,
           email: order.email,
           service: order.service,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.text(); // backend returns HTML form
 
-      if (data.success && data.apiUrl && data.payload) {
-        // Step 2: Store order in localStorage for /thankyou fallback
-        const orderData = {
-          orderId,
-          service: order.service,
-          amount: order.amount,
-          payment_method: "JazzCash",
-          transaction_id: "", 
-          name: order.name,
-          email: order.email,
-          phone: order.phone,
-          cnic: order.cnic,
-          description: order.description,
-        };
-        localStorage.setItem("lastOrder", JSON.stringify(orderData));
-
-        // Step 3: Create hidden form and submit to JazzCash
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = data.apiUrl;
-
-        Object.keys(data.payload).forEach((key) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = data.payload[key];
-          form.appendChild(input);
-        });
-
-        document.body.appendChild(form);
-        form.submit();
+      if (data) {
+        // Insert the HTML form into DOM and auto-submit
+        const div = document.createElement("div");
+        div.innerHTML = data;
+        document.body.appendChild(div);
       } else {
-        alert("Failed to initiate JazzCash payment: " + (data.error || "Unknown error"));
+        alert("Failed to initiate JazzCash payment.");
       }
     } catch (error) {
       console.error("JazzCash Error:", error);
@@ -179,7 +147,6 @@ export default function PaymentPage() {
       name: order.name,
       email: order.email,
       phone: order.phone,
-      cnic: order.cnic,
       description: order.description,
     };
     localStorage.setItem("lastOrder", JSON.stringify(orderData));
@@ -202,14 +169,13 @@ export default function PaymentPage() {
         <p><b>Name:</b> {order.name}</p>
         <p><b>Email:</b> {order.email}</p>
         <p><b>Phone:</b> {order.phone}</p>
-        <p><b>CNIC (last 6 digits):</b> {order.cnic}</p>
         <p><b>Description:</b> {order.description || "N/A"}</p>
         <p><b>Amount:</b> PKR {Number(order.amount).toLocaleString()}</p>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button 
-          onClick={handleJazzCashPayment} 
+        <button
+          onClick={handleJazzCashPayment}
           disabled={loading}
           style={loading ? { ...buttonStyle, backgroundColor: "#6c757d", cursor: "not-allowed" } : buttonStyle}
         >
@@ -266,5 +232,5 @@ export default function PaymentPage() {
       )}
     </div>
   );
-    }
+        }
     

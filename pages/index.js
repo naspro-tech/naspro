@@ -167,6 +167,22 @@ export default function Home() {
             Buy Now
           </button>
         </div>
+
+        {/* ✅ Added new Testing Service (for Easypaisa payment testing) */}
+        <div className="card">
+          <h3>Testing Service</h3>
+          <p>
+            This service is for payment gateway testing. It allows you to verify
+            your Easypaisa integration using a real PKR 1 transaction.
+          </p>
+          <p className="price">PKR 1</p>
+          <button
+            className="buy-btn"
+            onClick={() => handleBuyNowClick('testing')}
+          >
+            Buy Now
+          </button>
+        </div>
       </section>
 
       <section id="why-choose-us" className="details">
@@ -218,5 +234,4 @@ export default function Home() {
       </footer>
     </>
   );
-                  }
-                  
+            }

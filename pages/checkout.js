@@ -124,7 +124,7 @@ export default function Checkout() {
             onChange={handleChange}
             required
             maxLength={6}
-            pattern="\\d{6}"
+            pattern="\d{6}"
             placeholder="Enter last 6 digits of CNIC"
           />
         </label>

@@ -8,6 +8,7 @@ const SERVICE_LABELS = {
   ecommerce: "E-Commerce Solutions",
   cloudit: "Cloud & IT Infrastructure",
   digitalmarketing: "Digital Marketing",
+  testing: "Testing Service", // ✅ Added your new service
 };
 
 export default function PaymentPage() {
@@ -26,7 +27,12 @@ export default function PaymentPage() {
   const [orderId, setOrderId] = useState("");
   const [method, setMethod] = useState(null);
   const [bankStep, setBankStep] = useState(0);
-  const [proof, setProof] = useState({ transactionNumber: "", accountTitle: "", accountNumber: "", screenshot: null });
+  const [proof, setProof] = useState({
+    transactionNumber: "",
+    accountTitle: "",
+    accountNumber: "",
+    screenshot: null,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -38,6 +44,7 @@ export default function PaymentPage() {
     }
   }, [service, amount, name, email, phone, cnic, description]);
 
+  /** ------------------ JazzCash ------------------ **/
   const handleJazzCashPayment = async () => {
     if (!/^03\d{9}$/.test(order.phone)) {
       alert("Please provide a valid Pakistani phone number for JazzCash payment.");
@@ -56,7 +63,7 @@ export default function PaymentPage() {
           mobileNumber: order.phone,
           name: order.name,
           email: order.email,
-          cnic: order.cnic, // ✅ Added CNIC
+          cnic: order.cnic,
           service: order.service,
         }),
       });
@@ -89,8 +96,71 @@ export default function PaymentPage() {
     }
   };
 
+  /** ------------------ Easypaisa ------------------ **/
+  const handleEasypaisaPayment = async () => {
+    if (!/^03\d{9}$/.test(order.phone)) {
+      alert("Please provide a valid Pakistani phone number for Easypaisa payment.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/easypay/initiate-ma", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          transactionAmount: Number(order.amount),
+          mobileAccountNo: order.phone,
+          emailAddress: order.email,
+          optional1: order.service,
+        }),
+      });
+
+      const data = await res.json();
+      console.log("Easypaisa Response:", data);
+
+      if (data.responseCode === "0000") {
+        alert(
+          "Easypaisa payment request sent! Please approve it in your Easypaisa app or dial *786#.\nWe’ll automatically confirm your payment shortly."
+        );
+
+        // ✅ Start polling every 5 seconds
+        const interval = setInterval(async () => {
+          try {
+            const check = await fetch("/api/easypay/inquire", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId }),
+            });
+            const result = await check.json();
+            console.log("Easypaisa Status:", result);
+
+            if (result.responseCode === "0000") {
+              clearInterval(interval);
+              alert("✅ Payment confirmed successfully!");
+              router.push("/thankyou");
+            } else if (result.responseCode !== "0211") {
+              // 0211 = pending transaction
+              console.warn("Payment status:", result.responseDesc);
+            }
+          } catch (err) {
+            console.error("Status check error:", err);
+          }
+        }, 5000);
+      } else {
+        alert("Failed to initiate Easypaisa payment: " + (data.responseDesc || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Easypaisa Error:", err);
+      alert("Error initiating Easypaisa payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** ------------------ Bank Transfer ------------------ **/
   const handleBankStep1 = () => setBankStep(1);
-  const handleComingSoon = () => alert("This payment method is coming soon!");
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -100,7 +170,12 @@ export default function PaymentPage() {
 
   const handleBankSubmit = (e) => {
     e.preventDefault();
-    if (!proof.transactionNumber || !proof.accountTitle || !proof.accountNumber || !proof.screenshot) {
+    if (
+      !proof.transactionNumber ||
+      !proof.accountTitle ||
+      !proof.accountNumber ||
+      !proof.screenshot
+    ) {
       alert("Please complete all fields before submitting.");
       return;
     }
@@ -122,6 +197,7 @@ export default function PaymentPage() {
     router.push("/thankyou");
   };
 
+  /** ------------------ UI ------------------ **/
   const serviceLabel = SERVICE_LABELS[order.service] || order.service;
 
   return (
@@ -135,7 +211,7 @@ export default function PaymentPage() {
         <p><strong>Name:</strong> {order.name}</p>
         <p><strong>Email:</strong> {order.email}</p>
         <p><strong>Phone:</strong> {order.phone}</p>
-        <p><strong>CNIC:</strong> {order.cnic}</p> {/* ✅ Added CNIC */}
+        <p><strong>CNIC:</strong> {order.cnic}</p>
         <p><strong>Description:</strong> {order.description || "N/A"}</p>
         <p><strong>Amount:</strong> PKR {Number(order.amount).toLocaleString()}</p>
       </div>
@@ -146,8 +222,8 @@ export default function PaymentPage() {
           {loading ? "Processing..." : "Pay with JazzCash"}
         </button>
 
-        <button onClick={handleComingSoon} className="btn easypaisa">
-          Pay with Easypaisa (Coming Soon)
+        <button onClick={handleEasypaisaPayment} disabled={loading} className="btn easypaisa">
+          {loading ? "Processing..." : "Pay with Easypaisa"}
         </button>
 
         <button onClick={() => setMethod("bank")} className="btn bank">
@@ -155,7 +231,7 @@ export default function PaymentPage() {
         </button>
       </div>
 
-      {/* Bank Transfer - Step 0 */}
+      {/* Bank Transfer Steps */}
       {method === "bank" && bankStep === 0 && (
         <div className="bank-step">
           <h3>Bank Transfer Details</h3>
@@ -170,27 +246,48 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {/* Bank Transfer - Step 1 */}
       {method === "bank" && bankStep === 1 && (
         <form className="bank-step-form" onSubmit={handleBankSubmit}>
           <h3>Submit Payment Proof</h3>
           <label>
             Transaction Number:
-            <input type="text" name="transactionNumber" value={proof.transactionNumber} onChange={handleChange} />
+            <input
+              type="text"
+              name="transactionNumber"
+              value={proof.transactionNumber}
+              onChange={handleChange}
+            />
           </label>
           <label>
             Account Title:
-            <input type="text" name="accountTitle" value={proof.accountTitle} onChange={handleChange} />
+            <input
+              type="text"
+              name="accountTitle"
+              value={proof.accountTitle}
+              onChange={handleChange}
+            />
           </label>
           <label>
             Account Number:
-            <input type="text" name="accountNumber" value={proof.accountNumber} onChange={handleChange} />
+            <input
+              type="text"
+              name="accountNumber"
+              value={proof.accountNumber}
+              onChange={handleChange}
+            />
           </label>
           <label>
             Screenshot:
-            <input type="file" name="screenshot" accept="image/*" onChange={handleChange} />
+            <input
+              type="file"
+              name="screenshot"
+              accept="image/*"
+              onChange={handleChange}
+            />
           </label>
-          <button type="submit" className="btn bank">Submit Proof & Complete Payment</button>
+          <button type="submit" className="btn bank">
+            Submit Proof & Complete Payment
+          </button>
         </form>
       )}
 
@@ -200,7 +297,7 @@ export default function PaymentPage() {
           max-width: 600px;
           padding: 20px;
           margin: 10px auto;
-          font-family: 'Inter', sans-serif;
+          font-family: "Inter", sans-serif;
           color: #fff;
         }
         h2 {
@@ -215,8 +312,8 @@ export default function PaymentPage() {
           margin-bottom: 20px;
           line-height: 1.6;
           color: #f8fafc;
-          border: 1px solid rgba(255,255,255,0.1);
-          box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
         .summary-box strong {
           color: #38bdf8;
@@ -236,51 +333,31 @@ export default function PaymentPage() {
         .btn.jazzcash {
           background: linear-gradient(135deg, #f97316, #dc2626);
         }
-        .btn.jazzcash:hover {
-          background: linear-gradient(135deg, #ea580c, #b91c1c);
-          transform: scale(1.03);
-          box-shadow: 0 0 20px rgba(249,115,22,0.6);
-        }
         .btn.easypaisa {
           background: linear-gradient(135deg, #22c55e, #15803d);
-        }
-        .btn.easypaisa:hover {
-          background: linear-gradient(135deg, #16a34a, #166534);
-          transform: scale(1.03);
-          box-shadow: 0 0 20px rgba(34,197,94,0.6);
         }
         .btn.bank {
           background: linear-gradient(135deg, #3b82f6, #1e40af);
         }
-        .btn.bank:hover {
-          background: linear-gradient(135deg, #2563eb, #1e3a8a);
+        .btn:hover {
           transform: scale(1.03);
-          box-shadow: 0 0 20px rgba(59,130,246,0.6);
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
         }
-        .bank-step, .bank-step-form {
+        .bank-step,
+        .bank-step-form {
           background: linear-gradient(135deg, #0f172a, #1e293b);
           padding: 20px;
           border-radius: 12px;
           margin-top: 20px;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        }
-        .bank-step h3, .bank-step-form h3 {
-          font-size: 1.2rem;
-          margin-bottom: 15px;
-          text-align: center;
-        }
-        .bank-card {
-          background: rgba(255,255,255,0.08);
-          padding: 15px;
-          border-radius: 10px;
-          margin-bottom: 20px;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
         label {
           display: block;
           margin-bottom: 12px;
           font-size: 0.95rem;
         }
-        input[type="text"], input[type="file"] {
+        input[type="text"],
+        input[type="file"] {
           width: 100%;
           padding: 10px;
           border-radius: 6px;
@@ -292,4 +369,3 @@ export default function PaymentPage() {
     </div>
   );
         }
-  

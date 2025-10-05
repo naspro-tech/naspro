@@ -39,8 +39,8 @@ export default function PaymentPage() {
   }, [service, amount, name, email, phone, cnic, description]);
 
   const handleJazzCashPayment = async () => {
-    if (!order.phone || order.phone.length !== 11) {
-      alert("Please provide valid phone number for JazzCash payment.");
+    if (!/^03\d{9}$/.test(order.phone)) {
+      alert("Please provide a valid Pakistani phone number for JazzCash payment.");
       return;
     }
 
@@ -56,6 +56,7 @@ export default function PaymentPage() {
           mobileNumber: order.phone,
           name: order.name,
           email: order.email,
+          cnic: order.cnic, // ✅ Added CNIC
           service: order.service,
         }),
       });
@@ -113,6 +114,7 @@ export default function PaymentPage() {
       name: order.name,
       email: order.email,
       phone: order.phone,
+      cnic: order.cnic,
       description: order.description,
     };
     localStorage.setItem("lastOrder", JSON.stringify(orderData));
@@ -126,40 +128,49 @@ export default function PaymentPage() {
     <div className="payment-container">
       <h2>Payment</h2>
 
+      {/* Summary Section */}
       <div className="summary-box">
         <p><strong>Order ID:</strong> {orderId}</p>
         <p><strong>Service:</strong> {serviceLabel}</p>
         <p><strong>Name:</strong> {order.name}</p>
         <p><strong>Email:</strong> {order.email}</p>
         <p><strong>Phone:</strong> {order.phone}</p>
+        <p><strong>CNIC:</strong> {order.cnic}</p> {/* ✅ Added CNIC */}
         <p><strong>Description:</strong> {order.description || "N/A"}</p>
         <p><strong>Amount:</strong> PKR {Number(order.amount).toLocaleString()}</p>
       </div>
 
+      {/* Buttons */}
       <div className="button-group">
-        <button onClick={handleJazzCashPayment} disabled={loading}>
+        <button onClick={handleJazzCashPayment} disabled={loading} className="btn jazzcash">
           {loading ? "Processing..." : "Pay with JazzCash"}
         </button>
 
-        <button onClick={handleComingSoon} className="secondary">
+        <button onClick={handleComingSoon} className="btn easypaisa">
           Pay with Easypaisa (Coming Soon)
         </button>
 
-        <button onClick={() => setMethod("bank")} className="tertiary">
+        <button onClick={() => setMethod("bank")} className="btn bank">
           Pay via Bank Transfer
         </button>
       </div>
 
+      {/* Bank Transfer - Step 0 */}
       {method === "bank" && bankStep === 0 && (
         <div className="bank-step">
           <h3>Bank Transfer Details</h3>
-          <p>Bank Name: <b>JS Bank</b></p>
-          <p>Account Title: <b>NASPRO PRIVATE LIMITED</b></p>
-          <p>Account Number: <b>00028010102</b></p>
-          <button onClick={handleBankStep1}>I Have Completed the Payment</button>
+          <div className="bank-card">
+            <p><b>Bank Name:</b> JS Bank</p>
+            <p><b>Account Title:</b> NASPRO PRIVATE LIMITED</p>
+            <p><b>Account Number:</b> 00028010102</p>
+          </div>
+          <button className="btn bank" onClick={handleBankStep1}>
+            I Have Completed the Payment
+          </button>
         </div>
       )}
 
+      {/* Bank Transfer - Step 1 */}
       {method === "bank" && bankStep === 1 && (
         <form className="bank-step-form" onSubmit={handleBankSubmit}>
           <h3>Submit Payment Proof</h3>
@@ -179,68 +190,106 @@ export default function PaymentPage() {
             Screenshot:
             <input type="file" name="screenshot" accept="image/*" onChange={handleChange} />
           </label>
-          <button type="submit">Submit Proof & Complete Payment</button>
+          <button type="submit" className="btn bank">Submit Proof & Complete Payment</button>
         </form>
       )}
 
+      {/* Styles */}
       <style jsx>{`
         .payment-container {
-          max-width: 100%;
+          max-width: 600px;
           padding: 20px;
           margin: 10px auto;
           font-family: 'Inter', sans-serif;
+          color: #fff;
         }
         h2 {
           text-align: center;
-          font-size: 1.5rem;
-          margin-bottom: 15px;
+          font-size: 1.8rem;
+          margin-bottom: 20px;
         }
         .summary-box {
-          background: #fff;
-          padding: 15px;
-          border-radius: 10px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+          background: linear-gradient(135deg, #111827, #1e293b);
+          padding: 20px;
+          border-radius: 12px;
           margin-bottom: 20px;
           line-height: 1.6;
+          color: #f8fafc;
+          border: 1px solid rgba(255,255,255,0.1);
+          box-shadow: 0 6px 20px rgba(0,0,0,0.4);
         }
-        .button-group button {
+        .summary-box strong {
+          color: #38bdf8;
+        }
+        .btn {
           width: 100%;
-          padding: 12px;
-          border-radius: 8px;
-          border: none;
+          padding: 14px;
+          border-radius: 10px;
           font-weight: 600;
           font-size: 1rem;
           cursor: pointer;
-          margin-bottom: 10px;
-        }
-        .button-group .secondary {
-          background: #388e3c;
+          margin-bottom: 12px;
           color: #fff;
+          border: none;
+          transition: all 0.25s ease-in-out;
         }
-        .button-group .tertiary {
-          background: #ccc;
-          color: #333;
+        .btn.jazzcash {
+          background: linear-gradient(135deg, #f97316, #dc2626);
+        }
+        .btn.jazzcash:hover {
+          background: linear-gradient(135deg, #ea580c, #b91c1c);
+          transform: scale(1.03);
+          box-shadow: 0 0 20px rgba(249,115,22,0.6);
+        }
+        .btn.easypaisa {
+          background: linear-gradient(135deg, #22c55e, #15803d);
+        }
+        .btn.easypaisa:hover {
+          background: linear-gradient(135deg, #16a34a, #166534);
+          transform: scale(1.03);
+          box-shadow: 0 0 20px rgba(34,197,94,0.6);
+        }
+        .btn.bank {
+          background: linear-gradient(135deg, #3b82f6, #1e40af);
+        }
+        .btn.bank:hover {
+          background: linear-gradient(135deg, #2563eb, #1e3a8a);
+          transform: scale(1.03);
+          box-shadow: 0 0 20px rgba(59,130,246,0.6);
         }
         .bank-step, .bank-step-form {
-          background: #f9f9f9;
+          background: linear-gradient(135deg, #0f172a, #1e293b);
+          padding: 20px;
+          border-radius: 12px;
+          margin-top: 20px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .bank-step h3, .bank-step-form h3 {
+          font-size: 1.2rem;
+          margin-bottom: 15px;
+          text-align: center;
+        }
+        .bank-card {
+          background: rgba(255,255,255,0.08);
           padding: 15px;
           border-radius: 10px;
-          margin-top: 20px;
+          margin-bottom: 20px;
         }
         label {
           display: block;
           margin-bottom: 12px;
+          font-size: 0.95rem;
         }
         input[type="text"], input[type="file"] {
           width: 100%;
           padding: 10px;
           border-radius: 6px;
-          border: 1px solid #ccc;
+          border: none;
           margin-top: 6px;
           font-size: 1rem;
         }
       `}</style>
     </div>
   );
-                    }
-          
+        }
+  

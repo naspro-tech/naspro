@@ -8,7 +8,7 @@ const SERVICE_LABELS = {
   ecommerce: "E-Commerce Solutions",
   cloudit: "Cloud & IT Infrastructure",
   digitalmarketing: "Digital Marketing",
-  testing: "Testing Service", // ✅ Added your new service
+  testing: "Testing Service",
 };
 
 export default function PaymentPage() {
@@ -139,9 +139,25 @@ export default function PaymentPage() {
             if (result.responseCode === "0000") {
               clearInterval(interval);
               alert("✅ Payment confirmed successfully!");
+
+              // ✅ Save full order details for ThankYou page
+              const orderData = {
+                orderId,
+                service: order.service,
+                amount: order.amount,
+                payment_method: "Easypaisa",
+                transaction_id: result.transactionId || data.transactionId || "",
+                name: order.name,
+                email: order.email,
+                phone: order.phone,
+                cnic: order.cnic,
+                description: order.description,
+              };
+              localStorage.setItem("lastOrder", JSON.stringify(orderData));
+
+              // ✅ Redirect to thank-you page
               router.push("/thankyou");
             } else if (result.responseCode !== "0211") {
-              // 0211 = pending transaction
               console.warn("Payment status:", result.responseDesc);
             }
           } catch (err) {
@@ -368,4 +384,4 @@ export default function PaymentPage() {
       `}</style>
     </div>
   );
-        }
+      }

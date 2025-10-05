@@ -8,6 +8,9 @@ const SERVICE_PRICES = {
   ecommerce: 50000,
   cloudit: 0,
   digitalmarketing: 15000,
+
+  // ✅ Added Testing Service (for Easypaisa PKR 1 payment)
+  testing: 1,
 };
 
 const SERVICE_LABELS = {
@@ -17,6 +20,9 @@ const SERVICE_LABELS = {
   ecommerce: "E-Commerce Solutions",
   cloudit: "Cloud & IT Infrastructure",
   digitalmarketing: "Digital Marketing",
+
+  // ✅ Added Testing Service label
+  testing: "Testing Service",
 };
 
 export default function Checkout() {
@@ -104,7 +110,7 @@ export default function Checkout() {
             onChange={handleChange}
             required
             placeholder="03XXXXXXXXX"
-            pattern="03\d{9}"
+            pattern="03\\d{9}"
             maxLength={11}
           />
         </label>
@@ -118,7 +124,7 @@ export default function Checkout() {
             onChange={handleChange}
             required
             maxLength={6}
-            pattern="\d{6}"
+            pattern="\\d{6}"
             placeholder="Enter last 6 digits of CNIC"
           />
         </label>
@@ -209,5 +215,4 @@ export default function Checkout() {
       `}</style>
     </div>
   );
-    }
-    
+              }

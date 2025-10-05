@@ -1,37 +1,23 @@
-// pages/api/easypay/inquire.js
-
-import { getCredentialsHeader, baseUrl } from './_utils';
+import { easypayFetch } from "./_utils";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "Method not allowed" });
+
+  const { orderId } = req.body;
 
   try {
-    const { orderId } = req.body;
-    if (!orderId) {
-      return res.status(400).json({ message: 'Missing orderId' });
-    }
-
     const payload = {
-      orderId,
       storeId: process.env.EASYPAY_STORE_ID,
-      accountNum: process.env.EASYPAY_ACCOUNT_ID // Your live Account ID
+      orderId,
     };
 
-    const url = `${baseUrl()}/inquire-transaction`;
-    const headers = getCredentialsHeader();
+    const data = await easypayFetch("inquire-transaction", payload);
+    console.log("Easypay inquire response:", data);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-
-    const data = await response.json();
-    return res.status(response.ok ? 200 : 502).json(data);
-  } catch (error) {
-    console.error('Easypay inquire error:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error("inquire error:", err);
+    return res.status(500).json({ error: err.message });
   }
 }

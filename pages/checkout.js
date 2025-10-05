@@ -110,7 +110,7 @@ export default function Checkout() {
             onChange={handleChange}
             required
             placeholder="03XXXXXXXXX"
-            pattern="03\\d{9}"
+            pattern="03\d{9}"
             maxLength={11}
           />
         </label>

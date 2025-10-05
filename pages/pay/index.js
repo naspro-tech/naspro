@@ -10,16 +10,40 @@ export default function HostedEasypaisaPortal() {
   const [orderId, setOrderId] = useState("");
   const [step, setStep] = useState("input"); // input | guide | done
   const [message, setMessage] = useState("");
+  const [countdown, setCountdown] = useState(5); // seconds before close
 
   useEffect(() => {
+    if (!router.isReady) return;
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(Math.random() * 900 + 100);
     setOrderId(`NASPRO-${timestamp}-${random}`);
-  }, []);
+  }, [router.isReady]);
+
+  useEffect(() => {
+    // Auto-close countdown
+    if (step === "done") {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            window.close(); // ✅ Auto close page
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [step]);
 
   const handlePayment = async () => {
     if (!/^03\d{9}$/.test(mobile)) {
       alert("Please enter a valid Easypaisa mobile number (e.g. 03XXXXXXXXX)");
+      return;
+    }
+
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      alert("Invalid or missing amount. Please check your link.");
       return;
     }
 
@@ -34,9 +58,9 @@ export default function HostedEasypaisaPortal() {
         body: JSON.stringify({
           orderId,
           transactionAmount: Number(amount),
-          mobileAccountNo: mobile,
-          emailAddress: "",
-          optional1: service || "Custom Service",
+          mobileAccountNo: mobile.trim(),
+          emailAddress: "naspropvt@gmail.com", // ✅ always give valid email
+          optional1: service || "Hosted Portal",
         }),
       });
 
@@ -44,10 +68,8 @@ export default function HostedEasypaisaPortal() {
       console.log("Easypaisa Response:", data);
 
       if (data.responseCode === "0000") {
-        setMessage("✅ Payment request sent successfully!");
-        setStep("guide");
+        setMessage("✅ Payment request sent! Please approve in your Easypaisa app.");
 
-        // Start checking status
         const interval = setInterval(async () => {
           const check = await fetch("/api/easypay/inquire", {
             method: "POST",
@@ -70,7 +92,6 @@ export default function HostedEasypaisaPortal() {
               payment_method: "Easypaisa",
             };
             localStorage.setItem("lastOrder", JSON.stringify(orderData));
-            router.push("/thankyou");
           }
         }, 5000);
       } else {
@@ -90,9 +111,7 @@ export default function HostedEasypaisaPortal() {
     <div className="portal-container">
       <div className="portal-card">
         <h1>💚 Easypaisa Payment Portal</h1>
-        <p className="subtitle">
-          Powered by <strong>{merchant || "NasPro Pvt"}</strong>
-        </p>
+        <p className="subtitle">Powered by <strong>{merchant || "NasPro Pvt"}</strong></p>
 
         <div className="info-box">
           <p><strong>Service:</strong> {service || "Custom Service"}</p>
@@ -110,12 +129,7 @@ export default function HostedEasypaisaPortal() {
               onChange={(e) => setMobile(e.target.value)}
               maxLength={11}
             />
-
-            <button
-              className="pay-btn"
-              onClick={handlePayment}
-              disabled={loading}
-            >
+            <button className="pay-btn" onClick={handlePayment} disabled={loading}>
               {loading ? "Processing..." : "Pay Now"}
             </button>
           </>
@@ -126,7 +140,7 @@ export default function HostedEasypaisaPortal() {
             <h3>📱 Approve Your Payment</h3>
             <ol>
               <li>Open your <strong>Easypaisa</strong> App.</li>
-              <li>Go to <strong>“My Approvals”</strong> from the home screen.</li>
+              <li>Go to <strong>“My Approvals”</strong> on the home screen.</li>
               <li>Find the pending request for PKR {amount}.</li>
               <li>Tap <strong>Approve</strong> to complete your transaction.</li>
             </ol>
@@ -136,11 +150,9 @@ export default function HostedEasypaisaPortal() {
 
         {step === "done" && (
           <div className="success-box">
-            <h3>✅ Payment Confirmed!</h3>
+            <h3>✅ Payment Successful!</h3>
             <p>Thank you for your payment.</p>
-            <button className="back-btn" onClick={() => router.push("/")}>
-              Back to Home
-            </button>
+            <p>This page will close in <strong>{countdown}</strong> seconds.</p>
           </div>
         )}
 
@@ -237,15 +249,6 @@ export default function HostedEasypaisaPortal() {
           text-align: center;
           color: #22c55e;
         }
-        .back-btn {
-          margin-top: 15px;
-          background: #1e3a8a;
-          color: #fff;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 6px;
-          cursor: pointer;
-        }
         .status-msg {
           margin-top: 20px;
           font-size: 0.95rem;
@@ -254,4 +257,4 @@ export default function HostedEasypaisaPortal() {
       `}</style>
     </div>
   );
-        }
+          }

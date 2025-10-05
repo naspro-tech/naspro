@@ -8,6 +8,7 @@ const SERVICE_LABELS = {
   ecommerce: 'E-Commerce Solutions',
   cloudit: 'Cloud & IT Infrastructure',
   digitalmarketing: 'Digital Marketing',
+  testing: 'Testing Service', // ✅ added for Easypaisa Rs.1 test
 };
 
 const containerStyle = {
@@ -20,15 +21,6 @@ const containerStyle = {
   fontFamily: "'Inter', sans-serif",
   color: "#333",
   textAlign: "center",
-};
-
-const successBox = {
-  background: "#d4edda",
-  color: "#155724",
-  padding: "15px",
-  borderRadius: "8px",
-  margin: "20px 0",
-  textAlign: "left",
 };
 
 const errorBox = {
@@ -96,11 +88,10 @@ export default function ThankYou() {
       cnic,
       description,
       success,
-      error
+      error,
     } = router.query;
 
-    // Failed payment or error
-    if (success === 'false' || error) {
+    if (success === "false" || error) {
       setOrder((prev) => ({
         ...prev,
         success: false,
@@ -109,13 +100,14 @@ export default function ThankYou() {
       return;
     }
 
-    // Query params exist
     if (service && amount) {
       setOrder({
         orderId,
         service,
         amount,
-        payment_method: payment_method || "Bank Transfer",
+        payment_method:
+          payment_method ||
+          (transaction_id ? "Easypaisa" : "Bank Transfer"), // ✅ display Easypaisa if txn ID exists
         transaction_id,
         name,
         email,
@@ -125,7 +117,6 @@ export default function ThankYou() {
         success: true,
       });
     } else {
-      // fallback to localStorage
       const storedOrder = localStorage.getItem("lastOrder");
       if (storedOrder) {
         const parsedOrder = JSON.parse(storedOrder);
@@ -144,36 +135,79 @@ export default function ThankYou() {
     <div style={containerStyle}>
       {order.success ? (
         <>
-          <h1 style={{ fontSize: "1.5rem", marginBottom: 15, color: '#22c55e' }}>
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              marginBottom: 15,
+              color: "#22c55e",
+            }}
+          >
             ✅ Payment Successful!
           </h1>
-          <p>Thank you for your order. Our team will confirm your payment and get back to you shortly.</p>
+          <p>
+            Thank you for your order. Our team will confirm your payment and get
+            back to you shortly.
+          </p>
         </>
       ) : (
         <>
-          <h1 style={{ fontSize: "1.5rem", marginBottom: 15, color: '#dc2626' }}>
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              marginBottom: 15,
+              color: "#dc2626",
+            }}
+          >
             ❌ Payment Failed
           </h1>
           <div style={errorBox}>
             <h3>Payment Not Completed</h3>
-            <p>There was an issue processing your payment. Please try again or contact support.</p>
+            <p>
+              There was an issue processing your payment. Please try again or
+              contact support.
+            </p>
           </div>
         </>
       )}
 
       <div style={detailsBox}>
         <h3>Order Details:</h3>
-        <p><strong>Order ID:</strong> {order.orderId}</p>
-        <p><strong>Service:</strong> {serviceLabel}</p>
-        <p><strong>Amount:</strong> PKR {order.amount}</p>
-        <p><strong>Payment Method:</strong> {order.payment_method || 'Bank Transfer'}</p>
-        {order.transaction_id && <p><strong>Transaction ID:</strong> {order.transaction_id}</p>}
+        <p>
+          <strong>Order ID:</strong> {order.orderId}
+        </p>
+        <p>
+          <strong>Service:</strong> {serviceLabel}
+        </p>
+        <p>
+          <strong>Amount:</strong> PKR {order.amount}
+        </p>
+        <p>
+          <strong>Payment Method:</strong>{" "}
+          {order.payment_method || "Bank Transfer"}
+        </p>
+        {order.transaction_id && (
+          <p>
+            <strong>Transaction ID:</strong> {order.transaction_id}
+          </p>
+        )}
         <hr style={{ margin: "10px 0" }} />
-        <p><strong>Name:</strong> {order.name}</p>
-        <p><strong>Email:</strong> {order.email}</p>
-        <p><strong>Phone:</strong> {order.phone}</p>
-        {order.cnic && <p><strong>CNIC (last 6 digits):</strong> {order.cnic}</p>}
-        <p><strong>Description:</strong> {order.description || 'N/A'}</p>
+        <p>
+          <strong>Name:</strong> {order.name}
+        </p>
+        <p>
+          <strong>Email:</strong> {order.email}
+        </p>
+        <p>
+          <strong>Phone:</strong> {order.phone}
+        </p>
+        {order.cnic && (
+          <p>
+            <strong>CNIC (last 6 digits):</strong> {order.cnic}
+          </p>
+        )}
+        <p>
+          <strong>Description:</strong> {order.description || "N/A"}
+        </p>
       </div>
 
       <div style={contactBox}>
@@ -183,13 +217,19 @@ export default function ThankYou() {
         <p>⏰ Response Time: Within 24 hours</p>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          justifyContent: "center",
+        }}
+      >
         <button style={buttonStyle} onClick={() => router.push("/")}>
           Back to Home
         </button>
         {!order.success && (
           <button
-            style={{ ...buttonStyle, backgroundColor: '#dc2626' }}
+            style={{ ...buttonStyle, backgroundColor: "#dc2626" }}
             onClick={() => router.push("/checkout")}
           >
             Try Again
@@ -198,5 +238,4 @@ export default function ThankYou() {
       </div>
     </div>
   );
-      }
-        
+        }

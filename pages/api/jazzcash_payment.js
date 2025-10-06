@@ -35,10 +35,6 @@ export default function handler(req, res) {
   // Payload (keep field names & empties as before)
   // -------------------------
   const payload = {
-    // required for v2.0
-    pp_Version: "2.0",
-    pp_TxnType: "MWALLET",
-
     pp_Amount: (amount * 100).toString(), // amount in paisa
     pp_BillReference: billReference,
     pp_CNIC: cnic || "",

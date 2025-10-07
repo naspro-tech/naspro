@@ -79,30 +79,31 @@ export default function HostedEasypaisaPortal() {
           console.log("Easypaisa Status:", result);
 
           if (result.responseCode === "0000") {
-            clearInterval(interval);
-            setStep("done");
-            setMessage("✅ Payment confirmed successfully!");
+  clearInterval(interval);
+  setStep("done");
+  setMessage("✅ Payment confirmed successfully!");
 
-            const orderData = {
-              orderId,
-              amount: Number(amount),
-              service: service || "Hosted Portal",
-              mobile,
-              merchant: merchant || "NasPro Pvt",
-              partner: merchant || "NasPro Pvt", // ✅ Added partner field
-              payment_method: "Easypaisa",
-              createdAt: new Date().toISOString(), // ✅ Added timestamp
-            };
+  const partner = (merchant || "naspro").trim().toLowerCase();
 
-            // ✅ Save transaction to MongoDB
-            await fetch("/api/transactions/save", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(orderData),
-            });
+  const orderData = {
+    orderId,
+    amount,
+    service,
+    mobile,
+    merchant: partner,
+    payment_method: "Easypaisa",
+  };
 
-            localStorage.setItem("lastOrder", JSON.stringify(orderData));
+  // ✅ Save to MongoDB via API
+  await fetch("/api/transactions/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(orderData),
+  });
+
+  localStorage.setItem("lastOrder", JSON.stringify(orderData));
           }
+          
         }, 5000);
       } else {
         setMessage(`❌ ${data.responseDesc || "Failed to start transaction"}`);

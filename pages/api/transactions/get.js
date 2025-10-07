@@ -1,41 +1,30 @@
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri);
 const dbName = "nasprodb";
-
-let cachedClient = null;
-
-async function connectToDatabase() {
-  if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri);
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { partner, page = 1, limit = 10, startDate, endDate } = req.query;
+  const { merchant, page = 1, limit = 10, startDate, endDate } = req.query;
 
-  if (!partner) {
-    return res.status(400).json({ error: "Partner key required" });
-  }
-
-  const allowedPartners = ["betjee", "naspro"];
-  if (!allowedPartners.includes(partner.toLowerCase())) {
-    return res.status(403).json({ error: "Invalid partner key" });
+  if (!merchant) {
+    return res.status(400).json({ error: "Merchant name required" });
   }
 
   try {
-    const client = await connectToDatabase();
+    await client.connect();
     const db = client.db(dbName);
     const collection = db.collection("transactions");
 
-    const query = { partner: partner.toLowerCase() };
+    const partner = merchant.trim().toLowerCase();
 
+    const query = { merchant: partner };
+
+    // Optional date filter
     if (startDate && endDate) {
       query.createdAt = {
         $gte: new Date(startDate),
@@ -53,7 +42,7 @@ export default async function handler(req, res) {
       .toArray();
 
     const totalCount = await collection.countDocuments(query);
-    const totalAmountResult = await collection
+    const totalAmountAgg = await collection
       .aggregate([
         { $match: query },
         { $group: { _id: null, total: { $sum: { $toDouble: "$amount" } } } },
@@ -64,10 +53,13 @@ export default async function handler(req, res) {
       success: true,
       transactions,
       totalCount,
-      totalAmount: totalAmountResult[0]?.total || 0,
+      totalAmount: totalAmountAgg[0]?.total || 0,
     });
   } catch (error) {
     console.error("Error fetching transactions:", error);
     res.status(500).json({ success: false, error: "Failed to fetch transactions" });
+  } finally {
+    await client.close();
   }
-      }
+}
+  

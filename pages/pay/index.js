@@ -8,9 +8,9 @@ export default function HostedEasypaisaPortal() {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [step, setStep] = useState("input"); // input | guide | done
+  const [step, setStep] = useState("input");
   const [message, setMessage] = useState("");
-  const [countdown, setCountdown] = useState(5); // seconds before close
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -20,13 +20,12 @@ export default function HostedEasypaisaPortal() {
   }, [router.isReady]);
 
   useEffect(() => {
-    // Auto-close countdown
     if (step === "done") {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
-            window.close(); // ✅ Auto close page
+            window.close();
             return 0;
           }
           return prev - 1;
@@ -59,7 +58,7 @@ export default function HostedEasypaisaPortal() {
           orderId,
           transactionAmount: Number(amount),
           mobileAccountNo: mobile.trim(),
-          emailAddress: "naspropvt@gmail.com", // ✅ always give valid email
+          emailAddress: "naspropvt@gmail.com",
           optional1: service || "Hosted Portal",
         }),
       });
@@ -83,14 +82,25 @@ export default function HostedEasypaisaPortal() {
             clearInterval(interval);
             setStep("done");
             setMessage("✅ Payment confirmed successfully!");
+
             const orderData = {
               orderId,
-              amount,
-              service,
+              amount: Number(amount),
+              service: service || "Hosted Portal",
               mobile,
               merchant: merchant || "NasPro Pvt",
+              partner: merchant || "NasPro Pvt", // ✅ Added partner field
               payment_method: "Easypaisa",
+              createdAt: new Date().toISOString(), // ✅ Added timestamp
             };
+
+            // ✅ Save transaction to MongoDB
+            await fetch("/api/transactions/save", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(orderData),
+            });
+
             localStorage.setItem("lastOrder", JSON.stringify(orderData));
           }
         }, 5000);
@@ -158,7 +168,7 @@ export default function HostedEasypaisaPortal() {
 
         {message && <p className="status-msg">{message}</p>}
       </div>
-
+ 
       <style jsx>{`
         .portal-container {
           display: flex;

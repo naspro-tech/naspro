@@ -1,17 +1,8 @@
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri);
 const dbName = "nasprodb";
-
-let cachedClient = null;
-
-async function connectToDatabase() {
-  if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri);
-  await client.connect();
-  cachedClient = client;
-  return client;
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -19,29 +10,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { orderId, amount, service, mobile, merchant, payment_method, partner } = req.body;
+    const { orderId, amount, service, mobile, merchant, payment_method } = req.body;
 
-    if (!orderId || !amount || !partner) {
+    if (!orderId || !amount || !merchant) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const allowedPartners = ["betjee", "naspro"];
-    if (!allowedPartners.includes(partner.toLowerCase())) {
-      return res.status(403).json({ error: "Invalid partner key" });
-    }
-
-    const client = await connectToDatabase();
+    await client.connect();
     const db = client.db(dbName);
     const collection = db.collection("transactions");
+
+    const partner = (merchant || "naspro").trim().toLowerCase();
 
     const transaction = {
       orderId,
       amount: Number(amount),
       service: service || "Unknown",
       mobile: mobile || "N/A",
-      merchant: merchant || partner.toUpperCase(),
+      merchant: partner,
       payment_method: payment_method || "Easypaisa",
-      partner: partner.toLowerCase(),
       status: "Success",
       createdAt: new Date(),
     };
@@ -52,5 +39,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error("Error saving transaction:", error);
     return res.status(500).json({ success: false, error: "Failed to save transaction" });
+  } finally {
+    await client.close();
   }
 }

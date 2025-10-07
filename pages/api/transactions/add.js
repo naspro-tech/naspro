@@ -1,14 +1,15 @@
 // /pages/api/transactions/add.js
-import { connectToDatabase } from "@/lib/mongodb";
-import Transaction from "@/models/Transaction";
+import clientPromise from "../../lib/mongodb.js";
+import Transaction from "../../models/Transaction.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
   try {
-    await connectToDatabase();
+    const client = await clientPromise;
+    const db = client.db("nasprodb");
 
     const {
       orderId,
@@ -16,37 +17,44 @@ export default async function handler(req, res) {
       amount,
       payment_method,
       transaction_id,
-      phone,
-      email,
       name,
+      email,
+      phone,
       cnic,
       description,
-      status,
-      secretWord,
+      secretWord, // ✅ comes from hosted page
+      status = "Pending",
     } = req.body;
 
-    if (!orderId || !amount || !secretWord) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!secretWord) {
+      return res.status(400).json({ success: false, error: "Missing secretWord" });
     }
 
-    const newTxn = await Transaction.create({
+    const transaction = {
       orderId,
       service,
       amount,
       payment_method,
       transaction_id,
-      phone,
-      email,
       name,
-      cnic,
+      email,
+      phone,
+      cnic: cnic || null,
       description,
-      status: status || "pending",
       secretWord,
-    });
+      status,
+      createdAt: new Date(),
+    };
 
-    return res.status(200).json({ success: true, transaction: newTxn });
+    await db.collection("transactions").insertOne(transaction);
+
+    return res.status(200).json({
+      success: true,
+      message: "Transaction stored successfully",
+      transaction,
+    });
   } catch (error) {
-    console.error("Error adding transaction:", error);
+    console.error("Transaction save error:", error);
     return res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 }

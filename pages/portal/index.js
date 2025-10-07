@@ -19,7 +19,7 @@ export default function PartnerPortal() {
   // ✅ Allowed partners and passwords
   const validUsers = {
     Betjee: "Betjee1234",
-    NasPro: "NasPro1234",
+    Crickex: "Crickex1234",
   };
 
   const handleLogin = async (e) => {

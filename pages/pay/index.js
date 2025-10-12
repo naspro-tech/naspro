@@ -8,12 +8,15 @@ export default function HostedEasypaisaPortal() {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [step, setStep] = useState("input");
+  const [step, setStep] = useState("input"); // input | guide | success | expired
   const [message, setMessage] = useState("");
   const [timeLeft, setTimeLeft] = useState(600);
+  const [closeTimer, setCloseTimer] = useState(5);
+  const [fade, setFade] = useState(true);
 
   const finalService = service || "Easypaisa";
 
+  // Generate orderId
   useEffect(() => {
     if (!router.isReady) return;
     const timestamp = Date.now().toString().slice(-6);
@@ -21,6 +24,7 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
+  // Session countdown (10 minutes)
   useEffect(() => {
     if (step !== "input") return;
     const t = setInterval(() => {
@@ -36,6 +40,27 @@ export default function HostedEasypaisaPortal() {
     return () => clearInterval(t);
   }, [step]);
 
+  // Auto close timer after success
+  useEffect(() => {
+    if (step === "success") {
+      const interval = setInterval(() => {
+        setFade(false);
+        setTimeout(() => {
+          setFade(true);
+          setCloseTimer((prev) => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              window.close();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 400);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [step]);
+
   const handlePayment = async () => {
     if (!/^03\d{9}$/.test(mobile)) {
       alert("براہ کرم درست ایزی پیسہ نمبر درج کریں (مثلاً 03XXXXXXXXX)");
@@ -48,7 +73,9 @@ export default function HostedEasypaisaPortal() {
 
     setLoading(true);
     setStep("guide");
-    setMessage("براہ کرم اپنی Easypaisa App میں جا کر My Approvals میں ادائیگی کی منظوری دیں۔");
+    setMessage(
+      `براہ کرم اپنی Easypaisa ایپ کھولیں، "My Approvals" پر جائیں۔ اور رقم PKR ${amount} کی ادائیگی کی منظوری دیں۔`
+    );
 
     try {
       const res = await fetch("/api/easypay/initiate-ma", {
@@ -67,7 +94,6 @@ export default function HostedEasypaisaPortal() {
       if (data && data.responseCode === "0000") {
         setStep("success");
         setMessage("✅ آپ کی ادائیگی کامیاب ہوگئی ہے۔ صفحہ 5 سیکنڈ میں بند ہو جائے گا۔");
-        setTimeout(() => window.close(), 5000);
       }
     } catch (err) {
       console.error(err);
@@ -86,6 +112,7 @@ export default function HostedEasypaisaPortal() {
   return (
     <div className="page-bg">
       <div className="card">
+        {/* Header with logo */}
         <div className="card-header">
           <div className="logo-wrap">
             <img src="/images.jpeg" alt="Easypaisa Logo" />
@@ -97,9 +124,7 @@ export default function HostedEasypaisaPortal() {
             <>
               <h2 className="urdu-text">خوش آمدید</h2>
               <p className="urdu-subtext">
-                اگر آپ ٹیلی نار یا کسی دوسرے نیٹ ورک سے ہیں تو براہ کرم اپنی{" "}
-                <strong>ایزی پیسہ ایپ</strong> میں جا کر ادائیگی منظوری دیں۔ <br />
-                 براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں
+                براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں اور نیچے دی گئی رقم کی تصدیق کریں۔
               </p>
 
               <div className="form-grid">
@@ -123,11 +148,6 @@ export default function HostedEasypaisaPortal() {
                 </div>
               </div>
 
-              {/* ✅ Timer moved here below form */}
-              <div className="timer-section">
-                ⏰ سیشن وقت: <strong>{formatTime(timeLeft)}</strong>
-              </div>
-
               <button
                 className="submit-btn"
                 onClick={handlePayment}
@@ -135,17 +155,15 @@ export default function HostedEasypaisaPortal() {
               >
                 {loading ? "Processing..." : "Submit"}
               </button>
+
+              <div className="timer-below">⏰ سیشن وقت: {formatTime(timeLeft)}</div>
             </>
           )}
 
           {step === "guide" && (
             <div className="guide-box">
               <h3>📱 براہ کرم منظوری دیں</h3>
-              <p>
-                اپنی <strong>Easypaisa</strong> ایپ کھولیں، "My Approvals" میں جائیں،
-                اور PKR {amount} کی ادائیگی منظور کریں۔ جب ادائیگی مکمل ہو جائے گی تو
-                یہ صفحہ خود بخود بند ہو جائے گا۔
-              </p>
+              <p className="approval-text">{message}</p>
             </div>
           )}
 
@@ -153,6 +171,10 @@ export default function HostedEasypaisaPortal() {
             <div className="success-box">
               <h3>✅ ادائیگی مکمل</h3>
               <p>{message}</p>
+              <p className={`countdown ${fade ? "fade-in" : "fade-out"}`}>
+                صفحہ {closeTimer} سیکنڈ میں بند ہو جائے گا۔
+                <span className="close-icon" onClick={() => window.close()}>✖</span>
+              </p>
             </div>
           )}
 
@@ -162,8 +184,6 @@ export default function HostedEasypaisaPortal() {
               <p>براہ کرم صفحہ ریفریش کریں اور دوبارہ کوشش کریں۔</p>
             </div>
           )}
-
-          {message && step !== "success" && <p className="status">{message}</p>}
         </div>
       </div>
 
@@ -174,10 +194,18 @@ export default function HostedEasypaisaPortal() {
           align-items: center;
           justify-content: center;
           padding: 20px;
-          background: linear-gradient(45deg, #0a0f1e, #003a47, #2b0040, #004d3d);
+          background: linear-gradient(
+            45deg,
+            #0b1220,
+            #072540,
+            #2b0f3a,
+            #1f2937,
+            #0b1220
+          );
           background-size: 400% 400%;
-          animation: colorShift 4s ease infinite;
+          animation: colorShift 1s linear infinite;
         }
+
         @keyframes colorShift {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
@@ -188,21 +216,21 @@ export default function HostedEasypaisaPortal() {
           width: 100%;
           max-width: 440px;
           border-radius: 18px;
-          background: #ffffffee;
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+          background: rgba(255, 255, 255, 0.98);
+          box-shadow: 0 12px 40px rgba(2,6,23,0.6);
           overflow: hidden;
         }
 
         .card-header {
-          position: relative;
+          padding: 0;
           background: #fff;
         }
 
-        /* ✅ Logo now bigger and perfect */
         .logo-wrap img {
           width: 100%;
           height: 120px;
-          object-fit: cover;
+          object-fit: contain;
+          display: block;
         }
 
         .card-body {
@@ -210,88 +238,103 @@ export default function HostedEasypaisaPortal() {
         }
 
         .urdu-text {
+          text-align: center;
           font-size: 1.4rem;
           font-weight: 700;
           color: #0f172a;
-          text-align: center;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         }
 
         .urdu-subtext {
-          font-size: 0.9rem;
-          color: #374151;
-          margin-bottom: 14px;
-          line-height: 1.6;
           text-align: center;
+          direction: rtl;
+          font-size: 1rem;
+          color: #374151;
+          margin-bottom: 18px;
+          line-height: 1.8;
         }
 
         .form-grid {
           display: grid;
-          grid-template-columns: 1fr;
           gap: 12px;
         }
 
-        label {
+        .form-group label {
           font-size: 0.9rem;
-          margin-bottom: 4px;
+          color: #111827;
+          margin-bottom: 6px;
         }
 
         input {
-          padding: 10px 12px;
-          border-radius: 8px;
+          width: 100%;
+          padding: 12px 14px;
+          border-radius: 10px;
           border: 1px solid #d1d5db;
+          text-align: center;
           font-size: 1rem;
-          text-align: center;
-        }
-
-        .timer-section {
-          margin: 10px 0;
-          text-align: center;
-          color: #1f2937;
-          font-weight: 600;
         }
 
         .submit-btn {
-          margin-top: 12px;
+          margin-top: 10px;
           width: 100%;
           padding: 12px;
-          border: none;
           border-radius: 10px;
-          background: linear-gradient(90deg, #047857, #0ea5a6, #065f46);
-          color: #fff;
-          font-weight: 700;
+          border: none;
           font-size: 1rem;
-          box-shadow: 0 8px 20px rgba(4, 120, 87, 0.3);
-          transition: all 0.2s ease;
+          font-weight: 700;
+          color: #fff;
+          cursor: pointer;
+          background: linear-gradient(90deg, #0ea5a6, #075985);
         }
 
-        .submit-btn:hover {
-          transform: scale(1.02);
+        .timer-below {
+          margin-top: 12px;
+          text-align: center;
+          font-weight: 600;
+          color: #0f172a;
         }
 
-        .guide-box,
-        .success-box,
-        .expired-box {
-          margin-top: 10px;
+        .guide-box, .success-box, .expired-box {
+          margin-top: 15px;
           padding: 14px;
           border-radius: 10px;
-          line-height: 1.5;
+          font-size: 1rem;
+          text-align: center;
         }
 
-        .guide-box { background: #f8fafc; }
+        .guide-box { background: #f8fafc; color: #064e3b; }
         .success-box { background: #ecfccb; color: #14532d; }
         .expired-box { background: #fff7ed; color: #7c2d12; }
 
-        .status {
-          margin-top: 12px;
-          font-size: 0.95rem;
-          color: #374151;
+        .approval-text {
+          direction: rtl;
+          text-align: center;
+          line-height: 2;
+          font-size: 1rem;
+        }
+
+        .countdown {
+          margin-top: 10px;
+          direction: rtl;
+          text-align: center;
+          font-weight: 600;
+          transition: opacity 0.4s ease-in-out;
+        }
+
+        .fade-in { opacity: 1; }
+        .fade-out { opacity: 0.3; }
+
+        .close-icon {
+          margin-right: 8px;
+          cursor: pointer;
+          font-size: 1.2rem;
         }
 
         @media (max-width: 520px) {
-          .logo-wrap img { height: 100px; }
+          .card { max-width: 96%; }
         }
       `}</style>
     </div>
   );
-}
+                   }
+          

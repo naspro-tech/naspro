@@ -8,15 +8,14 @@ export default function HostedEasypaisaPortal() {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [step, setStep] = useState("input"); // input | guide | success | expired
+  const [step, setStep] = useState("input");
   const [message, setMessage] = useState("");
   const [timeLeft, setTimeLeft] = useState(600);
-  const [closeTimer, setCloseTimer] = useState(5);
-  const [fade, setFade] = useState(true);
+  const [closeCountdown, setCloseCountdown] = useState(5);
+  const [showCloseButton, setShowCloseButton] = useState(false);
 
   const finalService = service || "Easypaisa";
 
-  // Generate orderId
   useEffect(() => {
     if (!router.isReady) return;
     const timestamp = Date.now().toString().slice(-6);
@@ -24,7 +23,7 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
-  // Session countdown (10 minutes)
+  // Session countdown (10 min)
   useEffect(() => {
     if (step !== "input") return;
     const t = setInterval(() => {
@@ -40,22 +39,19 @@ export default function HostedEasypaisaPortal() {
     return () => clearInterval(t);
   }, [step]);
 
-  // Auto close timer after success
+  // Auto-close countdown
   useEffect(() => {
     if (step === "success") {
+      setShowCloseButton(true);
       const interval = setInterval(() => {
-        setFade(false);
-        setTimeout(() => {
-          setFade(true);
-          setCloseTimer((prev) => {
-            if (prev <= 1) {
-              clearInterval(interval);
-              window.close();
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 400);
+        setCloseCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            window.close();
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
       return () => clearInterval(interval);
     }
@@ -93,7 +89,7 @@ export default function HostedEasypaisaPortal() {
 
       if (data && data.responseCode === "0000") {
         setStep("success");
-        setMessage("✅ آپ کی ادائیگی کامیاب ہوگئی ہے۔ صفحہ 5 سیکنڈ میں بند ہو جائے گا۔");
+        setMessage("✅ آپ کی ادائیگی کامیاب ہوگئی ہے۔");
       }
     } catch (err) {
       console.error(err);
@@ -112,19 +108,20 @@ export default function HostedEasypaisaPortal() {
   return (
     <div className="page-bg">
       <div className="card">
-        {/* Header with logo */}
-        <div className="card-header">
-          <div className="logo-wrap">
-            <img src="/images.jpeg" alt="Easypaisa Logo" />
-          </div>
+        {/* Header */}
+        <div className="logo-wrap">
+          <img src="/images.jpeg" alt="Easypaisa Logo" />
         </div>
 
+        {/* Body */}
         <div className="card-body">
           {step === "input" && (
             <>
               <h2 className="urdu-text">خوش آمدید</h2>
               <p className="urdu-subtext">
-                براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں اور نیچے دی گئی رقم کی تصدیق کریں۔
+                اگر آپ ٹیلی نار یا کسی دوسرے نیٹ ورک سے ہیں تو براہ کرم اپنی ایزی پیسہ ایپ میں جا کر ادائیگی منظوری دیں۔
+                <br />
+                براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں۔
               </p>
 
               <div className="form-grid">
@@ -132,10 +129,12 @@ export default function HostedEasypaisaPortal() {
                   <label>Order Number</label>
                   <input type="text" value={orderId.slice(-9)} disabled />
                 </div>
+
                 <div className="form-group">
                   <label>Amount</label>
                   <input type="text" value={amount || "0.00"} disabled />
                 </div>
+
                 <div className="form-group">
                   <label>Mobile Number</label>
                   <input
@@ -155,26 +154,29 @@ export default function HostedEasypaisaPortal() {
               >
                 {loading ? "Processing..." : "Submit"}
               </button>
-
-              <div className="timer-below">⏰ سیشن وقت: {formatTime(timeLeft)}</div>
             </>
           )}
 
           {step === "guide" && (
             <div className="guide-box">
               <h3>📱 براہ کرم منظوری دیں</h3>
-              <p className="approval-text">{message}</p>
+              <p>{message}</p>
             </div>
           )}
 
           {step === "success" && (
             <div className="success-box">
               <h3>✅ ادائیگی مکمل</h3>
-              <p>{message}</p>
-              <p className={`countdown ${fade ? "fade-in" : "fade-out"}`}>
-                صفحہ {closeTimer} سیکنڈ میں بند ہو جائے گا۔
-                <span className="close-icon" onClick={() => window.close()}>✖</span>
+              <p>
+                آپ کی ادائیگی کامیاب ہوگئی ہے۔ صفحہ {closeCountdown} سیکنڈ میں
+                بند ہو جائے گا۔
               </p>
+
+              {showCloseButton && (
+                <button className="close-btn" onClick={() => window.close()}>
+                  Close Page
+                </button>
+              )}
             </div>
           )}
 
@@ -185,6 +187,13 @@ export default function HostedEasypaisaPortal() {
             </div>
           )}
         </div>
+
+        {/* Bottom Timer */}
+        {step === "input" && (
+          <div className="timer-bottom">
+            ⏰ سیشن وقت باقی ہے: {formatTime(timeLeft)}
+          </div>
+        )}
       </div>
 
       <style jsx>{`
@@ -193,20 +202,12 @@ export default function HostedEasypaisaPortal() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
-          background: linear-gradient(
-            45deg,
-            #0b1220,
-            #072540,
-            #2b0f3a,
-            #1f2937,
-            #0b1220
-          );
-          background-size: 400% 400%;
-          animation: colorShift 1s linear infinite;
+          background: linear-gradient(45deg, #0b1220, #2b0f3a, #0b3a4a, #1f2937);
+          background-size: 600% 600%;
+          animation: gradientMove 1s linear infinite;
+          padding: 10px;
         }
-
-        @keyframes colorShift {
+        @keyframes gradientMove {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
@@ -215,126 +216,106 @@ export default function HostedEasypaisaPortal() {
         .card {
           width: 100%;
           max-width: 440px;
-          border-radius: 18px;
-          background: rgba(255, 255, 255, 0.98);
-          box-shadow: 0 12px 40px rgba(2,6,23,0.6);
+          border-radius: 16px;
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
           overflow: hidden;
         }
 
-        .card-header {
-          padding: 0;
+        .logo-wrap {
           background: #fff;
+          height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-
         .logo-wrap img {
           width: 100%;
-          height: 120px;
+          height: 100%;
           object-fit: contain;
-          display: block;
         }
 
         .card-body {
-          padding: 20px;
+          padding: 10px 16px;
+          text-align: center;
         }
 
         .urdu-text {
-          text-align: center;
-          font-size: 1.4rem;
+          font-size: 1.2rem;
           font-weight: 700;
           color: #0f172a;
-          margin-bottom: 10px;
-        }
-
-        .urdu-subtext {
           text-align: center;
-          direction: rtl;
-          font-size: 1rem;
+        }
+        .urdu-subtext {
+          font-size: 0.9rem;
           color: #374151;
-          margin-bottom: 18px;
-          line-height: 1.8;
+          line-height: 1.4;
+          margin-bottom: 10px;
         }
 
         .form-grid {
           display: grid;
-          gap: 12px;
+          gap: 8px;
         }
-
         .form-group label {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           color: #111827;
-          margin-bottom: 6px;
+          text-align: left;
+          margin-bottom: 4px;
         }
-
-        input {
-          width: 100%;
-          padding: 12px 14px;
-          border-radius: 10px;
-          border: 1px solid #d1d5db;
+        .form-group input {
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 8px;
           text-align: center;
-          font-size: 1rem;
         }
 
         .submit-btn {
-          margin-top: 10px;
+          margin-top: 8px;
           width: 100%;
-          padding: 12px;
-          border-radius: 10px;
+          padding: 10px;
           border: none;
-          font-size: 1rem;
-          font-weight: 700;
-          color: #fff;
-          cursor: pointer;
+          border-radius: 8px;
+          color: white;
           background: linear-gradient(90deg, #0ea5a6, #075985);
-        }
-
-        .timer-below {
-          margin-top: 12px;
-          text-align: center;
-          font-weight: 600;
-          color: #0f172a;
+          font-weight: 700;
         }
 
         .guide-box, .success-box, .expired-box {
-          margin-top: 15px;
-          padding: 14px;
-          border-radius: 10px;
-          font-size: 1rem;
-          text-align: center;
-        }
-
-        .guide-box { background: #f8fafc; color: #064e3b; }
-        .success-box { background: #ecfccb; color: #14532d; }
-        .expired-box { background: #fff7ed; color: #7c2d12; }
-
-        .approval-text {
-          direction: rtl;
-          text-align: center;
-          line-height: 2;
-          font-size: 1rem;
-        }
-
-        .countdown {
           margin-top: 10px;
-          direction: rtl;
+          font-size: 0.9rem;
+          line-height: 1.5;
+        }
+
+        .close-btn {
+          margin-top: 10px;
+          background: #111827;
+          color: white;
+          padding: 8px 14px;
+          border-radius: 8px;
+          border: none;
+          font-size: 0.9rem;
+        }
+
+        .timer-bottom {
+          background: #0f172a;
+          color: white;
+          padding: 6px;
+          font-size: 0.85rem;
           text-align: center;
-          font-weight: 600;
-          transition: opacity 0.4s ease-in-out;
         }
 
-        .fade-in { opacity: 1; }
-        .fade-out { opacity: 0.3; }
-
-        .close-icon {
-          margin-right: 8px;
-          cursor: pointer;
-          font-size: 1.2rem;
+        @media (max-height: 720px) {
+          .card { transform: scale(0.9); }
         }
-
-        @media (max-width: 520px) {
-          .card { max-width: 96%; }
+        @media (max-height: 600px) {
+          .card { transform: scale(0.85); }
         }
       `}</style>
     </div>
   );
-                   }
-          
+    }
+      

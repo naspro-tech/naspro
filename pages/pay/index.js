@@ -10,8 +10,12 @@ export default function HostedEasypaisaPortal() {
   const [orderId, setOrderId] = useState("");
   const [step, setStep] = useState("input"); // input | guide | done
   const [message, setMessage] = useState("");
-  const [countdown, setCountdown] = useState(5); // seconds before close
+  const [countdown, setCountdown] = useState(5); // for closing after done
+  const [timeLeft, setTimeLeft] = useState(600); // ⏱ 10 minutes (600 seconds)
 
+  const finalService = service || "Easypaisa"; // ✅ Default service name
+
+  // Generate Order ID once router ready
   useEffect(() => {
     if (!router.isReady) return;
     const timestamp = Date.now().toString().slice(-6);
@@ -19,14 +23,14 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
+  // Auto-close countdown
   useEffect(() => {
-    // Auto-close countdown
     if (step === "done") {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
-            window.close(); // ✅ Auto close page
+            window.close();
             return 0;
           }
           return prev - 1;
@@ -34,6 +38,22 @@ export default function HostedEasypaisaPortal() {
       }, 1000);
       return () => clearInterval(timer);
     }
+  }, [step]);
+
+  // ⏰ Front page 10-minute countdown timer
+  useEffect(() => {
+    if (step !== "input") return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setStep("expired");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
   }, [step]);
 
   const handlePayment = async () => {
@@ -59,8 +79,8 @@ export default function HostedEasypaisaPortal() {
           orderId,
           transactionAmount: Number(amount),
           mobileAccountNo: mobile.trim(),
-          emailAddress: "naspropvt@gmail.com", // ✅ always give valid email
-          optional1: service || "Hosted Portal",
+          emailAddress: "naspropvt@gmail.com",
+          optional1: finalService,
         }),
       });
 
@@ -86,7 +106,7 @@ export default function HostedEasypaisaPortal() {
             const orderData = {
               orderId,
               amount,
-              service,
+              service: finalService,
               mobile,
               merchant: merchant || "NasPro Pvt",
               payment_method: "Easypaisa",
@@ -107,14 +127,30 @@ export default function HostedEasypaisaPortal() {
     }
   };
 
+  // Helper: Format mm:ss
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? "0" + s : s}`;
+  };
+
   return (
     <div className="portal-container">
       <div className="portal-card">
         <h1>💚 Easypaisa Payment Portal</h1>
-        <p className="subtitle">Powered by <strong>{merchant || "NasPro Pvt"}</strong></p>
+        <p className="subtitle">
+          Powered by <strong>{merchant || "NasPro Pvt"}</strong>
+        </p>
+
+        {/* Show timer only when on input page */}
+        {step === "input" && (
+          <p className="timer">
+            ⏰ Session expires in <strong>{formatTime(timeLeft)}</strong>
+          </p>
+        )}
 
         <div className="info-box">
-          <p><strong>Service:</strong> {service || "Custom Service"}</p>
+          <p><strong>Service:</strong> {finalService}</p>
           <p><strong>Amount:</strong> PKR {amount || "0"}</p>
         </div>
 
@@ -156,6 +192,13 @@ export default function HostedEasypaisaPortal() {
           </div>
         )}
 
+        {step === "expired" && (
+          <div className="expired-box">
+            <h3>⏰ Session Expired</h3>
+            <p>Your session has timed out. Please refresh the page to start again.</p>
+          </div>
+        )}
+
         {message && <p className="status-msg">{message}</p>}
       </div>
 
@@ -186,7 +229,12 @@ export default function HostedEasypaisaPortal() {
         .subtitle {
           color: #94a3b8;
           font-size: 0.9rem;
-          margin-bottom: 20px;
+          margin-bottom: 10px;
+        }
+        .timer {
+          color: #facc15;
+          font-weight: 600;
+          margin-bottom: 15px;
         }
         .info-box {
           background: rgba(255, 255, 255, 0.05);
@@ -249,6 +297,12 @@ export default function HostedEasypaisaPortal() {
           text-align: center;
           color: #22c55e;
         }
+        .expired-box {
+          color: #f87171;
+          background: rgba(255, 0, 0, 0.1);
+          border-radius: 10px;
+          padding: 15px;
+        }
         .status-msg {
           margin-top: 20px;
           font-size: 0.95rem;
@@ -257,5 +311,5 @@ export default function HostedEasypaisaPortal() {
       `}</style>
     </div>
   );
-                         }
-                        
+          }
+          

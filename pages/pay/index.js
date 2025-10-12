@@ -3,15 +3,15 @@ import { useEffect, useState } from "react";
 
 export default function HostedEasypaisaPortal() {
   const router = useRouter();
-  const { amount, service, merchant } = router.query;
+  const { amount, service } = router.query;
 
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [step, setStep] = useState("input"); // input | guide | done
+  const [step, setStep] = useState("input"); // input | guide | done | expired
   const [message, setMessage] = useState("");
-  const [countdown, setCountdown] = useState(5); // for closing after done
-  const [timeLeft, setTimeLeft] = useState(600); // ⏱ 10 minutes (600 seconds)
+  const [countdown, setCountdown] = useState(5); // seconds before close
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes (600s)
 
   const finalService = service || "Easypaisa"; // ✅ Default service name
 
@@ -23,7 +23,7 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
-  // Auto-close countdown
+  // Auto-close countdown (after payment success)
   useEffect(() => {
     if (step === "done") {
       const timer = setInterval(() => {
@@ -40,7 +40,7 @@ export default function HostedEasypaisaPortal() {
     }
   }, [step]);
 
-  // ⏰ Front page 10-minute countdown timer
+  // ⏰ 10-minute session countdown
   useEffect(() => {
     if (step !== "input") return;
     const interval = setInterval(() => {
@@ -108,7 +108,6 @@ export default function HostedEasypaisaPortal() {
               amount,
               service: finalService,
               mobile,
-              merchant: merchant || "NasPro Pvt",
               payment_method: "Easypaisa",
             };
             localStorage.setItem("lastOrder", JSON.stringify(orderData));
@@ -127,7 +126,7 @@ export default function HostedEasypaisaPortal() {
     }
   };
 
-  // Helper: Format mm:ss
+  // Helper: format mm:ss
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -138,11 +137,8 @@ export default function HostedEasypaisaPortal() {
     <div className="portal-container">
       <div className="portal-card">
         <h1>💚 Easypaisa Payment Portal</h1>
-        <p className="subtitle">
-          Powered by <strong>{merchant || "NasPro Pvt"}</strong>
-        </p>
 
-        {/* Show timer only when on input page */}
+        {/* Timer on input screen */}
         {step === "input" && (
           <p className="timer">
             ⏰ Session expires in <strong>{formatTime(timeLeft)}</strong>
@@ -223,13 +219,8 @@ export default function HostedEasypaisaPortal() {
         }
         h1 {
           color: #22c55e;
-          margin-bottom: 5px;
-          font-size: 1.6rem;
-        }
-        .subtitle {
-          color: #94a3b8;
-          font-size: 0.9rem;
           margin-bottom: 10px;
+          font-size: 1.6rem;
         }
         .timer {
           color: #facc15;

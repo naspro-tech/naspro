@@ -99,7 +99,7 @@ export default function HostedEasypaisaPortal() {
               <p className="urdu-subtext">
                 اگر آپ ٹیلی نار یا کسی دوسرے نیٹ ورک سے ہیں تو براہ کرم اپنی{" "}
                 <strong>ایزی پیسہ ایپ</strong> میں جا کر ادائیگی منظوری دیں۔ <br />
-                نیز براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں۔
+                 براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں
               </p>
 
               <div className="form-grid">

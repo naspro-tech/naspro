@@ -88,11 +88,12 @@ export default function HostedEasypaisaPortal() {
   return (
     <div className="container">
       <div className="card">
-        <img
-          src="https://seeklogo.com/images/E/easypaisa-digital-bank-logo-0E28D573C4-seeklogo.com.png"
-          alt="Easypaisa Logo"
-          className="logo"
-        />
+        <div className="logo">
+          <img
+            src="/easypaisa-logo.png"
+            alt="Easypaisa Logo"
+          />
+        </div>
 
         {step === "input" && (
           <>
@@ -112,30 +113,30 @@ export default function HostedEasypaisaPortal() {
               <input type="text" value={amount || "0.00"} disabled />
             </div>
 
-              <div className="form-group">
-                <label>Mobile</label>
-                <input
-                  type="tel"
-                  placeholder="03XXXXXXXXX"
-                  maxLength={11}
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                />
-              </div>
+            <div className="form-group">
+              <label>Mobile</label>
+              <input
+                type="tel"
+                placeholder="03XXXXXXXXX"
+                maxLength={11}
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+              />
+            </div>
 
-              <button
-                className="submit-btn"
-                onClick={handlePayment}
-                disabled={loading}
-              >
-                {loading ? "Processing..." : "Submit Amount"}
-              </button>
+            <button
+              className="submit-btn"
+              onClick={handlePayment}
+              disabled={loading}
+            >
+              {loading ? "Processing..." : "Submit Amount"}
+            </button>
 
-              <p className="timer">
-                ⏰ سیشن ختم ہونے میں وقت: <strong>{formatTime(timeLeft)}</strong>
-              </p>
-            </>
-          )}
+            <p className="timer">
+              ⏰ سیشن ختم ہونے میں وقت: <strong>{formatTime(timeLeft)}</strong>
+            </p>
+          </>
+        )}
 
         {step === "guide" && (
           <div className="guide-box">
@@ -175,9 +176,9 @@ export default function HostedEasypaisaPortal() {
           max-width: 380px;
           text-align: center;
         }
-        .logo {
-          width: 160px;
-          margin: 0 auto 15px;
+        .logo img {
+          width: 170px;
+          margin-bottom: 15px;
         }
         .urdu-text {
           font-size: 1.2rem;
@@ -248,5 +249,5 @@ export default function HostedEasypaisaPortal() {
       `}</style>
     </div>
   );
-          }
-    
+  }
+          

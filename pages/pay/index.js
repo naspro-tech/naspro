@@ -8,14 +8,12 @@ export default function HostedEasypaisaPortal() {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [step, setStep] = useState("input"); // input | guide | done | expired
+  const [step, setStep] = useState("input");
   const [message, setMessage] = useState("");
-  const [countdown, setCountdown] = useState(5); // seconds before close
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes (600s)
+  const [timeLeft, setTimeLeft] = useState(600);
 
-  const finalService = service || "Easypaisa"; // ✅ Default service name
+  const finalService = service || "Easypaisa";
 
-  // Generate Order ID once router ready
   useEffect(() => {
     if (!router.isReady) return;
     const timestamp = Date.now().toString().slice(-6);
@@ -23,53 +21,34 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
-  // Auto-close countdown (after payment success)
-  useEffect(() => {
-    if (step === "done") {
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            window.close();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [step]);
-
-  // ⏰ 10-minute session countdown
   useEffect(() => {
     if (step !== "input") return;
-    const interval = setInterval(() => {
+    const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(interval);
+          clearInterval(timer);
           setStep("expired");
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [step]);
 
   const handlePayment = async () => {
     if (!/^03\d{9}$/.test(mobile)) {
-      alert("Please enter a valid Easypaisa mobile number (e.g. 03XXXXXXXXX)");
+      alert("براہ کرم درست ایزی پیسہ نمبر درج کریں (مثلاً 03XXXXXXXXX)");
       return;
     }
 
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      alert("Invalid or missing amount. Please check your link.");
+      alert("رقم درست نہیں ہے۔ براہ کرم دوبارہ چیک کریں۔");
       return;
     }
 
     setLoading(true);
-    setStep("guide");
-    setMessage("Sending payment request to Easypaisa...");
+    setMessage("درخواست بھیجی جا رہی ہے...");
 
     try {
       const res = await fetch("/api/easypay/initiate-ma", {
@@ -85,48 +64,21 @@ export default function HostedEasypaisaPortal() {
       });
 
       const data = await res.json();
-      console.log("Easypaisa Response:", data);
 
       if (data.responseCode === "0000") {
-        setMessage("✅ Payment request sent! Please approve in your Easypaisa app.");
-
-        const interval = setInterval(async () => {
-          const check = await fetch("/api/easypay/inquire", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orderId }),
-          });
-          const result = await check.json();
-          console.log("Easypaisa Status:", result);
-
-          if (result.responseCode === "0000") {
-            clearInterval(interval);
-            setStep("done");
-            setMessage("✅ Payment confirmed successfully!");
-            const orderData = {
-              orderId,
-              amount,
-              service: finalService,
-              mobile,
-              payment_method: "Easypaisa",
-            };
-            localStorage.setItem("lastOrder", JSON.stringify(orderData));
-          }
-        }, 5000);
+        setStep("guide");
+        setMessage("براہ کرم اپنی Easypaisa App میں جا کر ادائیگی منظور کریں۔");
       } else {
-        setMessage(`❌ ${data.responseDesc || "Failed to start transaction"}`);
-        setStep("input");
+        setMessage("درخواست ناکام ہوگئی، دوبارہ کوشش کریں۔");
       }
     } catch (err) {
       console.error(err);
-      setMessage("❌ Error initiating payment. Please try again.");
-      setStep("input");
+      setMessage("خرابی پیدا ہوگئی، دوبارہ کوشش کریں۔");
     } finally {
       setLoading(false);
     }
   };
 
-  // Helper: format mm:ss
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -134,173 +86,167 @@ export default function HostedEasypaisaPortal() {
   };
 
   return (
-    <div className="portal-container">
-      <div className="portal-card">
-        <h1>💚 Easypaisa Payment Portal</h1>
-
-        {/* Timer on input screen */}
-        {step === "input" && (
-          <p className="timer">
-            ⏰ Session expires in <strong>{formatTime(timeLeft)}</strong>
-          </p>
-        )}
-
-        <div className="info-box">
-          <p><strong>Service:</strong> {finalService}</p>
-          <p><strong>Amount:</strong> PKR {amount || "0"}</p>
-        </div>
+    <div className="container">
+      <div className="card">
+        <img
+          src="https://seeklogo.com/images/E/easypaisa-digital-bank-logo-0E28D573C4-seeklogo.com.png"
+          alt="Easypaisa Logo"
+          className="logo"
+        />
 
         {step === "input" && (
           <>
-            <label className="input-label">Enter your Easypaisa number:</label>
-            <input
-              type="tel"
-              className="mobile-input"
-              placeholder="03XXXXXXXXX"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-              maxLength={11}
-            />
-            <button className="pay-btn" onClick={handlePayment} disabled={loading}>
-              {loading ? "Processing..." : "Pay Now"}
-            </button>
-          </>
-        )}
+            <h2 className="urdu-text">خوش آمدید</h2>
+            <p className="urdu-subtext">
+              اگر آپ ٹیلی نور کے علاوہ کسی اور نیٹ ورک سے ہیں تو براہ کرم{" "}
+              <strong>EasyPaisa App</strong> میں جا کر پیمنٹ کو اپروو کریں۔
+            </p>
+
+            <div className="form-group">
+              <label>Name</label>
+              <input type="text" value={orderId.slice(-9)} disabled />
+            </div>
+
+            <div className="form-group">
+              <label>Amount</label>
+              <input type="text" value={amount || "0.00"} disabled />
+            </div>
+
+              <div className="form-group">
+                <label>Mobile</label>
+                <input
+                  type="tel"
+                  placeholder="03XXXXXXXXX"
+                  maxLength={11}
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                />
+              </div>
+
+              <button
+                className="submit-btn"
+                onClick={handlePayment}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Submit Amount"}
+              </button>
+
+              <p className="timer">
+                ⏰ سیشن ختم ہونے میں وقت: <strong>{formatTime(timeLeft)}</strong>
+              </p>
+            </>
+          )}
 
         {step === "guide" && (
           <div className="guide-box">
-            <h3>📱 Approve Your Payment</h3>
-            <ol>
-              <li>Open your <strong>Easypaisa</strong> App.</li>
-              <li>Go to <strong>“My Approvals”</strong> on the home screen.</li>
-              <li>Find the pending request for PKR {amount}.</li>
-              <li>Tap <strong>Approve</strong> to complete your transaction.</li>
-            </ol>
-            <p className="waiting">⏳ Waiting for confirmation...</p>
-          </div>
-        )}
-
-        {step === "done" && (
-          <div className="success-box">
-            <h3>✅ Payment Successful!</h3>
-            <p>Thank you for your payment.</p>
-            <p>This page will close in <strong>{countdown}</strong> seconds.</p>
+            <h3>📱 ادائیگی کی منظوری دیں</h3>
+            <p>
+              اپنی <strong>Easypaisa App</strong> کھولیں، "My Approvals" میں جائیں، اور
+              PKR {amount} کی درخواست کو منظور کریں۔
+            </p>
           </div>
         )}
 
         {step === "expired" && (
           <div className="expired-box">
-            <h3>⏰ Session Expired</h3>
-            <p>Your session has timed out. Please refresh the page to start again.</p>
+            <h3>⏰ سیشن ختم ہوگیا</h3>
+            <p>براہ کرم صفحہ ریفریش کر کے دوبارہ کوشش کریں۔</p>
           </div>
         )}
 
-        {message && <p className="status-msg">{message}</p>}
+        {message && <p className="status">{message}</p>}
       </div>
 
       <style jsx>{`
-        .portal-container {
+        .container {
+          min-height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
-          min-height: 100vh;
-          background: linear-gradient(135deg, #0f172a, #1e293b);
+          background: linear-gradient(135deg, #0173b2, #f16b3a);
           padding: 20px;
         }
-        .portal-card {
-          background: #111827;
-          color: #f8fafc;
-          border-radius: 15px;
+        .card {
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
           padding: 30px 25px;
-          max-width: 400px;
           width: 100%;
+          max-width: 380px;
           text-align: center;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
         }
-        h1 {
-          color: #22c55e;
-          margin-bottom: 10px;
-          font-size: 1.6rem;
+        .logo {
+          width: 160px;
+          margin: 0 auto 15px;
         }
-        .timer {
-          color: #facc15;
-          font-weight: 600;
-          margin-bottom: 15px;
-        }
-        .info-box {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-          padding: 12px;
-          margin-bottom: 25px;
-        }
-        .input-label {
-          display: block;
-          text-align: left;
-          color: #cbd5e1;
+        .urdu-text {
+          font-size: 1.2rem;
+          font-weight: bold;
           margin-bottom: 6px;
-          font-size: 0.95rem;
         }
-        .mobile-input {
-          width: 100%;
-          padding: 12px;
-          border-radius: 8px;
-          border: none;
-          background: #1e293b;
-          color: #f8fafc;
+        .urdu-subtext {
+          font-size: 0.9rem;
+          margin-bottom: 20px;
+          line-height: 1.6;
+        }
+        .form-group {
+          text-align: left;
           margin-bottom: 15px;
+        }
+        label {
+          display: block;
+          font-size: 0.9rem;
+          margin-bottom: 5px;
+          color: #333;
+        }
+        input {
+          width: 100%;
+          padding: 10px;
+          border-radius: 8px;
+          border: 1px solid #ccc;
           font-size: 1rem;
           text-align: center;
-          letter-spacing: 1px;
         }
-        .pay-btn {
+        .submit-btn {
           width: 100%;
-          background: linear-gradient(135deg, #22c55e, #15803d);
+          background: #6d28d9;
+          color: white;
           border: none;
-          color: #fff;
-          padding: 14px;
           border-radius: 8px;
+          padding: 12px;
           font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.3s ease;
+          margin-top: 10px;
+          transition: all 0.3s;
         }
-        .pay-btn:hover {
-          transform: scale(1.03);
-          box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+        .submit-btn:hover {
+          background: #7c3aed;
+        }
+        .timer {
+          color: #f59e0b;
+          margin-top: 12px;
+          font-size: 0.9rem;
         }
         .guide-box {
-          text-align: left;
-          background: rgba(255, 255, 255, 0.06);
-          border-radius: 10px;
+          background: #f0fdf4;
           padding: 20px;
-        }
-        .guide-box ol {
-          margin: 10px 0;
-          padding-left: 20px;
-          line-height: 1.6;
-        }
-        .waiting {
-          text-align: center;
-          color: #facc15;
-          margin-top: 10px;
-        }
-        .success-box {
-          text-align: center;
-          color: #22c55e;
+          border-radius: 10px;
+          color: #065f46;
         }
         .expired-box {
-          color: #f87171;
-          background: rgba(255, 0, 0, 0.1);
+          background: #fff7ed;
+          padding: 20px;
           border-radius: 10px;
-          padding: 15px;
+          color: #b91c1c;
         }
-        .status-msg {
-          margin-top: 20px;
+        .status {
+          margin-top: 15px;
           font-size: 0.95rem;
-          color: #facc15;
+          color: #6b7280;
         }
       `}</style>
     </div>
   );
           }
-          
+    

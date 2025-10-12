@@ -90,7 +90,6 @@ export default function HostedEasypaisaPortal() {
           <div className="logo-wrap">
             <img src="/images.jpeg" alt="Easypaisa Logo" />
           </div>
-          <div className="timer-pill">⏰ {formatTime(timeLeft)}</div>
         </div>
 
         <div className="card-body">
@@ -99,7 +98,8 @@ export default function HostedEasypaisaPortal() {
               <h2 className="urdu-text">خوش آمدید</h2>
               <p className="urdu-subtext">
                 اگر آپ ٹیلی نار یا کسی دوسرے نیٹ ورک سے ہیں تو براہ کرم اپنی{" "}
-                <strong>ایزی پیسہ ایپ</strong> میں جا کر ادائیگی منظوری دیں۔
+                <strong>ایزی پیسہ ایپ</strong> میں جا کر ادائیگی منظوری دیں۔ <br />
+                نیز براہ کرم اپنا ایزی پیسہ موبائل نمبر درج کریں۔
               </p>
 
               <div className="form-grid">
@@ -121,6 +121,11 @@ export default function HostedEasypaisaPortal() {
                     onChange={(e) => setMobile(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* ✅ Timer moved here below form */}
+              <div className="timer-section">
+                ⏰ سیشن وقت: <strong>{formatTime(timeLeft)}</strong>
               </div>
 
               <button
@@ -193,30 +198,17 @@ export default function HostedEasypaisaPortal() {
           background: #fff;
         }
 
-        /* 🔥 Logo now larger and fills banner area */
+        /* ✅ Logo now bigger and perfect */
         .logo-wrap img {
           width: 100%;
-          height: 110px;
+          height: 120px;
           object-fit: cover;
-        }
-
-        .timer-pill {
-          position: absolute;
-          top: 8px;
-          right: 10px;
-          background: linear-gradient(90deg, #111827, #1f2937);
-          color: #fff;
-          padding: 5px 12px;
-          border-radius: 999px;
-          font-weight: bold;
-          font-size: 0.9rem;
         }
 
         .card-body {
           padding: 20px;
         }
 
-        /* 🔥 Centered خوش آمدید */
         .urdu-text {
           font-size: 1.4rem;
           font-weight: 700;
@@ -229,7 +221,7 @@ export default function HostedEasypaisaPortal() {
           font-size: 0.9rem;
           color: #374151;
           margin-bottom: 14px;
-          line-height: 1.5;
+          line-height: 1.6;
           text-align: center;
         }
 
@@ -250,6 +242,13 @@ export default function HostedEasypaisaPortal() {
           border: 1px solid #d1d5db;
           font-size: 1rem;
           text-align: center;
+        }
+
+        .timer-section {
+          margin: 10px 0;
+          text-align: center;
+          color: #1f2937;
+          font-weight: 600;
         }
 
         .submit-btn {
@@ -290,9 +289,9 @@ export default function HostedEasypaisaPortal() {
         }
 
         @media (max-width: 520px) {
-          .logo-wrap img { height: 90px; }
+          .logo-wrap img { height: 100px; }
         }
       `}</style>
     </div>
   );
-    }
+}

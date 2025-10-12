@@ -210,7 +210,7 @@ export default function HostedEasypaisaPortal() {
         }
 
         .logo-wrap {
-          width: 100%;
+          width: 250%;
           background: #fff;
           display: flex;
           justify-content: center;
@@ -218,8 +218,8 @@ export default function HostedEasypaisaPortal() {
         }
 
         .logo-wrap img {
-          width: 100%;
-          height: 80px;
+          width: 250%;
+          height: 150px;
           object-fit: contain;
         }
 

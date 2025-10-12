@@ -8,7 +8,7 @@ export default function HostedEasypaisaPortal() {
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState("");
-  const [step, setStep] = useState("input"); // input | guide | success | expired
+  const [step, setStep] = useState("input");
   const [message, setMessage] = useState("");
   const [timeLeft, setTimeLeft] = useState(600);
 
@@ -21,7 +21,6 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
-  // countdown timer (10 minutes)
   useEffect(() => {
     if (step !== "input") return;
     const t = setInterval(() => {
@@ -48,8 +47,6 @@ export default function HostedEasypaisaPortal() {
     }
 
     setLoading(true);
-
-    // Immediately show “please approve” message (don’t wait for response)
     setStep("guide");
     setMessage("براہ کرم اپنی Easypaisa App میں جا کر My Approvals میں ادائیگی کی منظوری دیں۔");
 
@@ -89,7 +86,6 @@ export default function HostedEasypaisaPortal() {
   return (
     <div className="page-bg">
       <div className="card">
-        {/* Header with logo + timer */}
         <div className="card-header">
           <div className="logo-wrap">
             <img src="/images.jpeg" alt="Easypaisa Logo" />
@@ -141,9 +137,9 @@ export default function HostedEasypaisaPortal() {
             <div className="guide-box">
               <h3>📱 براہ کرم منظوری دیں</h3>
               <p>
-                اپنی <strong>Easypaisa</strong> ایپ کھولیں، "My Approvals" میں
-                جائیں، اور PKR {amount} کی ادائیگی منظور کریں۔ جب ادائیگی مکمل
-                ہو جائے گی تو یہ صفحہ خود بخود بند ہو جائے گا۔
+                اپنی <strong>Easypaisa</strong> ایپ کھولیں، "My Approvals" میں جائیں،
+                اور PKR {amount} کی ادائیگی منظور کریں۔ جب ادائیگی مکمل ہو جائے گی تو
+                یہ صفحہ خود بخود بند ہو جائے گا۔
               </p>
             </div>
           )}
@@ -162,14 +158,11 @@ export default function HostedEasypaisaPortal() {
             </div>
           )}
 
-          {message && step !== "success" && (
-            <p className="status">{message}</p>
-          )}
+          {message && step !== "success" && <p className="status">{message}</p>}
         </div>
       </div>
 
       <style jsx>{`
-        /* Background with fast dual-multi color animation */
         .page-bg {
           min-height: 100vh;
           display: flex;
@@ -180,17 +173,10 @@ export default function HostedEasypaisaPortal() {
           background-size: 400% 400%;
           animation: colorShift 4s ease infinite;
         }
-
         @keyframes colorShift {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
         }
 
         .card {
@@ -200,27 +186,18 @@ export default function HostedEasypaisaPortal() {
           background: #ffffffee;
           box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
           overflow: hidden;
-          position: relative;
         }
 
         .card-header {
           position: relative;
           background: #fff;
-          padding: 0;
         }
 
-        .logo-wrap {
-          width: 250%;
-          background: #fff;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
+        /* 🔥 Logo now larger and fills banner area */
         .logo-wrap img {
-          width: 250%;
-          height: 150px;
-          object-fit: contain;
+          width: 100%;
+          height: 110px;
+          object-fit: cover;
         }
 
         .timer-pill {
@@ -239,11 +216,13 @@ export default function HostedEasypaisaPortal() {
           padding: 20px;
         }
 
+        /* 🔥 Centered خوش آمدید */
         .urdu-text {
-          font-size: 1.2rem;
+          font-size: 1.4rem;
           font-weight: 700;
           color: #0f172a;
-          margin-bottom: 6px;
+          text-align: center;
+          margin-bottom: 8px;
         }
 
         .urdu-subtext {
@@ -251,6 +230,7 @@ export default function HostedEasypaisaPortal() {
           color: #374151;
           margin-bottom: 14px;
           line-height: 1.5;
+          text-align: center;
         }
 
         .form-grid {
@@ -299,19 +279,9 @@ export default function HostedEasypaisaPortal() {
           line-height: 1.5;
         }
 
-        .guide-box {
-          background: #f8fafc;
-        }
-
-        .success-box {
-          background: #ecfccb;
-          color: #14532d;
-        }
-
-        .expired-box {
-          background: #fff7ed;
-          color: #7c2d12;
-        }
+        .guide-box { background: #f8fafc; }
+        .success-box { background: #ecfccb; color: #14532d; }
+        .expired-box { background: #fff7ed; color: #7c2d12; }
 
         .status {
           margin-top: 12px;
@@ -320,14 +290,9 @@ export default function HostedEasypaisaPortal() {
         }
 
         @media (max-width: 520px) {
-          .card {
-            max-width: 96%;
-          }
-          .logo-wrap img {
-            height: 64px;
-          }
+          .logo-wrap img { height: 90px; }
         }
       `}</style>
     </div>
   );
-}
+    }

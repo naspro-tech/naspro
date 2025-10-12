@@ -66,7 +66,7 @@ export default function HostedEasypaisaPortal() {
     <div className="container">
       <div className="card">
         <div className="logo">
-          <img src="/easypaisa-logo.png" alt="Easypaisa Logo" />
+          <img src="/images.jpeg" alt="Easypaisa Logo" />
         </div>
 
         {step === "input" && (

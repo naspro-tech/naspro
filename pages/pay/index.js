@@ -43,7 +43,7 @@ export default function HostedEasypaisaPortal() {
     }
 
     if (!amount || isNaN(amount) || Number(amount) <= 0) {
-      alert("رقم درست نہیں ہے۔ براہ کرم دوبارہ چیک کریں۔");
+      alert("براہ کرم درست رقم درج کریں۔");
       return;
     }
 
@@ -67,13 +67,13 @@ export default function HostedEasypaisaPortal() {
 
       if (data.responseCode === "0000") {
         setStep("guide");
-        setMessage("براہ کرم اپنی Easypaisa App میں جا کر ادائیگی منظور کریں۔");
+        setMessage("براہ کرم اپنی Easypaisa ایپ میں جا کر ادائیگی منظور کریں۔");
       } else {
         setMessage("درخواست ناکام ہوگئی، دوبارہ کوشش کریں۔");
       }
     } catch (err) {
       console.error(err);
-      setMessage("خرابی پیدا ہوگئی، دوبارہ کوشش کریں۔");
+      setMessage("خرابی پیدا ہوگئی، براہ کرم دوبارہ کوشش کریں۔");
     } finally {
       setLoading(false);
     }
@@ -89,32 +89,29 @@ export default function HostedEasypaisaPortal() {
     <div className="container">
       <div className="card">
         <div className="logo">
-          <img
-            src="/easypaisa-logo.png"
-            alt="Easypaisa Logo"
-          />
+          <img src="/images.jpeg" alt="Easypaisa Logo" />
         </div>
 
         {step === "input" && (
           <>
             <h2 className="urdu-text">خوش آمدید</h2>
             <p className="urdu-subtext">
-              اگر آپ ٹیلی نور کے علاوہ کسی اور نیٹ ورک سے ہیں تو براہ کرم{" "}
-              <strong>EasyPaisa App</strong> میں جا کر پیمنٹ کو اپروو کریں۔
+              اگر آپ ٹیلی نار کے علاوہ کسی اور نیٹ ورک سے ہیں تو براہ کرم{" "}
+              <strong>ایزی پیسہ ایپ</strong> میں جا کر اپنی ادائیگی کی منظوری دیں۔
             </p>
 
             <div className="form-group">
-              <label>Name</label>
+              <label>آرڈر نمبر</label>
               <input type="text" value={orderId.slice(-9)} disabled />
             </div>
 
             <div className="form-group">
-              <label>Amount</label>
+              <label>رقم (روپے)</label>
               <input type="text" value={amount || "0.00"} disabled />
             </div>
 
             <div className="form-group">
-              <label>Mobile</label>
+              <label>موبائل نمبر</label>
               <input
                 type="tel"
                 placeholder="03XXXXXXXXX"
@@ -129,7 +126,7 @@ export default function HostedEasypaisaPortal() {
               onClick={handlePayment}
               disabled={loading}
             >
-              {loading ? "Processing..." : "Submit Amount"}
+              {loading ? "عمل جاری ہے..." : "رقم جمع کریں"}
             </button>
 
             <p className="timer">
@@ -142,8 +139,8 @@ export default function HostedEasypaisaPortal() {
           <div className="guide-box">
             <h3>📱 ادائیگی کی منظوری دیں</h3>
             <p>
-              اپنی <strong>Easypaisa App</strong> کھولیں، "My Approvals" میں جائیں، اور
-              PKR {amount} کی درخواست کو منظور کریں۔
+              اپنی <strong>Easypaisa</strong> ایپ کھولیں، "My Approvals" میں جائیں،
+              اور PKR {amount} کی درخواست کو منظور کریں۔
             </p>
           </div>
         )}
@@ -164,41 +161,57 @@ export default function HostedEasypaisaPortal() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #0173b2, #f16b3a);
+          background: linear-gradient(135deg, #007d3d, #00c853, #0173b2, #f16b3a);
+          background-size: 400% 400%;
+          animation: gradientMove 10s ease infinite;
           padding: 20px;
+        }
+        @keyframes gradientMove {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
         }
         .card {
           background: white;
-          border-radius: 16px;
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-          padding: 30px 25px;
+          border-radius: 18px;
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+          padding: 35px 25px;
           width: 100%;
-          max-width: 380px;
+          max-width: 400px;
           text-align: center;
         }
         .logo img {
-          width: 170px;
-          margin-bottom: 15px;
+          width: 160px;
+          margin-bottom: 18px;
+          border-radius: 10px;
         }
         .urdu-text {
-          font-size: 1.2rem;
+          font-size: 1.3rem;
           font-weight: bold;
-          margin-bottom: 6px;
+          color: #047857;
+          margin-bottom: 8px;
         }
         .urdu-subtext {
           font-size: 0.9rem;
           margin-bottom: 20px;
-          line-height: 1.6;
+          line-height: 1.7;
+          color: #374151;
         }
         .form-group {
-          text-align: left;
+          text-align: right;
           margin-bottom: 15px;
         }
         label {
           display: block;
           font-size: 0.9rem;
           margin-bottom: 5px;
-          color: #333;
+          color: #111827;
         }
         input {
           width: 100%;
@@ -207,13 +220,14 @@ export default function HostedEasypaisaPortal() {
           border: 1px solid #ccc;
           font-size: 1rem;
           text-align: center;
+          direction: ltr;
         }
         .submit-btn {
           width: 100%;
-          background: #6d28d9;
+          background: linear-gradient(90deg, #007d3d, #00c853);
           color: white;
           border: none;
-          border-radius: 8px;
+          border-radius: 10px;
           padding: 12px;
           font-size: 1rem;
           font-weight: 600;
@@ -222,23 +236,24 @@ export default function HostedEasypaisaPortal() {
           transition: all 0.3s;
         }
         .submit-btn:hover {
-          background: #7c3aed;
+          background: linear-gradient(90deg, #00c853, #007d3d);
+          transform: translateY(-2px);
         }
         .timer {
-          color: #f59e0b;
+          color: #ea580c;
           margin-top: 12px;
           font-size: 0.9rem;
         }
         .guide-box {
-          background: #f0fdf4;
+          background: #ecfdf5;
           padding: 20px;
-          border-radius: 10px;
+          border-radius: 12px;
           color: #065f46;
         }
         .expired-box {
           background: #fff7ed;
           padding: 20px;
-          border-radius: 10px;
+          border-radius: 12px;
           color: #b91c1c;
         }
         .status {
@@ -250,4 +265,3 @@ export default function HostedEasypaisaPortal() {
     </div>
   );
   }
-          

@@ -10,7 +10,7 @@ export default function HostedEasypaisaPortal() {
   const [orderId, setOrderId] = useState("");
   const [step, setStep] = useState("input"); // input | guide | success | expired
   const [message, setMessage] = useState("");
-  const [timeLeft, setTimeLeft] = useState(600);
+  const [timeLeft, setTimeLeft] = useState(600); // 10-minute timer
   const [countdown, setCountdown] = useState(5);
 
   const finalService = service || "Easypaisa";
@@ -22,7 +22,7 @@ export default function HostedEasypaisaPortal() {
     setOrderId(`NASPRO-${timestamp}-${random}`);
   }, [router.isReady]);
 
-  // session timer (10 minutes)
+  // ✅ Proper 10-minute timer
   useEffect(() => {
     if (step !== "input") return;
     const t = setInterval(() => {
@@ -100,15 +100,12 @@ export default function HostedEasypaisaPortal() {
   return (
     <div className="page-bg">
       <div className="card">
-        {/* Header */}
+        {/* Header with full-size logo */}
         <div className="card-header">
           <div className="logo-wrap">
             <img src="/images.jpeg" alt="Easypaisa Logo" />
           </div>
         </div>
-
-        {/* Timer always visible below header */}
-        <div className="timer-section">⏰ {formatTime(timeLeft)}</div>
 
         <div className="card-body">
           {step === "input" && (
@@ -148,6 +145,9 @@ export default function HostedEasypaisaPortal() {
               >
                 {loading ? "Processing..." : "Submit"}
               </button>
+
+              {/* ✅ Timer now below submit */}
+              <div className="timer-section">⏰ سیشن کا وقت: {formatTime(timeLeft)}</div>
             </>
           )}
 
@@ -163,10 +163,7 @@ export default function HostedEasypaisaPortal() {
               <h3>✅ ادائیگی مکمل</h3>
               <p>
                 {message} ({countdown}){" "}
-                <button
-                  className="close-btn"
-                  onClick={() => window.close()}
-                >
+                <button className="close-btn" onClick={() => window.close()}>
                   Close Page
                 </button>
               </p>
@@ -224,16 +221,8 @@ export default function HostedEasypaisaPortal() {
 
         .logo-wrap img {
           width: 100%;
-          height: 100%;
+          height: 120px;
           object-fit: contain;
-        }
-
-        .timer-section {
-          text-align: center;
-          color: #fff;
-          font-weight: 600;
-          margin: 8px 0;
-          font-size: 1rem;
         }
 
         .card-body {
@@ -288,6 +277,15 @@ export default function HostedEasypaisaPortal() {
           cursor: pointer;
         }
 
+        .timer-section {
+          margin-top: 10px;
+          font-weight: 600;
+          color: #fff;
+          background: linear-gradient(90deg, #111827, #1f2937);
+          padding: 6px 0;
+          border-radius: 8px;
+        }
+
         .guide-box,
         .success-box,
         .expired-box {
@@ -310,11 +308,11 @@ export default function HostedEasypaisaPortal() {
             max-width: 100%;
           }
           .logo-wrap {
-            height: 100px;
+            height: 120px;
           }
         }
       `}</style>
     </div>
   );
-    }
-           
+           }
+    

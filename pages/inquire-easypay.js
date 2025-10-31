@@ -25,29 +25,14 @@ export default function InquireEasypay() {
         throw new Error(data.message || 'Inquiry failed');
       }
 
-      // interpret Easypaisa response codes
+      // Interpret Easypaisa status
+      const status = data.transactionStatus || data.responseCode || '';
       let statusMessage = '';
-      const status = data.transactionStatus || data.responseCode || 'UNKNOWN';
 
-      switch (status) {
-        case '0000':
-          statusMessage = '✅ Transaction Successful';
-          break;
-        case '0001':
-        case '0002':
-          statusMessage = '⏳ Transaction Pending';
-          break;
-        case '0003':
-          statusMessage = '❌ Transaction Failed or Cancelled';
-          break;
-        case 'RECON_FAILED':
-          statusMessage = '⚠️ Reconciliation Failed (Not Credited Yet)';
-          break;
-        case 'UNKNOWN':
-          statusMessage = 'ℹ️ Transaction Not Found (Possibly Settled or Archived)';
-          break;
-        default:
-          statusMessage = `❔ Unknown Status (${status})`;
+      if (status === '0000' || status.toLowerCase() === 'paid') {
+        statusMessage = '✅ Transaction Successful';
+      } else {
+        statusMessage = '❌ Transaction Failed';
       }
 
       setResult({
@@ -146,3 +131,4 @@ const styles = {
     marginBottom: '10px',
   },
 };
+                      

@@ -1,123 +1,148 @@
-import { useState } from "react";
+import { useState } from 'react';
 
-export default function InquiryPage() {
-  const [orderId, setOrderId] = useState("");
+export default function InquireEasypay() {
+  const [orderId, setOrderId] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleInquiry = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     setResult(null);
 
     try {
-      const res = await fetch("/api/easypay/inquire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/easypay/inquire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       });
 
       const data = await res.json();
-      setResult(data);
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Inquiry failed');
+      }
+
+      // interpret Easypaisa response codes
+      let statusMessage = '';
+      const status = data.transactionStatus || data.responseCode || 'UNKNOWN';
+
+      switch (status) {
+        case '0000':
+          statusMessage = '✅ Transaction Successful';
+          break;
+        case '0001':
+        case '0002':
+          statusMessage = '⏳ Transaction Pending';
+          break;
+        case '0003':
+          statusMessage = '❌ Transaction Failed or Cancelled';
+          break;
+        case 'RECON_FAILED':
+          statusMessage = '⚠️ Reconciliation Failed (Not Credited Yet)';
+          break;
+        case 'UNKNOWN':
+          statusMessage = 'ℹ️ Transaction Not Found (Possibly Settled or Archived)';
+          break;
+        default:
+          statusMessage = `❔ Unknown Status (${status})`;
+      }
+
+      setResult({
+        statusMessage,
+        data,
+      });
     } catch (err) {
-      setResult({ message: "Error: " + err.message });
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderStatus = () => {
-    if (!result) return null;
-
-    const status = result?.transactionStatus || result?.status || "";
-    let message = "❌ Unknown status";
-
-    if (status === "00" || status.toLowerCase() === "success") {
-      message = "✅ Transaction Successful";
-    } else if (status === "02" || status.toLowerCase() === "pending") {
-      message = "⏳ Transaction Pending";
-    } else if (status.toLowerCase().includes("fail") || status === "99") {
-      message = "❌ Transaction Failed or Not Settled";
-    }
-
-    return (
-      <div style={{ marginTop: 20 }}>
-        <h3>{message}</h3>
-        <pre
-          style={{
-            background: "#f8f8f8",
-            padding: 10,
-            borderRadius: 8,
-            overflowX: "auto",
-          }}
-        >
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      </div>
-    );
-  };
-
   return (
-    <div
-      style={{
-        fontFamily: "Arial, sans-serif",
-        background: "#f5f5f5",
-        minHeight: "100vh",
-        padding: "40px 15px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 480,
-          margin: "auto",
-          background: "white",
-          borderRadius: 12,
-          padding: 25,
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-        }}
-      >
-        <h2 style={{ textAlign: "center", marginBottom: 20 }}>
-          Easypaisa Transaction Inquiry
-        </h2>
+    <div style={styles.container}>
+      <h2 style={styles.title}>Easypaisa Transaction Inquiry</h2>
 
-        <form onSubmit={handleInquiry}>
-          <label style={{ fontWeight: "bold" }}>Order ID</label>
-          <input
-            type="text"
-            value={orderId}
-            onChange={(e) => setOrderId(e.target.value)}
-            placeholder="Enter Order ID"
-            required
-            style={{
-              width: "100%",
-              padding: 10,
-              border: "1px solid #ccc",
-              borderRadius: 6,
-              marginTop: 6,
-              marginBottom: 15,
-            }}
-          />
+      <form onSubmit={handleInquiry} style={styles.form}>
+        <input
+          type="text"
+          placeholder="Enter Order ID"
+          value={orderId}
+          onChange={(e) => setOrderId(e.target.value)}
+          style={styles.input}
+          required
+        />
+        <button type="submit" disabled={loading} style={styles.button}>
+          {loading ? 'Checking...' : 'Inquire'}
+        </button>
+      </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              background: "#0c8c4a",
-              color: "white",
-              padding: 10,
-              border: "none",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            {loading ? "Checking..." : "Check Transaction"}
-          </button>
-        </form>
+      {error && <div style={styles.error}>❌ {error}</div>}
 
-        {renderStatus()}
-      </div>
+      {result && (
+        <div style={styles.card}>
+          <h3>{result.statusMessage}</h3>
+          <pre style={styles.json}>
+            {JSON.stringify(result.data, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
-    }
+}
+
+const styles = {
+  container: {
+    maxWidth: '600px',
+    margin: '60px auto',
+    padding: '20px',
+    borderRadius: '12px',
+    backgroundColor: '#f8f9fa',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+    fontFamily: 'system-ui, sans-serif',
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: '20px',
+  },
+  form: {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'center',
+    marginBottom: '20px',
+  },
+  input: {
+    flex: 1,
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #ccc',
+  },
+  button: {
+    padding: '10px 20px',
+    borderRadius: '8px',
+    backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: '10px',
+    padding: '15px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+  },
+  json: {
+    fontSize: '13px',
+    backgroundColor: '#f4f4f4',
+    padding: '10px',
+    borderRadius: '6px',
+    overflowX: 'auto',
+  },
+  error: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: '10px',
+  },
+};

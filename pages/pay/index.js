@@ -16,11 +16,16 @@ export default function HostedEasypaisaPortal() {
   const finalService = service || "Easypaisa";
 
   useEffect(() => {
-    if (!router.isReady) return;
+  if (!router.isReady) return;
+
+  if (router.query.orderId) {
+    setOrderId(router.query.orderId);
+  } else {
     const timestamp = Date.now().toString().slice(-6);
     const random = Math.floor(Math.random() * 900 + 100);
     setOrderId(`NASPRO-${timestamp}-${random}`);
-  }, [router.isReady]);
+  }
+}, [router.isReady, router.query.orderId]);
 
   // session countdown
   useEffect(() => {

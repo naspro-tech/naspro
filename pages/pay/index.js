@@ -132,7 +132,7 @@ export default function HostedEasypaisaPortal() {
               <div className="fields">
                 <div className="field">
                   <label>Order Number</label>
-                  <input type="text" value={orderId.slice(-9)} disabled />
+                  <input type="text" value={orderId} disabled />
                 </div>
 
                 <div className="field">

@@ -9,6 +9,16 @@ const SERVICE_LABELS = {
   cloudit: "Cloud & IT Infrastructure",
   digitalmarketing: "Digital Marketing",
   testing: "Testing Service",
+
+  // New services
+  bugfix500: "Website Bug Fix (1 Issue)",
+  plugin500: "Plugin Installation",
+  section1000: "Website Section Update",
+  speed1000: "Basic Speed Optimization",
+  revamp1500: "Landing Page Revamp",
+  apitest1500: "API Testing (5 Endpoints)",
+  audit2000: "Full Website Audit",
+  estore2000: "Basic E-commerce Store Setup",
 };
 
 export default function PaymentPage() {

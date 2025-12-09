@@ -8,9 +8,17 @@ const SERVICE_PRICES = {
   ecommerce: 50000,
   cloudit: 0,
   digitalmarketing: 15000,
-
-  // ✅ Added Testing Service (for Easypaisa PKR 1 payment)
   testing: 1,
+
+  // New services
+  bugfix500: 500,
+  plugin500: 500,
+  section1000: 1000,
+  speed1000: 1000,
+  revamp1500: 1500,
+  apitest1500: 1500,
+  audit2000: 2000,
+  estore2000: 2000,
 };
 
 const SERVICE_LABELS = {
@@ -20,10 +28,19 @@ const SERVICE_LABELS = {
   ecommerce: "E-Commerce Solutions",
   cloudit: "Cloud & IT Infrastructure",
   digitalmarketing: "Digital Marketing",
-
-  // ✅ Added Testing Service label
   testing: "Testing Service",
+
+  // New services
+  bugfix500: "Website Bug Fix (1 Issue)",
+  plugin500: "Plugin Installation",
+  section1000: "Website Section Update",
+  speed1000: "Basic Speed Optimization",
+  revamp1500: "Landing Page Revamp",
+  apitest1500: "API Testing (5 Endpoints)",
+  audit2000: "Full Website Audit",
+  estore2000: "Basic E-commerce Store Setup",
 };
+
 
 export default function Checkout() {
   const router = useRouter();

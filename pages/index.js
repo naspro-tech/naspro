@@ -183,6 +183,106 @@ export default function Home() {
             Buy Now
           </button>
         </div>
+              {/* 🔵 PKR 500 Services */}
+<div className="card">
+  <h3>Website Bug Fix (1 Issue)</h3>
+  <p>Fixing a small issue such as button malfunction, broken link, or layout error.</p>
+  <p className="price">PKR 500</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('bugfix500')}
+  >
+    Buy Now
+  </button>
+</div>
+
+<div className="card">
+  <h3>Plugin Installation</h3>
+  <p>Installation and basic configuration of a WordPress plugin.</p>
+  <p className="price">PKR 500</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('plugin500')}
+  >
+    Buy Now
+  </button>
+</div>
+
+{/* 🔵 PKR 1000 Services */}
+<div className="card">
+  <h3>Website Section Update</h3>
+  <p>Adding or updating a single section on your website with improved design.</p>
+  <p className="price">PKR 1000</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('section1000')}
+  >
+    Buy Now
+  </button>
+</div>
+
+<div className="card">
+  <h3>Basic Speed Optimization</h3>
+  <p>Initial website speed boost with caching and image optimization.</p>
+  <p className="price">PKR 1000</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('speed1000')}
+  >
+    Buy Now
+  </button>
+</div>
+
+{/* 🔵 PKR 1500 Services */}
+<div className="card">
+  <h3>Landing Page Revamp</h3>
+  <p>Light redesign of your landing page for a more modern, clean layout.</p>
+  <p className="price">PKR 1500</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('revamp1500')}
+  >
+    Buy Now
+  </button>
+</div>
+
+<div className="card">
+  <h3>API Testing (5 Endpoints)</h3>
+  <p>Testing API responses, status codes, and request logs for up to 5 endpoints.</p>
+  <p className="price">PKR 1500</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('apitest1500')}
+  >
+    Buy Now
+  </button>
+</div>
+
+{/* 🔵 PKR 2000 Services */}
+<div className="card">
+  <h3>Full Website Audit</h3>
+  <p>Performance, security, SEO and UI/UX report with improvement suggestions.</p>
+  <p className="price">PKR 2000</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('audit2000')}
+  >
+    Buy Now
+  </button>
+</div>
+
+<div className="card">
+  <h3>Basic Ecommerce Store Setup</h3>
+  <p>Home page, products, and checkout setup for a small online store.</p>
+  <p className="price">PKR 2000</p>
+  <button
+    className="buy-btn"
+    onClick={() => handleBuyNowClick('estore2000')}
+  >
+    Buy Now
+  </button>
+</div>
+      
       </section>
 
       <section id="why-choose-us" className="details">

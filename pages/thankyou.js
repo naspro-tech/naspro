@@ -2,13 +2,23 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 const SERVICE_LABELS = {
-  webapp: 'Web & App Development',
-  domainhosting: 'Domain & Hosting',
-  branding: 'Branding & Logo Design',
-  ecommerce: 'E-Commerce Solutions',
-  cloudit: 'Cloud & IT Infrastructure',
-  digitalmarketing: 'Digital Marketing',
-  testing: 'Testing Service', // ✅ added for Easypaisa Rs.1 test
+  webapp: "Web & App Development",
+  domainhosting: "Domain & Hosting",
+  branding: "Branding & Logo Design",
+  ecommerce: "E-Commerce Solutions",
+  cloudit: "Cloud & IT Infrastructure",
+  digitalmarketing: "Digital Marketing",
+  testing: "Testing Service",
+
+  // New services
+  bugfix500: "Website Bug Fix (1 Issue)",
+  plugin500: "Plugin Installation",
+  section1000: "Website Section Update",
+  speed1000: "Basic Speed Optimization",
+  revamp1500: "Landing Page Revamp",
+  apitest1500: "API Testing (5 Endpoints)",
+  audit2000: "Full Website Audit",
+  estore2000: "Basic E-commerce Store Setup",
 };
 
 const containerStyle = {

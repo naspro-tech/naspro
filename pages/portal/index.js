@@ -1,16 +1,15 @@
 // pages/portal/index.js
 
 import { useState, useEffect } from "react";
-import { FiMenu, FiX } from "react-icons/fi";
 
 export default function PartnerPortal() {
-  // Login / auth states
+  // Auth/login states
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [partner, setPartner] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Dashboard / data states
+  // Dashboard/data states
   const [transactions, setTransactions] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [availableBalance, setAvailableBalance] = useState(0);
@@ -23,11 +22,11 @@ export default function PartnerPortal() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawMobile, setWithdrawMobile] = useState("");
   const [withdrawMethod, setWithdrawMethod] = useState("Bank");
-  const [loading, setLoading] = useState(false);
 
-  // Sidebar / menu
+  // UI / menu states
   const [menu, setMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const validUsers = {
     betjee: "Betjee1234",
@@ -44,7 +43,7 @@ export default function PartnerPortal() {
     }
   }, []);
 
-  // Handle login
+  // Login
   const handleLogin = (e) => {
     e.preventDefault();
     if (validUsers[username.toLowerCase()] === password) {
@@ -58,12 +57,10 @@ export default function PartnerPortal() {
     }
   };
 
-  // Fetch dashboard data (replace with real API calls)
+  // Fetch dashboard data (replace dummy data with API)
   const fetchDashboardData = async (partner) => {
     setLoading(true);
-
     try {
-      // TODO: Replace dummy data with actual API calls
       const dummyTransactions = [
         {
           orderId: "ORD001",
@@ -109,13 +106,11 @@ export default function PartnerPortal() {
       setTransactions(dummyTransactions);
       setWithdrawals(dummyWithdrawals);
 
-      // Calculate KPIs
       const approvedTxns = dummyTransactions.filter((t) => t.status === "APPROVED");
       const totalNet = approvedTxns.reduce((acc, t) => acc + t.netAmount, 0);
       const fees = approvedTxns.reduce((acc, t) => acc + t.fee, 0);
       const depositCommission = approvedTxns.reduce((acc, t) => acc + t.commission, 0);
       const withdrawCommission = dummyWithdrawals.reduce((acc, w) => acc + w.commission, 0);
-
       const totalWithdrawn = dummyWithdrawals.reduce((acc, w) => acc + w.amount, 0);
 
       setAvailableBalance(totalNet - totalWithdrawn);
@@ -133,21 +128,11 @@ export default function PartnerPortal() {
   // Handle withdraw request
   const handleWithdraw = () => {
     const amount = parseFloat(withdrawAmount);
-    if (!amount || amount <= 0) {
-      alert("Enter a valid amount");
-      return;
-    }
-    if (amount > availableBalance) {
-      alert("Cannot withdraw more than available balance");
-      return;
-    }
-    if (!withdrawMobile) {
-      alert("Enter mobile number");
-      return;
-    }
+    if (!amount || amount <= 0) return alert("Enter valid amount");
+    if (amount > availableBalance) return alert("Cannot withdraw more than available balance");
+    if (!withdrawMobile) return alert("Enter mobile number");
 
-    // TODO: Call backend API to create withdrawal
-    const commission = amount * 0.02; // 2% commission
+    const commission = amount * 0.02;
     const newWithdraw = {
       mobile: withdrawMobile,
       method: withdrawMethod,
@@ -157,7 +142,6 @@ export default function PartnerPortal() {
       screenshotUrl: "",
       createdAt: new Date(),
     };
-
     setWithdrawals([newWithdraw, ...withdrawals]);
     setAvailableBalance(availableBalance - amount);
     setWithdrawAmount("");
@@ -165,7 +149,6 @@ export default function PartnerPortal() {
     alert("Withdrawal requested successfully!");
   };
 
-  // Status badge helper
   const statusColor = (status) => {
     if (status === "APPROVED") return "bg-green-100 text-green-700";
     if (status === "FAILED") return "bg-red-100 text-red-700";
@@ -214,11 +197,8 @@ export default function PartnerPortal() {
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <span className="text-2xl font-bold">My Portal</span>
-          <button
-            className="md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <FiX size={24} />
+          <button className="md:hidden text-2xl font-bold" onClick={() => setSidebarOpen(false)}>
+            &times;
           </button>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -254,13 +234,13 @@ export default function PartnerPortal() {
 
       {/* Mobile hamburger */}
       <button
-        className="fixed top-4 left-4 z-40 md:hidden bg-gray-900 text-white p-2 rounded"
+        className="fixed top-4 left-4 z-40 md:hidden bg-gray-900 text-white p-2 rounded text-xl font-bold"
         onClick={() => setSidebarOpen(true)}
       >
-        <FiMenu size={24} />
+        &#9776;
       </button>
 
-      {/* Main Content */}
+      {/* Main content */}
       <div className="flex-1 p-6 ml-0 md:ml-64 overflow-auto">
         {loading ? (
           <p>Loading...</p>
@@ -268,7 +248,7 @@ export default function PartnerPortal() {
           <>
             {menu === "dashboard" && (
               <>
-                {/* Top Cards */}
+                {/* Dashboard cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
                   <div className="bg-white shadow rounded p-5">
                     <p className="text-gray-500">Total Transactions</p>
@@ -399,15 +379,14 @@ export default function PartnerPortal() {
               </>
             )}
 
-            {/* Other menu screens (placeholders) */}
-            {menu === "overall" && <div>Overall Summary Page</div>}
-            {menu === "balance" && <div>Balance Summary Page</div>}
-            {menu === "transactions" && <div>Transactions Page</div>}
-            {menu === "withdrawals" && <div>Withdrawals Page</div>}
-            {menu === "commission" && <div>Our Commission Page</div>}
+            {menu === "overall" && <div>Overall Summary Page (Add charts & stats here)</div>}
+            {menu === "balance" && <div>Balance Summary Page (Detailed balances)</div>}
+            {menu === "transactions" && <div>Transactions Page (Full transaction table)</div>}
+            {menu === "withdrawals" && <div>Withdrawals Page (History and request)</div>}
+            {menu === "commission" && <div>Our Commission Page (Deposit + Withdrawal commission)</div>}
           </>
         )}
       </div>
     </div>
   );
-                }
+    }

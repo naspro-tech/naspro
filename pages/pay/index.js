@@ -94,6 +94,27 @@ export default function HostedEasypaisaPortal() {
       if (data && data.responseCode === "0000") {
         setStep("success");
         setMessage("✅ آپ کی ادائیگی کامیاب ہوگئی ہے۔");
+        // Step 3: Send callback to merchant automatically
+      if (router.query.callback) {
+        try {
+          await fetch(router.query.callback, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: "SUCCESS",
+              code: "0000", // Easypaisa standard success code
+              order_id: orderId,
+              amount: Number(amount),
+              username: router.query.username,
+              service: finalService,
+              gateway: "Easypaisa",
+              timestamp: new Date().toISOString()
+            })
+          });
+        } catch (err) {
+          console.error("Merchant callback error:", err);
+        }
+      }
       }
       // If your backend uses polling or webhook, you can detect success separately — this keeps current behavior.
     } catch (err) {

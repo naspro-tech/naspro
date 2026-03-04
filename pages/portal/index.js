@@ -1,392 +1,187 @@
-// pages/portal/index.js
+import { useEffect, useState } from "react";
 
-import { useState, useEffect } from "react";
-
-export default function PartnerPortal() {
-  // Auth/login states
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [partner, setPartner] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // Dashboard/data states
+export default function Portal() {
   const [transactions, setTransactions] = useState([]);
-  const [withdrawals, setWithdrawals] = useState([]);
   const [availableBalance, setAvailableBalance] = useState(0);
   const [totalTxns, setTotalTxns] = useState(0);
   const [successTxns, setSuccessTxns] = useState(0);
   const [totalFees, setTotalFees] = useState(0);
   const [totalCommission, setTotalCommission] = useState(0);
 
-  // Withdraw form states
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawMobile, setWithdrawMobile] = useState("");
-  const [withdrawMethod, setWithdrawMethod] = useState("Bank");
+  // 🔥 Replace this later with real API
+  const fetchData = async () => {
+    const dummy = [
+      {
+        order_id: "NASPRO-123456",
+        username: "AliKhan",
+        amount: 5000,
+        status: "APPROVED",
+        fee: 50,
+        commission: 20,
+        createdAt: new Date().toLocaleString(),
+      },
+      {
+        order_id: "NASPRO-987654",
+        username: "Ahmed",
+        amount: 2000,
+        status: "PENDING",
+        fee: 20,
+        commission: 10,
+        createdAt: new Date().toLocaleString(),
+      },
+    ];
 
-  // UI / menu states
-  const [menu, setMenu] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+    setTransactions(dummy);
 
-  const validUsers = {
-    betjee: "Betjee1234",
-    crickex: "Crickex1234",
+    const approved = dummy.filter(t => t.status === "APPROVED");
+
+    setAvailableBalance(
+      approved.reduce((acc, t) => acc + t.amount - t.fee, 0)
+    );
+    setTotalTxns(dummy.length);
+    setSuccessTxns(approved.length);
+    setTotalFees(approved.reduce((acc, t) => acc + t.fee, 0));
+    setTotalCommission(approved.reduce((acc, t) => acc + t.commission, 0));
   };
 
-  // Persistent login
   useEffect(() => {
-    const storedPartner = localStorage.getItem("partner");
-    if (storedPartner) {
-      setPartner(storedPartner);
-      setIsAuthenticated(true);
-      fetchDashboardData(storedPartner);
-    }
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Login
-  const handleLogin = (e) => {
-    e.preventDefault();
-    if (validUsers[username.toLowerCase()] === password) {
-      const user = username.toLowerCase();
-      localStorage.setItem("partner", user);
-      setPartner(user);
-      setIsAuthenticated(true);
-      fetchDashboardData(user);
-    } else {
-      alert("Invalid username or password");
-    }
-  };
-
-  // Fetch dashboard data (replace dummy data with API)
-  const fetchDashboardData = async (partner) => {
-    setLoading(true);
-    try {
-      const dummyTransactions = [
-        {
-          orderId: "ORD001",
-          amount: 100000,
-          fee: 986,
-          commission: 4000,
-          netAmount: 95414,
-          status: "APPROVED",
-          createdAt: new Date(),
-        },
-        {
-          orderId: "ORD002",
-          amount: 5000,
-          fee: 0,
-          commission: 0,
-          netAmount: 0,
-          status: "PENDING",
-          createdAt: new Date(),
-        },
-        {
-          orderId: "ORD003",
-          amount: 2000,
-          fee: 0,
-          commission: 0,
-          netAmount: 0,
-          status: "FAILED",
-          createdAt: new Date(),
-        },
-      ];
-
-      const dummyWithdrawals = [
-        {
-          mobile: "03001234567",
-          method: "Bank",
-          amount: 20000,
-          commission: 400,
-          status: "PENDING",
-          screenshotUrl: "",
-          createdAt: new Date(),
-        },
-      ];
-
-      setTransactions(dummyTransactions);
-      setWithdrawals(dummyWithdrawals);
-
-      const approvedTxns = dummyTransactions.filter((t) => t.status === "APPROVED");
-      const totalNet = approvedTxns.reduce((acc, t) => acc + t.netAmount, 0);
-      const fees = approvedTxns.reduce((acc, t) => acc + t.fee, 0);
-      const depositCommission = approvedTxns.reduce((acc, t) => acc + t.commission, 0);
-      const withdrawCommission = dummyWithdrawals.reduce((acc, w) => acc + w.commission, 0);
-      const totalWithdrawn = dummyWithdrawals.reduce((acc, w) => acc + w.amount, 0);
-
-      setAvailableBalance(totalNet - totalWithdrawn);
-      setTotalTxns(dummyTransactions.length);
-      setSuccessTxns(approvedTxns.length);
-      setTotalFees(fees);
-      setTotalCommission(depositCommission + withdrawCommission);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle withdraw request
-  const handleWithdraw = () => {
-    const amount = parseFloat(withdrawAmount);
-    if (!amount || amount <= 0) return alert("Enter valid amount");
-    if (amount > availableBalance) return alert("Cannot withdraw more than available balance");
-    if (!withdrawMobile) return alert("Enter mobile number");
-
-    const commission = amount * 0.02;
-    const newWithdraw = {
-      mobile: withdrawMobile,
-      method: withdrawMethod,
-      amount,
-      commission,
-      status: "PENDING",
-      screenshotUrl: "",
-      createdAt: new Date(),
-    };
-    setWithdrawals([newWithdraw, ...withdrawals]);
-    setAvailableBalance(availableBalance - amount);
-    setWithdrawAmount("");
-    setWithdrawMobile("");
-    alert("Withdrawal requested successfully!");
-  };
-
-  const statusColor = (status) => {
-    if (status === "APPROVED") return "bg-green-100 text-green-700";
-    if (status === "FAILED") return "bg-red-100 text-red-700";
-    return "bg-yellow-100 text-yellow-700";
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-tr from-blue-800 to-indigo-900 p-4">
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Partner Portal Login</h2>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-            >
-              Login
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#0f172a] text-white flex">
+
       {/* Sidebar */}
-      <div
-        className={`fixed z-50 h-full w-64 bg-gray-900 text-white flex flex-col transition-transform transform ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-64"
-        } md:translate-x-0`}
-      >
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <span className="text-2xl font-bold">My Portal</span>
-          <button className="md:hidden text-2xl font-bold" onClick={() => setSidebarOpen(false)}>
-            &times;
-          </button>
-        </div>
-        <nav className="flex-1 p-4 space-y-2">
-          {[
-            { name: "Dashboard", key: "dashboard" },
-            { name: "Overall Summary", key: "overall" },
-            { name: "Balance Summary", key: "balance" },
-            { name: "Transactions", key: "transactions" },
-            { name: "Withdrawals", key: "withdrawals" },
-            { name: "Our Commission", key: "commission" },
-          ].map((item) => (
-            <button
-              key={item.key}
-              onClick={() => setMenu(item.key)}
-              className={`flex items-center w-full p-2 rounded hover:bg-gray-800 ${
-                menu === item.key ? "bg-gray-700 font-semibold" : ""
-              }`}
-            >
-              {item.name}
-            </button>
-          ))}
+      <aside className="w-64 bg-[#111827] border-r border-gray-800 p-6">
+        <h2 className="text-2xl font-bold text-emerald-400 mb-10">
+          NASPRO PSP
+        </h2>
+
+        <nav className="space-y-6 text-gray-400">
+          <div className="hover:text-white cursor-pointer transition">
+            📊 Dashboard
+          </div>
+          <div className="hover:text-white cursor-pointer transition">
+            💳 Transactions
+          </div>
+          <div className="hover:text-white cursor-pointer transition">
+            💸 Withdrawals
+          </div>
+          <div className="hover:text-white cursor-pointer transition">
+            ⚙ Settings
+          </div>
         </nav>
-        <button
-          onClick={() => {
-            localStorage.removeItem("partner");
-            window.location.reload();
-          }}
-          className="flex items-center p-4 mt-auto hover:bg-gray-800"
-        >
-          Logout
-        </button>
-      </div>
+      </aside>
 
-      {/* Mobile hamburger */}
-      <button
-        className="fixed top-4 left-4 z-40 md:hidden bg-gray-900 text-white p-2 rounded text-xl font-bold"
-        onClick={() => setSidebarOpen(true)}
-      >
-        &#9776;
-      </button>
+      {/* Main */}
+      <main className="flex-1 p-10">
 
-      {/* Main content */}
-      <div className="flex-1 p-6 ml-0 md:ml-64 overflow-auto">
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <>
-            {menu === "dashboard" && (
-              <>
-                {/* Dashboard cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-6 mb-6">
-                  <div className="bg-white shadow rounded p-5">
-                    <p className="text-gray-500">Total Transactions</p>
-                    <p className="text-2xl font-bold">{totalTxns}</p>
-                  </div>
-                  <div className="bg-white shadow rounded p-5">
-                    <p className="text-gray-500">Successful Transactions</p>
-                    <p className="text-2xl font-bold">{successTxns}</p>
-                  </div>
-                  <div className="bg-white shadow rounded p-5">
-                    <p className="text-gray-500">Available Balance</p>
-                    <p className="text-2xl font-bold">PKR {availableBalance.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-white shadow rounded p-5">
-                    <p className="text-gray-500">Total Fees</p>
-                    <p className="text-2xl font-bold">PKR {totalFees.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-white shadow rounded p-5">
-                    <p className="text-gray-500">Total Commission</p>
-                    <p className="text-2xl font-bold">PKR {totalCommission.toLocaleString()}</p>
-                  </div>
-                </div>
+        {/* Balance Card */}
+        <div className="bg-gradient-to-r from-emerald-500 to-green-400 rounded-3xl p-8 shadow-2xl mb-10">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="uppercase text-sm opacity-80">
+                Available Balance
+              </p>
+              <h1 className="text-5xl font-bold mt-3">
+                PKR {availableBalance.toLocaleString()}
+              </h1>
+              <p className="mt-2 text-sm opacity-80">
+                Live Settlement Wallet
+              </p>
+            </div>
 
-                {/* Transactions Table */}
-                <div className="bg-white shadow rounded p-5 overflow-x-auto mb-6">
-                  <h2 className="text-lg font-bold mb-4">Transactions</h2>
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Order ID</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Amount</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Fee</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Commission</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Net</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Status</th>
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {transactions.map((t) => (
-                        <tr key={t.orderId}>
-                          <td className="px-4 py-2">{t.orderId}</td>
-                          <td className="px-4 py-2">PKR {t.amount}</td>
-                          <td className="px-4 py-2">{t.status === "APPROVED" ? t.fee : "-"}</td>
-                          <td className="px-4 py-2">{t.status === "APPROVED" ? t.commission : "-"}</td>
-                          <td className="px-4 py-2">{t.status === "APPROVED" ? t.netAmount : "-"}</td>
-                          <td className="px-4 py-2">
-                            <span className={`px-2 py-1 rounded text-sm font-semibold ${statusColor(t.status)}`}>
-                              {t.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2">{new Date(t.createdAt).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+              <span className="text-sm font-medium">System Online</span>
+            </div>
+          </div>
+        </div>
 
-                {/* Withdrawals */}
-                <div className="bg-white shadow rounded p-5 mb-6">
-                  <h2 className="text-lg font-bold mb-4">Request Withdrawal</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <input
-                      type="text"
-                      placeholder="Mobile Number"
-                      value={withdrawMobile}
-                      onChange={(e) => setWithdrawMobile(e.target.value)}
-                      className="border border-gray-300 rounded px-3 py-2 w-full"
-                    />
-                    <select
-                      value={withdrawMethod}
-                      onChange={(e) => setWithdrawMethod(e.target.value)}
-                      className="border border-gray-300 rounded px-3 py-2 w-full"
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-8 mb-12">
+          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
+            <p className="text-gray-400 text-sm">Total Transactions</p>
+            <h2 className="text-3xl font-bold mt-3">{totalTxns}</h2>
+          </div>
+
+          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
+            <p className="text-gray-400 text-sm">Successful</p>
+            <h2 className="text-3xl font-bold mt-3 text-emerald-400">
+              {successTxns}
+            </h2>
+          </div>
+
+          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
+            <p className="text-gray-400 text-sm">Total Fees</p>
+            <h2 className="text-3xl font-bold mt-3 text-red-400">
+              PKR {totalFees.toLocaleString()}
+            </h2>
+          </div>
+
+          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
+            <p className="text-gray-400 text-sm">Commission</p>
+            <h2 className="text-3xl font-bold mt-3 text-yellow-400">
+              PKR {totalCommission.toLocaleString()}
+            </h2>
+          </div>
+        </div>
+
+        {/* Transactions Table */}
+        <div className="bg-[#111827] rounded-2xl shadow-xl overflow-hidden">
+          <div className="p-6 border-b border-gray-800">
+            <h2 className="text-xl font-semibold">Recent Transactions</h2>
+          </div>
+
+          <table className="w-full text-sm">
+            <thead className="bg-[#1f2937] text-gray-400 uppercase text-xs">
+              <tr>
+                <th className="p-4 text-left">Order ID</th>
+                <th className="p-4 text-left">User</th>
+                <th className="p-4 text-left">Amount</th>
+                <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">Date</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {transactions.map((txn) => (
+                <tr
+                  key={txn.order_id}
+                  className="border-b border-gray-800 hover:bg-[#1e293b] transition"
+                >
+                  <td className="p-4 font-mono text-xs">
+                    {txn.order_id}
+                  </td>
+                  <td className="p-4">{txn.username}</td>
+                  <td className="p-4 font-semibold">
+                    PKR {txn.amount}
+                  </td>
+                  <td className="p-4">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        txn.status === "APPROVED"
+                          ? "bg-emerald-500/20 text-emerald-400"
+                          : txn.status === "PENDING"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
                     >
-                      <option>Bank</option>
-                      <option>EasyPaisa</option>
-                      <option>JazzCash</option>
-                    </select>
-                    <input
-                      type="number"
-                      placeholder="Amount"
-                      value={withdrawAmount}
-                      onChange={(e) => setWithdrawAmount(e.target.value)}
-                      className="border border-gray-300 rounded px-3 py-2 w-full"
-                    />
-                    <button
-                      onClick={handleWithdraw}
-                      className="bg-blue-600 text-white rounded px-3 py-2 w-full hover:bg-blue-700"
-                    >
-                      Withdraw
-                    </button>
-                  </div>
+                      {txn.status}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400 text-xs">
+                    {txn.createdAt}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-                  <h3 className="text-md font-semibold mb-2">Withdrawal History</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Mobile</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Method</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Amount</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Commission</th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-500">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {withdrawals.map((w, i) => (
-                          <tr key={i}>
-                            <td className="px-4 py-2">{w.mobile}</td>
-                            <td className="px-4 py-2">{w.method}</td>
-                            <td className="px-4 py-2">PKR {w.amount}</td>
-                            <td className="px-4 py-2">PKR {w.commission}</td>
-                            <td className="px-4 py-2">
-                              <span className={`px-2 py-1 rounded text-sm font-semibold ${
-                                w.status === "PAID"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                              }`}>
-                                {w.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {menu === "overall" && <div>Overall Summary Page (Add charts & stats here)</div>}
-            {menu === "balance" && <div>Balance Summary Page (Detailed balances)</div>}
-            {menu === "transactions" && <div>Transactions Page (Full transaction table)</div>}
-            {menu === "withdrawals" && <div>Withdrawals Page (History and request)</div>}
-            {menu === "commission" && <div>Our Commission Page (Deposit + Withdrawal commission)</div>}
-          </>
-        )}
-      </div>
+      </main>
     </div>
   );
-    }
+      }

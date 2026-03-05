@@ -76,8 +76,8 @@ return(
 <h2>Portal</h2>
 
 <p>Dashboard</p>
-<p>Projects</p>
-<p>Invoices</p>
+<p>Transaction history</p>
+<p>Withdrawal Records</p>
 <p>Support</p>
 <p>Settings</p>
 
@@ -94,23 +94,23 @@ Logout
 <div style={styles.cardGrid}>
 
 <div style={styles.card}>
-<h3>Active Projects</h3>
-<p>5</p>
+<h3>Available balance</h3>
+<p>137.98</p>
 </div>
 
 <div style={styles.card}>
-<h3>Pending Tasks</h3>
-<p>12</p>
+<h3>Success Transaction Rate</h3>
+<p>12%</p>
 </div>
 
 <div style={styles.card}>
-<h3>Invoices</h3>
-<p>3</p>
+<h3>Failed Transactions Rate</h3>
+<p>3%</p>
 </div>
 
 <div style={styles.card}>
-<h3>Messages</h3>
-<p>7</p>
+<h3>Withdraw Amount Total Today</h3>
+<p>70</p>
 </div>
 
 </div>

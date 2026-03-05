@@ -1,187 +1,189 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import {
+Chart as ChartJS,
+ArcElement,
+Tooltip,
+Legend,
+CategoryScale,
+LinearScale,
+BarElement
+} from "chart.js";
 
-export default function Portal() {
-  const [transactions, setTransactions] = useState([]);
-  const [availableBalance, setAvailableBalance] = useState(0);
-  const [totalTxns, setTotalTxns] = useState(0);
-  const [successTxns, setSuccessTxns] = useState(0);
-  const [totalFees, setTotalFees] = useState(0);
-  const [totalCommission, setTotalCommission] = useState(0);
+import { Pie,Bar } from "react-chartjs-2";
 
-  // 🔥 Replace this later with real API
-  const fetchData = async () => {
-    const dummy = [
-      {
-        order_id: "NASPRO-123456",
-        username: "AliKhan",
-        amount: 5000,
-        status: "APPROVED",
-        fee: 50,
-        commission: 20,
-        createdAt: new Date().toLocaleString(),
-      },
-      {
-        order_id: "NASPRO-987654",
-        username: "Ahmed",
-        amount: 2000,
-        status: "PENDING",
-        fee: 20,
-        commission: 10,
-        createdAt: new Date().toLocaleString(),
-      },
-    ];
+ChartJS.register(
+ArcElement,
+Tooltip,
+Legend,
+CategoryScale,
+LinearScale,
+BarElement
+);
 
-    setTransactions(dummy);
+export default function Dashboard(){
 
-    const approved = dummy.filter(t => t.status === "APPROVED");
+const router = useRouter();
 
-    setAvailableBalance(
-      approved.reduce((acc, t) => acc + t.amount - t.fee, 0)
-    );
-    setTotalTxns(dummy.length);
-    setSuccessTxns(approved.length);
-    setTotalFees(approved.reduce((acc, t) => acc + t.fee, 0));
-    setTotalCommission(approved.reduce((acc, t) => acc + t.commission, 0));
-  };
+useEffect(()=>{
+const auth = localStorage.getItem("auth");
+if(!auth){
+router.push("/login");
+}
+},[]);
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
-  }, []);
+const pieData = {
+labels:["Easypaisa","JazzCash"],
+datasets:[
+{
+data:[60,40],
+backgroundColor:["#3b82f6","#10b981"]
+}
+]
+}
 
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex">
+const barData = {
+labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+datasets:[
+{
+label:"Transactions",
+data:[20,35,25,40,50,30,60],
+backgroundColor:"#2563eb"
+}
+]
+}
 
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#111827] border-r border-gray-800 p-6">
-        <h2 className="text-2xl font-bold text-emerald-400 mb-10">
-          NASPRO PSP
-        </h2>
+return(
 
-        <nav className="space-y-6 text-gray-400">
-          <div className="hover:text-white cursor-pointer transition">
-            📊 Dashboard
-          </div>
-          <div className="hover:text-white cursor-pointer transition">
-            💳 Transactions
-          </div>
-          <div className="hover:text-white cursor-pointer transition">
-            💸 Withdrawals
-          </div>
-          <div className="hover:text-white cursor-pointer transition">
-            ⚙ Settings
-          </div>
-        </nav>
-      </aside>
+<div style={{display:"flex",height:"100vh",fontFamily:"Arial"}}>
 
-      {/* Main */}
-      <main className="flex-1 p-10">
+{/* Sidebar */}
 
-        {/* Balance Card */}
-        <div className="bg-gradient-to-r from-emerald-500 to-green-400 rounded-3xl p-8 shadow-2xl mb-10">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="uppercase text-sm opacity-80">
-                Available Balance
-              </p>
-              <h1 className="text-5xl font-bold mt-3">
-                PKR {availableBalance.toLocaleString()}
-              </h1>
-              <p className="mt-2 text-sm opacity-80">
-                Live Settlement Wallet
-              </p>
-            </div>
+<div style={{
+width:"220px",
+background:"#0f172a",
+color:"white",
+padding:"20px"
+}}>
 
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
-              <span className="text-sm font-medium">System Online</span>
-            </div>
-          </div>
-        </div>
+<h2>NASPRO</h2>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-8 mb-12">
-          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
-            <p className="text-gray-400 text-sm">Total Transactions</p>
-            <h2 className="text-3xl font-bold mt-3">{totalTxns}</h2>
-          </div>
+<ul style={{listStyle:"none",padding:0,marginTop:"30px"}}>
+<li style={{marginBottom:"15px"}}>Dashboard</li>
+<li style={{marginBottom:"15px"}}>Transactions</li>
+<li style={{marginBottom:"15px"}}>Reports</li>
+<li style={{marginBottom:"15px"}}>Settings</li>
+</ul>
 
-          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
-            <p className="text-gray-400 text-sm">Successful</p>
-            <h2 className="text-3xl font-bold mt-3 text-emerald-400">
-              {successTxns}
-            </h2>
-          </div>
+</div>
 
-          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
-            <p className="text-gray-400 text-sm">Total Fees</p>
-            <h2 className="text-3xl font-bold mt-3 text-red-400">
-              PKR {totalFees.toLocaleString()}
-            </h2>
-          </div>
+{/* Main */}
 
-          <div className="bg-[#1e293b] p-6 rounded-2xl shadow-lg">
-            <p className="text-gray-400 text-sm">Commission</p>
-            <h2 className="text-3xl font-bold mt-3 text-yellow-400">
-              PKR {totalCommission.toLocaleString()}
-            </h2>
-          </div>
-        </div>
+<div style={{flex:1,padding:"30px",background:"#f1f5f9"}}>
 
-        {/* Transactions Table */}
-        <div className="bg-[#111827] rounded-2xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b border-gray-800">
-            <h2 className="text-xl font-semibold">Recent Transactions</h2>
-          </div>
+<h1>Dashboard</h1>
 
-          <table className="w-full text-sm">
-            <thead className="bg-[#1f2937] text-gray-400 uppercase text-xs">
-              <tr>
-                <th className="p-4 text-left">Order ID</th>
-                <th className="p-4 text-left">User</th>
-                <th className="p-4 text-left">Amount</th>
-                <th className="p-4 text-left">Status</th>
-                <th className="p-4 text-left">Date</th>
-              </tr>
-            </thead>
+{/* Balance cards */}
 
-            <tbody>
-              {transactions.map((txn) => (
-                <tr
-                  key={txn.order_id}
-                  className="border-b border-gray-800 hover:bg-[#1e293b] transition"
-                >
-                  <td className="p-4 font-mono text-xs">
-                    {txn.order_id}
-                  </td>
-                  <td className="p-4">{txn.username}</td>
-                  <td className="p-4 font-semibold">
-                    PKR {txn.amount}
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        txn.status === "APPROVED"
-                          ? "bg-emerald-500/20 text-emerald-400"
-                          : txn.status === "PENDING"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-red-500/20 text-red-400"
-                      }`}
-                    >
-                      {txn.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-gray-400 text-xs">
-                    {txn.createdAt}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+<div style={{
+display:"grid",
+gridTemplateColumns:"repeat(3,1fr)",
+gap:"20px",
+marginTop:"20px"
+}}>
 
-      </main>
-    </div>
-  );
-      }
+<div style={{background:"white",padding:"20px",borderRadius:"10px"}}>
+<h3>Total Volume</h3>
+<h2>PKR 2,430,000</h2>
+</div>
+
+<div style={{background:"white",padding:"20px",borderRadius:"10px"}}>
+<h3>Total Transactions</h3>
+<h2>1,283</h2>
+</div>
+
+<div style={{background:"white",padding:"20px",borderRadius:"10px"}}>
+<h3>Available Balance</h3>
+<h2>PKR 420,000</h2>
+</div>
+
+</div>
+
+{/* Charts */}
+
+<div style={{
+display:"grid",
+gridTemplateColumns:"1fr 1fr",
+gap:"20px",
+marginTop:"30px"
+}}>
+
+<div style={{background:"white",padding:"20px",borderRadius:"10px"}}>
+<h3>Transactions by Gateway</h3>
+<Pie data={pieData}/>
+</div>
+
+<div style={{background:"white",padding:"20px",borderRadius:"10px"}}>
+<h3>Weekly Transactions</h3>
+<Bar data={barData}/>
+</div>
+
+</div>
+
+{/* Table */}
+
+<div style={{
+background:"white",
+marginTop:"30px",
+padding:"20px",
+borderRadius:"10px"
+}}>
+
+<h3>Recent Transactions</h3>
+
+<table style={{width:"100%",marginTop:"10px"}}>
+
+<thead>
+<tr>
+<th>Order ID</th>
+<th>User</th>
+<th>Amount</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr>
+<td>NASPRO-001</td>
+<td>Ali Khan</td>
+<td>PKR 5,000</td>
+<td style={{color:"green"}}>SUCCESS</td>
+</tr>
+
+<tr>
+<td>NASPRO-002</td>
+<td>Usman</td>
+<td>PKR 2,000</td>
+<td style={{color:"green"}}>SUCCESS</td>
+</tr>
+
+<tr>
+<td>NASPRO-003</td>
+<td>Ahmed</td>
+<td>PKR 7,000</td>
+<td style={{color:"orange"}}>PENDING</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+)
+  }

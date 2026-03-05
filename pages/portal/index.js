@@ -1,151 +1,119 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Portal() {
 
 const [loggedIn,setLoggedIn] = useState(false)
-const [email,setEmail] = useState("")
+const [username,setUsername] = useState("")
 const [password,setPassword] = useState("")
+const [error,setError] = useState("")
 
-function login(){
-
-if(email==="admin@portal.com" && password==="123456"){
+useEffect(()=>{
+const savedLogin = localStorage.getItem("portalLogin")
+if(savedLogin === "true"){
 setLoggedIn(true)
+}
+},[])
+
+const login = () => {
+
+if(username === "admin" && password === "admin123"){
+setLoggedIn(true)
+localStorage.setItem("portalLogin","true")
 }else{
-alert("Invalid Login")
+setError("Invalid username or password")
 }
 
+}
+
+const logout = () => {
+localStorage.removeItem("portalLogin")
+setLoggedIn(false)
 }
 
 if(!loggedIn){
-
 return(
 
 <div style={styles.loginPage}>
 
 <div style={styles.loginBox}>
 
-<h2>Merchant Portal Login</h2>
+<h2 style={styles.title}>Client Portal</h2>
 
 <input
-placeholder="Email"
+placeholder="Username"
+value={username}
+onChange={(e)=>setUsername(e.target.value)}
 style={styles.input}
-onChange={(e)=>setEmail(e.target.value)}
 />
 
 <input
 type="password"
 placeholder="Password"
-style={styles.input}
+value={password}
 onChange={(e)=>setPassword(e.target.value)}
+style={styles.input}
 />
 
-<button style={styles.button} onClick={login}>Login</button>
+<button onClick={login} style={styles.loginBtn}>
+Login
+</button>
 
-<p style={{fontSize:12,marginTop:15,color:"#777"}}>
-Demo Login<br/>
-admin@portal.com<br/>
-123456
-</p>
+<p style={{color:"red"}}>{error}</p>
 
 </div>
 
 </div>
 
 )
-
 }
 
 return(
 
-<div style={styles.container}>
+<div style={styles.portalWrapper}>
 
 <div style={styles.sidebar}>
 
 <h2>Portal</h2>
 
 <p>Dashboard</p>
-<p>Transactions</p>
-<p>Withdraw</p>
+<p>Projects</p>
+<p>Invoices</p>
+<p>Support</p>
 <p>Settings</p>
 
+<button style={styles.logoutBtn} onClick={logout}>
+Logout
+</button>
+
 </div>
 
+<div style={styles.mainContent}>
 
-<div style={styles.main}>
+<h1>Client Dashboard</h1>
 
-<h1>Dashboard</h1>
-
-<div style={styles.cards}>
-
-<div style={styles.card}>
-<h3>Total Balance</h3>
-<p>$24,320</p>
-</div>
+<div style={styles.cardGrid}>
 
 <div style={styles.card}>
-<h3>Today's Volume</h3>
-<p>$4,120</p>
+<h3>Active Projects</h3>
+<p>5</p>
 </div>
 
 <div style={styles.card}>
-<h3>Total Transactions</h3>
-<p>86</p>
+<h3>Pending Tasks</h3>
+<p>12</p>
 </div>
 
 <div style={styles.card}>
-<h3>Pending Payout</h3>
-<p>$6,200</p>
+<h3>Invoices</h3>
+<p>3</p>
+</div>
+
+<div style={styles.card}>
+<h3>Messages</h3>
+<p>7</p>
 </div>
 
 </div>
-
-
-<h2>Recent Transactions</h2>
-
-<table style={styles.table}>
-
-<thead>
-<tr>
-<th>ID</th>
-<th>Amount</th>
-<th>Status</th>
-<th>Date</th>
-</tr>
-</thead>
-
-<tbody>
-
-<tr>
-<td>TX9321</td>
-<td>$120</td>
-<td style={{color:"lime"}}>Completed</td>
-<td>2026-03-05</td>
-</tr>
-
-<tr>
-<td>TX9322</td>
-<td>$240</td>
-<td style={{color:"orange"}}>Pending</td>
-<td>2026-03-05</td>
-</tr>
-
-<tr>
-<td>TX9323</td>
-<td>$80</td>
-<td style={{color:"lime"}}>Completed</td>
-<td>2026-03-04</td>
-</tr>
-
-<tr>
-<td>TX9324</td>
-<td>$430</td>
-<td style={{color:"red"}}>Failed</td>
-<td>2026-03-04</td>
-</tr>
-
-</tbody>
-
-</table>
 
 </div>
 
@@ -154,7 +122,6 @@ return(
 )
 
 }
-
 
 const styles = {
 
@@ -163,72 +130,83 @@ height:"100vh",
 display:"flex",
 justifyContent:"center",
 alignItems:"center",
-background:"#0f172a",
-color:"white"
+background:"linear-gradient(135deg,#0f172a,#1e293b)",
 },
 
 loginBox:{
-background:"#1e293b",
-padding:40,
-borderRadius:10,
-width:320,
-textAlign:"center"
+background:"#fff",
+padding:"40px",
+borderRadius:"10px",
+width:"320px",
+display:"flex",
+flexDirection:"column",
+gap:"10px"
+},
+
+title:{
+textAlign:"center",
+marginBottom:"10px"
 },
 
 input:{
-width:"100%",
-padding:10,
-marginTop:10,
-borderRadius:6,
-border:"none"
+padding:"10px",
+border:"1px solid #ccc",
+borderRadius:"6px"
 },
 
-button:{
-width:"100%",
-padding:10,
-marginTop:15,
-background:"#3b82f6",
-color:"white",
+loginBtn:{
+padding:"10px",
+background:"#2563eb",
+color:"#fff",
 border:"none",
-borderRadius:6,
+borderRadius:"6px",
 cursor:"pointer"
 },
 
-container:{
+portalWrapper:{
 display:"flex",
-background:"#0f172a",
 minHeight:"100vh",
-color:"white"
+background:"#f1f5f9"
 },
 
 sidebar:{
-width:220,
-background:"#020617",
-padding:20
-},
-
-main:{
-flex:1,
-padding:30
-},
-
-cards:{
+width:"220px",
+background:"#0f172a",
+color:"#fff",
+padding:"20px",
 display:"flex",
-gap:20,
-marginBottom:30
+flexDirection:"column",
+gap:"15px"
+},
+
+logoutBtn:{
+marginTop:"auto",
+padding:"10px",
+background:"#ef4444",
+border:"none",
+color:"#fff",
+borderRadius:"6px",
+cursor:"pointer"
+},
+
+mainContent:{
+flex:1,
+padding:"40px"
+},
+
+cardGrid:{
+display:"grid",
+gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",
+gap:"20px",
+marginTop:"20px"
 },
 
 card:{
-background:"#1e293b",
-padding:20,
-borderRadius:10,
-flex:1
-},
-
-table:{
-width:"100%",
-background:"#1e293b",
-borderCollapse:"collapse"
+background:"#fff",
+padding:"20px",
+borderRadius:"10px",
+boxShadow:"0 2px 6px rgba(0,0,0,0.1)",
+textAlign:"center"
 }
 
   }

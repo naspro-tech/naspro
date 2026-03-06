@@ -10,6 +10,14 @@ export default async function handler(req, res) {
     });
   }
 
+  const apiKey = req.headers["x-api-key"];
+
+  if (apiKey !== process.env.PORTAL_API_KEY) {
+    return res.status(401).json({
+      status: "error",
+      msg: "Unauthorized request"
+    });
+  }
   try {
     const { amount, username, service, callback } = req.body;
 

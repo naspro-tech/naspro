@@ -49,13 +49,9 @@ if (isNaN(parsedAmount) || parsedAmount <= 0) {
     // Example: order_id, username, amount, service, callback, order_status: "PENDING", created_at
 
     // Generate hosted payment URL
-    const redirectUrl = `https://naspropvt.vercel.app/pay?amount=${encodeURIComponent(
-      amount
-    )}&username=${encodeURIComponent(
-      username
-    )}&orderId=${encodeURIComponent(
-      systemOrderId
-    )}&service=${encodeURIComponent(service || "Deposit")}&callback=${encodeURIComponent(callback)}`;
+    const redirectUrl = `https://naspropvt.vercel.app/pay?orderId=${encodeURIComponent(
+  systemOrderId
+)}`;
 
     // ✅ Return structured response
     return res.status(200).json({

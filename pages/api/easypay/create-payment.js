@@ -18,6 +18,7 @@ export default async function handler(req, res) {
       msg: "Unauthorized request"
     });
   }
+  
   try {
     const { amount, username, service, callback } = req.body;
 
@@ -28,6 +29,15 @@ export default async function handler(req, res) {
       });
     }
 
+    const parsedAmount = Number(amount);
+
+if (isNaN(parsedAmount) || parsedAmount <= 0) {
+  return res.status(400).json({
+    status: "error",
+    msg: "Invalid amount"
+  });
+}
+    
     // Generate system order ID
     const systemOrderId =
       "NASPRO-" +

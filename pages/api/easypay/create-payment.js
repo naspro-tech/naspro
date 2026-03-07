@@ -1,6 +1,7 @@
 // pages/api/create-payment.js
 
 import crypto from "crypto";
+import supabase from "../../lib/supabase";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -45,9 +46,17 @@ if (isNaN(parsedAmount) || parsedAmount <= 0) {
       "-" +
       crypto.randomBytes(3).toString("hex");
 
-    // TODO: Save order to DB with PENDING status
-    // Example: order_id, username, amount, service, callback, order_status: "PENDING", created_at
-
+    await supabase.from("orders").insert([
+  {
+    order_id: systemOrderId,
+    username: username,
+    amount: parsedAmount,
+    service: service || "Deposit",
+    status: "PENDING",
+    callback: callback
+  }
+]);
+    
     // Generate hosted payment URL
     const redirectUrl = `https://naspropvt.vercel.app/pay?orderId=${encodeURIComponent(
   systemOrderId

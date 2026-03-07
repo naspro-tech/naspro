@@ -12,6 +12,7 @@ export default function HostedEasypaisaPortal() {
   const [message, setMessage] = useState("");
   const [sessionTime, setSessionTime] = useState(600);
   const [closeCountdown, setCloseCountdown] = useState(5);
+  const amount = order?.amount;
 
   const finalService = service || "Easypaisa";
 
@@ -86,7 +87,7 @@ export default function HostedEasypaisaPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId,
-          transactionAmount: Number(amount),
+          transactionAmount: Number(order?.amount),
           mobileAccountNo: mobile.trim(),
           emailAddress: "naspropvt@gmail.com",
           optional1: finalService,

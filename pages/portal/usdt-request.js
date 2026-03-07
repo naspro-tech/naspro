@@ -41,6 +41,7 @@ export default function UsdtRequest() {
 
       <div style={{
         background:"#111",
+        color:"#fff",
         padding:"30px",
         borderRadius:"10px",
         maxWidth:"500px"
@@ -78,6 +79,7 @@ export default function UsdtRequest() {
           onClick={submitRequest}
           style={{
             padding:"10px 20px",
+            color:"#fff",
             background:"#22c55e",
             border:"none",
             cursor:"pointer"

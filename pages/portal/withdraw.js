@@ -60,7 +60,7 @@ export default function Withdraw() {
           type="text"
           value={userId}
           onChange={(e)=>setUserId(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%", color:"#fff", padding:"10px", marginBottom:"20px"}}
         />
 
         <p>Amount (PKR)</p>
@@ -68,14 +68,14 @@ export default function Withdraw() {
           type="number"
           value={amount}
           onChange={(e)=>setAmount(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%", color:"#fff", padding:"10px", marginBottom:"20px"}}
         />
 
         <p>Withdraw Method</p>
         <select
           value={method}
           onChange={(e)=>setMethod(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%", color:"#fff", padding:"10px", marginBottom:"20px"}}
         >
           <option value="">Select Method</option>
           <option value="bank">Bank Transfer</option>
@@ -90,7 +90,7 @@ export default function Withdraw() {
               type="text"
               value={bankName}
               onChange={(e)=>setBankName(e.target.value)}
-              style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+              style={{width:"100%", color:"#fff", padding:"10px", marginBottom:"20px"}}
             />
           </>
         )}
@@ -100,7 +100,7 @@ export default function Withdraw() {
           type="text"
           value={account}
           onChange={(e)=>setAccount(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%", color:"#fff", padding:"10px", marginBottom:"20px"}}
         />
 
         <button

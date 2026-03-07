@@ -38,17 +38,17 @@ export default function PortalDashboard() {
         gap:"20px"
       }}>
 
-        <div style={{background:"#111",color:"#fff",padding:"20px",borderRadius:"10px"}}>
+        <div style={{background: "#0f172a",color:"#fff",padding:"20px",borderRadius:"10px"}}>
           <h3>Total Balance</h3>
           <p>PKR {balance}</p>
         </div>
 
-        <div style={{background:"#111",color:"#fff",padding:"20px",borderRadius:"10px"}}>
+        <div style={{background:"#0f172a",color:"#fff",padding:"20px",borderRadius:"10px"}}>
           <h3>Today's Payments</h3>
           <p>0</p>
         </div>
 
-        <div style={{background:"#111",color:"#fff",padding:"20px",borderRadius:"10px"}}>
+        <div style={{background:"#0f172a",color:"#fff",padding:"20px",borderRadius:"10px"}}>
           <h3>Total Orders</h3>
           <p>{orders.length}</p>
         </div>

@@ -4,12 +4,13 @@ import PortalLayout from "../../components/PortalLayout";
 export default function Transactions() {
 
   const [orders, setOrders] = useState([]);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
 
     const loadOrders = async () => {
 
-      const res = await fetch("/api/orders/list");
+      const res = await fetch("/api/order/list");
       const data = await res.json();
 
       setOrders(data);
@@ -20,6 +21,10 @@ export default function Transactions() {
 
   }, []);
 
+  const filteredOrders = orders.filter(order =>
+    order.order_id.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <PortalLayout>
 
@@ -27,7 +32,20 @@ export default function Transactions() {
         Transactions
       </h1>
 
+      <input
+        type="text"
+        placeholder="Search Order ID..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          padding:"10px",
+          marginBottom:"20px",
+          width:"300px"
+        }}
+      />
+
       <table style={{width:"100%", background:"#111", borderRadius:"10px"}}>
+
         <thead>
           <tr>
             <th>Order ID</th>
@@ -39,7 +57,9 @@ export default function Transactions() {
         </thead>
 
         <tbody>
-          {orders.map((order) => (
+
+          {filteredOrders.map((order) => (
+
             <tr key={order.order_id}>
               <td>{order.order_id}</td>
               <td>{order.username}</td>
@@ -47,11 +67,13 @@ export default function Transactions() {
               <td>{order.status}</td>
               <td>{new Date(order.created_at).toLocaleString()}</td>
             </tr>
+
           ))}
+
         </tbody>
 
       </table>
 
     </PortalLayout>
   );
-                       }
+        }

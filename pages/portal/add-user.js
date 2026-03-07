@@ -44,6 +44,7 @@ export default function AddUser() {
 
       <div style={{
         background:"#111",
+        color:"#fff",
         padding:"30px",
         borderRadius:"10px",
         maxWidth:"500px"

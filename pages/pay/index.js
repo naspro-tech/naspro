@@ -3,30 +3,33 @@ import { useEffect, useState } from "react";
 
 export default function HostedEasypaisaPortal() {
   const router = useRouter();
-  const { amount, service } = router.query;
+  const { orderId, service } = router.query;
 
+  const [order, setOrder] = useState(null);
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState("");
   const [step, setStep] = useState("input"); // input | guide | success | expired
   const [message, setMessage] = useState("");
-  const [sessionTime, setSessionTime] = useState(600); // 10 minutes
+  const [sessionTime, setSessionTime] = useState(600);
   const [closeCountdown, setCloseCountdown] = useState(5);
 
   const finalService = service || "Easypaisa";
 
   useEffect(() => {
-  if (!router.isReady) return;
+    if (!orderId) return;
 
-  if (router.query.orderId) {
-    setOrderId(router.query.orderId);
-  } else {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 900 + 100);
-    setOrderId(`NASPRO-${timestamp}-${random}`);
-  }
-}, [router.isReady, router.query.orderId]);
+    const loadOrder = async () => {
+      const response = await fetch(`/api/order/get?orderId=${orderId}`);
+      const data = await response.json();
 
+      console.log("Order from DB:", data);
+
+      setOrder(data);
+    };
+
+    loadOrder();
+  }, [orderId]);
+  
   // session countdown
   useEffect(() => {
     if (step !== "input") return;

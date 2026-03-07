@@ -1,6 +1,5 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import supabase from "../../lib/supabase";
 
 export default function HostedEasypaisaPortal() {
   const router = useRouter();
@@ -95,11 +94,7 @@ export default function HostedEasypaisaPortal() {
       if (data && data.responseCode === "0000") {
         setStep("success");
         setMessage("✅ آپ کی ادائیگی کامیاب ہوگئی ہے۔");
-        const { data: order } = await supabase
-  .from("orders")
-  .select("*")
-  .eq("order_id", orderId)
-  .single();
+
         // Step 3: Send callback to merchant automatically
       if (router.query.callback) {
         try {
@@ -117,12 +112,6 @@ export default function HostedEasypaisaPortal() {
               timestamp: new Date().toISOString()
             })
           });
-
-          // ✅ Mark order as paid
-         await supabase
-            .from("orders")
-            .update({ status: "PAID" })
-            .eq("order_id", orderId);
         } catch (err) {
           console.error("Merchant callback error:", err);
         }

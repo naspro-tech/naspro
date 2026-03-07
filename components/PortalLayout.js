@@ -12,20 +12,71 @@ export default function PortalLayout({ children }) {
         padding: "20px"
       }}>
 
-        <h2>Merchant Panel</h2>
+        <h2 style={{ marginBottom: "25px" }}>
+          Merchant Panel
+        </h2>
 
-        <ul style={{ listStyle: "none", padding: 0 }}>
+        <ul style={{ listStyle: "none", padding: 0, lineHeight: "2.2" }}>
 
-          <li><Link href="/portal">Dashboard</Link></li>
-          <li><Link href="/portal/wallet">Wallet</Link></li>
-          <li><Link href="/portal/usdt-request">USDT Request</Link></li>
-          <li><Link href="/portal/transactions">Transactions</Link></li>
-          <a href="/portal/withdraw">Withdraw</a>
-          <li><Link href="/portal/reports">Report</Link></li>
-          <li><Link href="/portal/add-user">Add User</Link></li>
-          <li><Link href="/portal/status-inquiry">Status Inquiry</Link></li>
-          <li><Link href="/portal/links">Links</Link></li>
-          <li><Link href="/portal/settings">Settings</Link></li>
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal" style={{ color: "#fff", textDecoration: "none" }}>
+              Dashboard
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/wallet" style={{ color: "#fff", textDecoration: "none" }}>
+              Wallet
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/usdt-request" style={{ color: "#fff", textDecoration: "none" }}>
+              USDT Request
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/transactions" style={{ color: "#fff", textDecoration: "none" }}>
+              Transactions
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <a href="/portal/withdraw" style={{ color: "#fff", textDecoration: "none" }}>
+              Withdraw
+            </a>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/reports" style={{ color: "#fff", textDecoration: "none" }}>
+              Report
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/add-user" style={{ color: "#fff", textDecoration: "none" }}>
+              Add User
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/status-inquiry" style={{ color: "#fff", textDecoration: "none" }}>
+              Status Inquiry
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/links" style={{ color: "#fff", textDecoration: "none" }}>
+              Links
+            </Link>
+          </li>
+
+          <li style={{ marginBottom: "6px" }}>
+            <Link href="/portal/settings" style={{ color: "#fff", textDecoration: "none" }}>
+              Settings
+            </Link>
+          </li>
 
         </ul>
 
@@ -37,4 +88,4 @@ export default function PortalLayout({ children }) {
 
     </div>
   );
-  }
+                }

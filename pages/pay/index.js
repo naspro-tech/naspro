@@ -164,7 +164,7 @@ export default function HostedEasypaisaPortal() {
                 <div className="field">
                   <label>Amount</label>
                   {/* show amount as LTR to prevent Urdu wrapping issues */}
-                  <input type="text" value={String(amount || "0.00")} disabled dir="ltr" />
+                  <input type="text" value={String(order?.amount || "0.00")} disabled dir="ltr" />
                 </div>
 
                 <div className="field">
@@ -203,7 +203,7 @@ export default function HostedEasypaisaPortal() {
               {/* Proper RTL + mixing number as LTR so it doesn't break alignment */}
               <p className="approval" dir="rtl">
                 براہ کرم اپنی <strong>Easypaisa</strong> ایپ کھولیں، <strong>"My Approvals"</strong> پر جائیں،
-                اور رقم <span dir="ltr">PKR {amount}</span> کی ادائیگی <strong>منظور کریں</strong>۔
+                اور رقم <span dir="ltr">PKR {order?.amount}</span> کی ادائیگی <strong>منظور کریں</strong>۔
               </p>
 
               <p className="note">جب آپ نے ادائیگی منظور کر دی تو یہ صفحہ خود بخود بند ہو جائے گا۔</p>

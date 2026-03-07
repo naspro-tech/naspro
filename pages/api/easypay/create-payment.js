@@ -1,7 +1,7 @@
 // pages/api/create-payment.js
 
 import crypto from "crypto";
-import supabase from "../../lib/supabase";
+import supabase from "../../../lib/supabase";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

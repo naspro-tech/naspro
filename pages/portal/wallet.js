@@ -9,7 +9,7 @@ export default function Wallet() {
       <div style={{
         padding: "20px",
         color:"#fff",
-        background: "#111",
+        background: "#0f172a",
         borderRadius: "10px",
         marginTop: "20px"
       }}>

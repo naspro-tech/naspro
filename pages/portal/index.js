@@ -1,6 +1,24 @@
 import PortalLayout from "../../components/PortalLayout";
+import { useEffect, useState } from "react";
 
 export default function PortalDashboard() {
+  
+  const [balance, setBalance] = useState(0);
+
+  useEffect(() => {
+
+  const loadBalance = async () => {
+
+    const res = await fetch("/api/wallet/balance");
+    const data = await res.json();
+
+    setBalance(data.balance);
+
+  };
+
+  loadBalance();
+
+}, []);
   return (
     <PortalLayout>
 
@@ -16,7 +34,7 @@ export default function PortalDashboard() {
 
         <div style={{background:"#111",padding:"20px",borderRadius:"10px"}}>
           <h3>Total Balance</h3>
-          <p>$0.00</p>
+          <p>PKR {balance}</p>
         </div>
 
         <div style={{background:"#111",padding:"20px",borderRadius:"10px"}}>

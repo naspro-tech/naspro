@@ -1,24 +1,30 @@
-import PortalLayout from "../../components/PortalLayout";
 import { useEffect, useState } from "react";
+import PortalLayout from "../../components/PortalLayout";
 
 export default function PortalDashboard() {
-  
+
   const [balance, setBalance] = useState(0);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
 
-  const loadBalance = async () => {
+    const loadBalance = async () => {
+      const res = await fetch("/api/wallet/balance");
+      const data = await res.json();
+      setBalance(data.balance || 0);
+    };
 
-    const res = await fetch("/api/wallet/balance");
-    const data = await res.json();
+    const loadOrders = async () => {
+      const res = await fetch("/api/order/list");
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
+    };
 
-    setBalance(data.balance);
+    loadBalance();
+    loadOrders();
 
-  };
+  }, []);
 
-  loadBalance();
-
-}, []);
   return (
     <PortalLayout>
 

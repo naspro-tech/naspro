@@ -12,7 +12,7 @@ export default function Links() {
       </h1>
 
       {/* CREATE PAYMENT */}
-      <div style={{background:"#111", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
 
         <h2>Create Payment</h2>
 
@@ -43,7 +43,7 @@ export default function Links() {
 
 
       {/* HOSTED PAYMENT PAGE */}
-      <div style={{background:"#111", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
 
         <h2>Hosted Payment Page</h2>
 
@@ -57,7 +57,7 @@ https://naspropvt.vercel.app/pay?orderId=NASPRO-XXXX
 
 
       {/* CHECK STATUS */}
-      <div style={{background:"#111", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
 
         <h2>Check Order Status</h2>
 
@@ -83,7 +83,7 @@ https://naspropvt.vercel.app/api/order/get?orderId=NASPRO-XXXX
 
 
       {/* CALLBACK */}
-      <div style={{background:"#111", color:"#fff", padding:"20px", borderRadius:"10px"}}>
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", borderRadius:"10px"}}>
 
         <h2>Payment Callback</h2>
 

@@ -10,7 +10,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "mongodb": "^6.9.0"
+    "mongodb": "^6.9.0",
     "@supabase/supabase-js": "^2.39.0"
   }
 }

@@ -44,7 +44,7 @@ export default function PortalDashboard() {
 
         <div style={{background:"#111",padding:"20px",borderRadius:"10px"}}>
           <h3>Total Orders</h3>
-          <p>0</p>
+          <p>{orders.length}</p>
         </div>
 
       </div>

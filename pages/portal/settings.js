@@ -39,7 +39,7 @@ export default function Settings() {
       </h1>
 
       <div style={{
-        background:"#111",
+        background:"#0f172a",
         color:"#fff",
         padding:"30px",
         borderRadius:"10px",

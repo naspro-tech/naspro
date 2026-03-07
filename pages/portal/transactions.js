@@ -44,7 +44,7 @@ export default function Transactions() {
         }}
       />
 
-      <table style={{width:"100%", background:"#111", color:"#fff", borderRadius:"10px"}}>
+      <table style={{width:"100%", background:"#0f172a", color:"#fff", borderRadius:"10px"}}>
 
         <thead>
           <tr>

@@ -6,7 +6,7 @@ export default function PortalLayout({ children }) {
 
       <div style={{
         width: "220px",
-        background: "#111",
+        background: "#0f172a",
         color: "#fff",
         minHeight: "100vh",
         padding: "20px"

@@ -25,6 +25,12 @@ export default function HostedEasypaisaPortal() {
 
       console.log("Order from DB:", data);
 
+      // 🚨 If order already paid
+  if (data.status === "PAID") {
+    alert("This payment has already been completed.");
+    return;
+  }
+      
       setOrder(data);
     };
 

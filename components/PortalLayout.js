@@ -21,7 +21,7 @@ export default function PortalLayout({ children }) {
           <li><Link href="/portal/usdt-request">USDT Request</Link></li>
           <li><Link href="/portal/transactions">Transactions</Link></li>
           <a href="/portal/withdraw">Withdraw</a>
-          <li><Link href="/portal/report">Report</Link></li>
+          <li><Link href="/portal/reports">Report</Link></li>
           <li><Link href="/portal/add-user">Add User</Link></li>
           <li><Link href="/portal/status-inquiry">Status Inquiry</Link></li>
           <li><Link href="/portal/links">Links</Link></li>

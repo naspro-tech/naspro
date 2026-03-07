@@ -16,7 +16,7 @@ export default function PortalLayout({ children }) {
           Merchant Panel
         </h2>
 
-        <ul style={{ listStyle: "none", padding: 0, lineHeight: "2.2" }}>
+        <ul style={{ listStyle: "none", padding: 0, lineHeight: "4.2" }}>
 
           <li style={{ marginBottom: "6px" }}>
             <Link href="/portal" style={{ color: "#fff", textDecoration: "none" }}>

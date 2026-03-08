@@ -3,18 +3,20 @@ import PortalLayout from "../../components/PortalLayout";
 
 export default function UsdtRequest() {
 
-  const [amount, setAmount] = useState("");
-  const [wallet, setWallet] = useState("");
-  const [message, setMessage] = useState("");
+  const [amount,setAmount] = useState("");
+  const [wallet,setWallet] = useState("");
+  const [message,setMessage] = useState("");
 
   const submitRequest = async () => {
 
-    const res = await fetch("/api/usdt/request", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
+    setMessage("Submitting request...");
+
+    const res = await fetch("/api/usdt/request",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
       },
-      body: JSON.stringify({
+      body:JSON.stringify({
         amount,
         wallet
       })
@@ -22,12 +24,12 @@ export default function UsdtRequest() {
 
     const data = await res.json();
 
-    if (data.success) {
-      setMessage("USDT request submitted successfully.");
+    if(data.success){
+      setMessage("Request submitted. Status: Processing.");
       setAmount("");
       setWallet("");
-    } else {
-      setMessage("Error submitting request.");
+    }else{
+      setMessage(data.message || "Request failed");
     }
 
   };
@@ -35,7 +37,7 @@ export default function UsdtRequest() {
   return (
     <PortalLayout>
 
-      <h1 style={{fontSize:"28px", marginBottom:"30px"}}>
+      <h1 style={{fontSize:"28px",marginBottom:"30px"}}>
         USDT Request
       </h1>
 
@@ -65,7 +67,7 @@ export default function UsdtRequest() {
 
         <input
           type="text"
-          placeholder="Enter TRC20 wallet"
+          placeholder="Enter TRC20 wallet address"
           value={wallet}
           onChange={(e)=>setWallet(e.target.value)}
           style={{
@@ -79,8 +81,8 @@ export default function UsdtRequest() {
           onClick={submitRequest}
           style={{
             padding:"10px 20px",
-            color:"#fff",
             background:"#22c55e",
+            color:"#fff",
             border:"none",
             cursor:"pointer"
           }}
@@ -96,4 +98,4 @@ export default function UsdtRequest() {
 
     </PortalLayout>
   );
-}
+          }

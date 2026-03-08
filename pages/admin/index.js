@@ -17,6 +17,7 @@ export default function AdminDashboard() {
 
         <div style={{
           background:"#0f172a",
+          color:"#fff",
           padding:"20px",
           borderRadius:"10px",
           width:"200px"
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
 
         <div style={{
           background:"#0f172a",
+          color:"#fff",
           padding:"20px",
           borderRadius:"10px",
           width:"200px"
@@ -37,6 +39,7 @@ export default function AdminDashboard() {
 
         <div style={{
           background:"#0f172a",
+          color:"#fff",
           padding:"20px",
           borderRadius:"10px",
           width:"200px"
@@ -47,6 +50,7 @@ export default function AdminDashboard() {
 
         <div style={{
           background:"#0f172a",
+          color:"#fff",
           padding:"20px",
           borderRadius:"10px",
           width:"200px"

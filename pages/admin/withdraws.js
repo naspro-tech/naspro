@@ -31,7 +31,7 @@ export default function Withdraws() {
       <table style={{
         width:"100%",
         background:"#0f172a",
-        color:"fff", 
+        color:"#fff", 
         borderRadius:"10px",
         padding:"15px"
       }}>

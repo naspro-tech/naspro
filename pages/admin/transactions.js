@@ -28,7 +28,8 @@ export default function Transactions() {
 
       <table style={{
         width: "100%",
-        background: "#fff",
+        background: "#0f172a",
+        color:"#fff",
         borderRadius: "10px",
         padding: "15px"
       }}>

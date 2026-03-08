@@ -16,7 +16,8 @@ export default function Merchants() {
 
       <table style={{
         width:"100%",
-        background:"#fff",
+        background:"#0f172a",
+        color:"#fff",
         borderRadius:"10px",
         padding:"10px"
       }}>

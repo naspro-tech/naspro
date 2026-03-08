@@ -39,4 +39,7 @@ export default function Transactions() {
             <th>Merchant</th>
             <th>Amount</th>
             <th>Status</th>
-            <th>Date</th
+            <th>Date</th>
+         </tr>
+      </thead>
+

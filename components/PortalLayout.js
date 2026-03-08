@@ -82,7 +82,7 @@ export default function PortalLayout({ children }) {
 
       </div>
 
-      <div style={{ flex: 1, padding: "30px" }}>
+      <div style={{ flex: 1, background:"#f0f7ff", padding: "30px" }}>
         {children}
       </div>
 

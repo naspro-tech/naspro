@@ -3,11 +3,15 @@ import supabase from "../../../lib/supabase";
 export default async function handler(req, res) {
 
   if (req.method !== "POST") {
-    return res.status(405).json({ success:false, message:"Method not allowed" });
+    return res.status(405).json({
+      success:false,
+      message:"Method not allowed"
+    });
   }
 
   const { amount, wallet } = req.body;
 
+  // validate fields
   if (!amount || !wallet) {
     return res.status(400).json({
       success:false,
@@ -15,11 +19,18 @@ export default async function handler(req, res) {
     });
   }
 
-  // 1️⃣ Get total paid orders
-  const { data: orders } = await supabase
+  // get paid orders
+  const { data: orders, error: orderError } = await supabase
     .from("orders")
     .select("amount")
     .eq("status","PAID");
+
+  if (orderError) {
+    return res.status(500).json({
+      success:false,
+      message:"Failed to read orders"
+    });
+  }
 
   let ordersTotal = 0;
 
@@ -27,11 +38,18 @@ export default async function handler(req, res) {
     ordersTotal += Number(o.amount);
   });
 
-  // 2️⃣ Get existing USDT requests
-  const { data: requests } = await supabase
+  // get existing USDT requests
+  const { data: requests, error: requestError } = await supabase
     .from("usdt_requests")
     .select("amount")
     .in("status",["PENDING","APPROVED"]);
+
+  if (requestError) {
+    return res.status(500).json({
+      success:false,
+      message:"Failed to read requests"
+    });
+  }
 
   let requestTotal = 0;
 
@@ -41,7 +59,7 @@ export default async function handler(req, res) {
 
   const balance = ordersTotal - requestTotal;
 
-  // 3️⃣ Check balance
+  // insufficient balance check
   if (Number(amount) > balance) {
     return res.status(400).json({
       success:false,
@@ -49,7 +67,7 @@ export default async function handler(req, res) {
     });
   }
 
-  // 4️⃣ Insert request
+  // insert request
   const { error } = await supabase
     .from("usdt_requests")
     .insert([
@@ -66,13 +84,13 @@ export default async function handler(req, res) {
   if (error) {
     return res.status(500).json({
       success:false,
-      message:"Database error"
+      message:"Failed to save request"
     });
   }
 
   return res.status(200).json({
     success:true,
-    message:"USDT request submitted successfully"
+    message:"Request submitted successfully"
   });
 
 }

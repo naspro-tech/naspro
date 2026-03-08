@@ -22,15 +22,15 @@ export default function Transactions() {
   return (
     <AdminLayout>
 
-      <h1 style={{fontSize:"26px", marginBottom:"20px"}}>
+      <h1 style={{ fontSize: "26px", marginBottom: "20px" }}>
         Transactions
       </h1>
 
       <table style={{
-        width:"100%",
-        background:"#fff",
-        borderRadius:"10px",
-        padding:"15px"
+        width: "100%",
+        background: "#fff",
+        borderRadius: "10px",
+        padding: "15px"
       }}>
 
         <thead>
@@ -40,6 +40,23 @@ export default function Transactions() {
             <th>Amount</th>
             <th>Status</th>
             <th>Date</th>
-         </tr>
-      </thead>
+          </tr>
+        </thead>
 
+        <tbody>
+          {transactions.map((t) => (
+            <tr key={t.id}>
+              <td>{t.id}</td>
+              <td>{t.merchant}</td>
+              <td>{t.amount}</td>
+              <td>{t.status}</td>
+              <td>{t.date}</td>
+            </tr>
+          ))}
+        </tbody>
+
+      </table>
+
+    </AdminLayout>
+  );
+}

@@ -9,27 +9,39 @@ export default function UsdtRequest() {
 
   const submitRequest = async () => {
 
+    // frontend validation
+    if (!amount || !wallet) {
+      setMessage("Please enter amount and USDT wallet address.");
+      return;
+    }
+
     setMessage("Submitting request...");
 
-    const res = await fetch("/api/usdt/request",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        amount,
-        wallet
-      })
-    });
+    try{
 
-    const data = await res.json();
+      const res = await fetch("/api/usdt/request",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          amount,
+          wallet
+        })
+      });
 
-    if(data.success){
-      setMessage("Request submitted. Status: Processing.");
-      setAmount("");
-      setWallet("");
-    }else{
-      setMessage(data.message || "Request failed");
+      const data = await res.json();
+
+      if(data.success){
+        setMessage("Request submitted. Status: Processing.");
+        setAmount("");
+        setWallet("");
+      }else{
+        setMessage(data.message);
+      }
+
+    }catch(err){
+      setMessage("Network error. Please try again.");
     }
 
   };
@@ -98,4 +110,4 @@ export default function UsdtRequest() {
 
     </PortalLayout>
   );
-          }
+            }

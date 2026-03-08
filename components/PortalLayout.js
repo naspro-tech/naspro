@@ -35,6 +35,12 @@ export default function PortalLayout({ children }) {
               USDT Request
             </Link>
           </li>
+                
+         <li style={{ marginBottom: "9px" }}>
+            <Link href="/portal/usdt-history" style={{ color: "#fff", textDecoration: "none" }}>
+              USDT History 
+            </Link>
+          </li>       
 
           <li style={{ marginBottom: "9px" }}>
             <Link href="/portal/transactions" style={{ color: "#fff", textDecoration: "none" }}>

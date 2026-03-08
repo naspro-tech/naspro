@@ -3,85 +3,128 @@ import supabase from "../../../lib/supabase";
 export default async function handler(req, res) {
 
   if (req.method !== "POST") {
-    return res.status(405).json({ success:false, message:"Method not allowed" });
+    return res.status(405).json({
+      success: false,
+      message: "Method not allowed"
+    });
   }
 
   try {
 
     const { amount, wallet } = req.body;
 
+    // validation
     if (!amount || !wallet) {
       return res.status(400).json({
-        success:false,
-        message:"Amount and wallet are required"
+        success: false,
+        message: "Amount and wallet are required"
       });
     }
 
-    // get paid orders
+    const requestAmount = Number(amount);
+
+    if (requestAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid amount"
+      });
+    }
+
+    /* ---------------------------
+       GET TOTAL PAID ORDERS
+    ---------------------------- */
+
+    let ordersTotal = 0;
+
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
       .select("amount")
-      .eq("status","PAID");
+      .eq("status", "PAID");
 
     if (ordersError) {
-      return res.status(500).json({ error: ordersError.message });
-    }
-
-    let ordersTotal = 0;
-    (orders || []).forEach(o=>{
-      ordersTotal += Number(o.amount);
-    });
-
-    // get existing requests
-    const { data: requests, error: reqError } = await supabase
-      .from("usdt_requests")
-      .select("amount")
-      .in("status",["PENDING","APPROVED"]);
-
-    if (reqError) {
-      return res.status(500).json({ error: reqError.message });
-    }
-
-    let requestTotal = 0;
-    (requests || []).forEach(r=>{
-      requestTotal += Number(r.amount);
-    });
-
-    const balance = ordersTotal - requestTotal;
-
-    if (Number(amount) > balance) {
-      return res.status(400).json({
-        success:false,
-        message:"Insufficient balance"
+      console.error("Orders error:", ordersError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load orders"
       });
     }
 
-    // save request
+    (orders || []).forEach(o => {
+      ordersTotal += Number(o.amount || 0);
+    });
+
+    /* ---------------------------
+       GET WITHDRAW REQUESTS
+    ---------------------------- */
+
+    let requestTotal = 0;
+
+    const { data: requests, error: reqError } = await supabase
+      .from("usdt_requests")
+      .select("amount")
+      .in("status", ["PENDING", "APPROVED"]);
+
+    if (reqError) {
+      console.error("Request error:", reqError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to load withdrawal requests"
+      });
+    }
+
+    (requests || []).forEach(r => {
+      requestTotal += Number(r.amount || 0);
+    });
+
+    /* ---------------------------
+       CALCULATE BALANCE
+    ---------------------------- */
+
+    const balance = ordersTotal - requestTotal;
+
+    if (requestAmount > balance) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient balance"
+      });
+    }
+
+    /* ---------------------------
+       SAVE REQUEST
+    ---------------------------- */
+
     const { error: insertError } = await supabase
       .from("usdt_requests")
       .insert([
         {
-          amount: Number(amount),
-          wallet,
+          amount: requestAmount,
+          wallet: wallet.trim(),
           status: "PENDING"
         }
       ]);
 
     if (insertError) {
-      return res.status(500).json({ error: insertError.message });
+      console.error("Insert error:", insertError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to save request"
+      });
     }
 
     return res.status(200).json({
-      success:true,
-      message:"Request submitted"
+      success: true,
+      message: "Request submitted"
     });
 
   } catch (error) {
 
+    console.error("API crash:", error);
+
     return res.status(500).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: "Server error"
     });
 
   }
-}
+
+    }

@@ -1,44 +1,62 @@
 import { useState } from "react";
 import PortalLayout from "../../components/PortalLayout";
 
-export default function AddUser() {
+export default function AddUser(){
 
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [message, setMessage] = useState("");
+  const [username,setUsername] = useState("");
+  const [email,setEmail] = useState("");
+  const [role,setRole] = useState("");
+  const [message,setMessage] = useState("");
+  const [loading,setLoading] = useState(false);
 
   const createUser = async () => {
 
-    const res = await fetch("/api/user/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        username,
-        email,
-        role
-      })
-    });
-
-    const data = await res.json();
-
-    if(data.success){
-      setMessage("User added successfully");
-      setUsername("");
-      setEmail("");
-      setRole("");
-    } else {
-      setMessage(data.message || "Error creating user");
+    if(!username || !email || !role){
+      setMessage("Please fill all fields");
+      return;
     }
+
+    try{
+
+      setLoading(true);
+      setMessage("");
+
+      const res = await fetch("/api/user/create",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          username: username.trim(),
+          email: email.trim().toLowerCase(),
+          role
+        })
+      });
+
+      const data = await res.json();
+
+      if(data.success){
+        setMessage("User created successfully");
+        setUsername("");
+        setEmail("");
+        setRole("");
+      }else{
+        setMessage(data.message || "Failed to create user");
+      }
+
+    }catch(err){
+      setMessage("Server error");
+    }
+
+    setLoading(false);
 
   };
 
-  return (
+  return(
+
     <PortalLayout>
 
-      <h1 style={{fontSize:"28px", marginBottom:"30px"}}>
+      <h1 style={{fontSize:"28px",marginBottom:"30px"}}>
         Add User
       </h1>
 
@@ -55,7 +73,7 @@ export default function AddUser() {
           type="text"
           value={username}
           onChange={(e)=>setUsername(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%",padding:"10px",marginBottom:"20px"}}
         />
 
         <p>Email</p>
@@ -63,14 +81,14 @@ export default function AddUser() {
           type="email"
           value={email}
           onChange={(e)=>setEmail(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%",padding:"10px",marginBottom:"20px"}}
         />
 
         <p>Role</p>
         <select
           value={role}
           onChange={(e)=>setRole(e.target.value)}
-          style={{width:"100%", padding:"10px", marginBottom:"20px"}}
+          style={{width:"100%",padding:"10px",marginBottom:"20px"}}
         >
           <option value="">Select Role</option>
           <option value="admin">Admin</option>
@@ -81,6 +99,7 @@ export default function AddUser() {
 
         <button
           onClick={createUser}
+          disabled={loading}
           style={{
             padding:"10px 20px",
             background:"#22c55e",
@@ -88,15 +107,18 @@ export default function AddUser() {
             cursor:"pointer"
           }}
         >
-          Create User
+          {loading ? "Creating..." : "Create User"}
         </button>
 
-        <p style={{marginTop:"20px"}}>
-          {message}
-        </p>
+        {message && (
+          <p style={{marginTop:"20px"}}>
+            {message}
+          </p>
+        )}
 
       </div>
 
     </PortalLayout>
+
   );
           }

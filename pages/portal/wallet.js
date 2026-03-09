@@ -11,7 +11,7 @@ export default function Wallet() {
       const res = await fetch("/api/wallet/balance");
       const data = await res.json();
 
-      const gross = data.balance || 0;
+      const gross = data.success ? data.balance : 0;
 
       const fee = gross * 0.00986; // Easypaisa 0.986%
       const settledAmount = gross - fee;

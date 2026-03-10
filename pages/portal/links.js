@@ -15,6 +15,7 @@ export default function Links() {
   const createEndpoint = `${domain}/api/easypay/create-payment`;
   const payPage = `${domain}/pay?orderId=NASPRO-XXXX`;
   const statusEndpoint = `${domain}/api/order/get?orderId=NASPRO-XXXX`;
+  const manualInquiry = `${domain}/inquire-easypay`;
 
   const requestBody = `{
   "amount": 1000,
@@ -54,56 +55,76 @@ export default function Links() {
         Payment Gateway API Documentation
       </h1>
 
+      <div style={{background:"#020617", color:"#fff", padding:"20px", marginBottom:"25px", borderRadius:"10px"}}>
+        <h2>Integration Overview</h2>
+
+        <p>
+        This payment gateway allows merchants to accept Easypaisa payments using a hosted payment page.
+        The integration process is simple and requires only a few steps.
+        </p>
+
+        <p><b>Complete Payment Flow:</b></p>
+
+        <ol style={{lineHeight:"1.8"}}>
+          <li>Merchant backend sends POST request to Create Payment API.</li>
+          <li>System generates Order ID and returns redirect_url.</li>
+          <li>Merchant redirects customer to hosted payment page.</li>
+          <li>Customer approves payment inside Easypaisa mobile app.</li>
+          <li>Gateway sends callback to merchant server.</li>
+          <li>Merchant updates transaction or user balance.</li>
+          <li>Status can also be verified using status API.</li>
+        </ol>
+
+        <p>
+        Every API request must include <b>x-api-key</b> header provided to the merchant.
+        </p>
+      </div>
 
       {/* CREATE PAYMENT */}
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
 
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
         <h2>Create Payment</h2>
 
-        <p>This API creates a payment order and returns a hosted payment page.</p>
-
-        <p><b>Endpoint:</b></p>
-
+        <p><b>Endpoint</b></p>
         <pre>{createEndpoint}</pre>
 
         <button onClick={() => copy(createEndpoint,"endpoint")}>
           {copied==="endpoint" ? "Copied!" : "Copy Endpoint"}
         </button>
 
-        <p style={{marginTop:"20px"}}><b>Method:</b> POST</p>
+        <p style={{marginTop:"15px"}}><b>Method:</b> POST</p>
 
-        <p><b>Headers:</b></p>
+        <p><b>Headers</b></p>
 
 <pre>
 Content-Type: application/json
 x-api-key: YOUR_API_KEY
 </pre>
 
-        <p><b>Request Body:</b></p>
+        <p><b>Request Body</b></p>
 
-<pre>{requestBody}</pre>
+        <pre>{requestBody}</pre>
 
         <button onClick={() => copy(requestBody,"body")}>
           {copied==="body" ? "Copied!" : "Copy Body"}
         </button>
 
-        <p style={{marginTop:"20px"}}><b>Response Example:</b></p>
+        <p style={{marginTop:"20px"}}><b>Response Example</b></p>
 
-<pre>{responseExample}</pre>
+        <pre>{responseExample}</pre>
 
         <button onClick={() => copy(responseExample,"response")}>
           {copied==="response" ? "Copied!" : "Copy Response"}
         </button>
-
       </div>
 
 
       {/* HOSTED PAYMENT PAGE */}
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
 
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
         <h2>Hosted Payment Page</h2>
 
-        <p>Redirect your customer to this page to complete payment.</p>
+        <p>Redirect customer to this page:</p>
 
         <pre>{payPage}</pre>
 
@@ -111,15 +132,16 @@ x-api-key: YOUR_API_KEY
           {copied==="pay" ? "Copied!" : "Copy URL"}
         </button>
 
+        <p style={{marginTop:"10px"}}>
+        Customer approves payment inside Easypaisa app under My Approvals.
+        </p>
       </div>
 
 
-      {/* CHECK STATUS */}
+      {/* STATUS API */}
+
       <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
-
-        <h2>Check Order Status</h2>
-
-        <p>Use this API to verify payment status.</p>
+        <h2>Check Order Status (API)</h2>
 
         <pre>{statusEndpoint}</pre>
 
@@ -127,11 +149,7 @@ x-api-key: YOUR_API_KEY
           {copied==="status" ? "Copied!" : "Copy Endpoint"}
         </button>
 
-        <p style={{marginTop:"15px"}}>Method: GET</p>
-
-        <p>Example Response:</p>
-
-<pre>
+<pre style={{marginTop:"15px"}}>
 {`{
   "order_id": "NASPRO-1730212345678-a1b2c3",
   "username": "customer123",
@@ -141,15 +159,33 @@ x-api-key: YOUR_API_KEY
 }`}
 </pre>
 
+        <p>Possible status values: PENDING, PAID, FAILED</p>
+      </div>
+
+
+      {/* MANUAL INQUIRY */}
+
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
+        <h2>Manual Status Inquiry</h2>
+
+        <pre>{manualInquiry}</pre>
+
+        <button onClick={() => copy(manualInquiry,"manual")}>
+          {copied==="manual" ? "Copied!" : "Copy URL"}
+        </button>
+
+        <p style={{marginTop:"10px"}}>
+        Merchant support team can check payment status manually using this tool.
+        </p>
       </div>
 
 
       {/* CALLBACK */}
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", borderRadius:"10px"}}>
 
+      <div style={{background:"#0f172a", color:"#fff", padding:"20px", borderRadius:"10px"}}>
         <h2>Payment Callback</h2>
 
-        <p>After successful payment, our system sends a POST request to your callback URL.</p>
+        <p>After successful payment our system sends POST request to your callback URL.</p>
 
         <pre>{callbackPayload}</pre>
 
@@ -161,4 +197,4 @@ x-api-key: YOUR_API_KEY
 
     </PortalLayout>
   );
-  }
+          }

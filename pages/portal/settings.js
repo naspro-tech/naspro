@@ -75,8 +75,8 @@ export default function Settings() {
             width:"100%",
             padding:"10px",
             marginBottom:"20px",
-            background:"#020617",
-            color:"#9ca3af"
+            background:"#0f172a",
+            color:"#fff"
           }}
         />
 

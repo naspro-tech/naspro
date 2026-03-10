@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PortalLayout from "../../components/PortalLayout";
 
 export default function Settings() {
 
-  const [apiKey, setApiKey] = useState("sk_live_xxxxxxxxxxxxx");
+  const [apiKey, setApiKey] = useState("");
   const [callbackUrl, setCallbackUrl] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [message, setMessage] = useState("");
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+
+    const res = await fetch("/api/settings/get");
+    const data = await res.json();
+
+    if (data.success) {
+      setApiKey(data.settings.api_key || "");
+      setCallbackUrl(data.settings.callback_url || "");
+      setWebhookUrl(data.settings.webhook_url || "");
+    }
+
+  };
+
   const saveSettings = async () => {
+
+    setMessage("Saving...");
 
     const res = await fetch("/api/settings/update", {
       method: "POST",
@@ -23,10 +42,10 @@ export default function Settings() {
 
     const data = await res.json();
 
-    if(data.success){
-      setMessage("Settings updated successfully");
+    if (data.success) {
+      setMessage("✅ Settings updated successfully");
     } else {
-      setMessage("Error updating settings");
+      setMessage("❌ Error updating settings");
     }
 
   };
@@ -35,7 +54,7 @@ export default function Settings() {
     <PortalLayout>
 
       <h1 style={{fontSize:"28px", marginBottom:"30px"}}>
-        Settings
+        Merchant Settings
       </h1>
 
       <div style={{
@@ -56,8 +75,8 @@ export default function Settings() {
             width:"100%",
             padding:"10px",
             marginBottom:"20px",
-            background:"#222",
-            color:"#aaa"
+            background:"#020617",
+            color:"#9ca3af"
           }}
         />
 
@@ -65,7 +84,7 @@ export default function Settings() {
 
         <input
           type="text"
-          placeholder="https://yourwebsite.com/callback"
+          placeholder="https://yourwebsite.com/api/payment-callback"
           value={callbackUrl}
           onChange={(e)=>setCallbackUrl(e.target.value)}
           style={{
@@ -75,11 +94,11 @@ export default function Settings() {
           }}
         />
 
-        <p>Webhook URL</p>
+        <p>Webhook URL (Optional)</p>
 
         <input
           type="text"
-          placeholder="https://yourwebsite.com/webhook"
+          placeholder="https://yourwebsite.com/api/webhook"
           value={webhookUrl}
           onChange={(e)=>setWebhookUrl(e.target.value)}
           style={{
@@ -95,7 +114,8 @@ export default function Settings() {
             padding:"10px 20px",
             background:"#22c55e",
             border:"none",
-            cursor:"pointer"
+            cursor:"pointer",
+            borderRadius:"5px"
           }}
         >
           Save Settings
@@ -109,4 +129,4 @@ export default function Settings() {
 
     </PortalLayout>
   );
-          }
+}

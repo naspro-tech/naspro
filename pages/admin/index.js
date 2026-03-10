@@ -13,17 +13,55 @@ export default function AdminDashboard() {
   useEffect(() => {
 
     const loadStats = async () => {
-      try {
-        const res = await fetch("/api/admin/dashboard-stats");
-        const data = await res.json();
 
-        if (data.success) {
-          setStats(data);
+      try {
+
+        // 1️⃣ Wallet Balance
+        const walletRes = await fetch("/api/wallet/balance");
+        const walletData = await walletRes.json();
+
+        let balance = 0;
+        let settled = 0;
+
+        if (walletData.success) {
+
+          balance = walletData.balance;
+
+          // same formula used in merchant portal
+          const fee = balance * 0.00986;
+          settled = balance - fee;
+
         }
 
+        // 2️⃣ Withdraw Requests
+        const withdrawRes = await fetch("/api/withdraw/request");
+        const withdrawData = await withdrawRes.json();
+
+        const withdrawCount = withdrawData.success
+          ? withdrawData.requests.length
+          : 0;
+
+        // 3️⃣ USDT Requests
+        const usdtRes = await fetch("/api/usdt/request");
+        const usdtData = await usdtRes.json();
+
+        const usdtCount = usdtData.success
+          ? usdtData.requests.length
+          : 0;
+
+        setStats({
+          totalBalance: balance,
+          settledAmount: settled,
+          pendingWithdraws: withdrawCount,
+          usdtRequests: usdtCount
+        });
+
       } catch (err) {
+
         console.error("Dashboard load error:", err);
+
       }
+
     };
 
     loadStats();
@@ -77,4 +115,4 @@ function Card({title,value}) {
     </div>
   );
 
-}
+  }

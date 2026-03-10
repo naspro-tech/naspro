@@ -1,3 +1,5 @@
+import supabase from "../../../lib/supabase";
+
 export default async function handler(req, res) {
 
   if (req.method !== "POST") {
@@ -16,14 +18,35 @@ export default async function handler(req, res) {
     });
   }
 
-  console.log("Merchant settings update:", {
-    callback_url,
-    webhook_url,
-    updated_at: new Date()
-  });
+  try {
 
-  return res.status(200).json({
-    success:true
-  });
+    const { error } = await supabase
+      .from("merchant_settings")
+      .update({
+        callback_url,
+        webhook_url,
+        updated_at: new Date()
+      })
+      .eq("id",1);
 
-}
+    if(error){
+      return res.status(500).json({
+        success:false,
+        message:"Database error"
+      });
+    }
+
+    return res.status(200).json({
+      success:true
+    });
+
+  } catch(err){
+
+    return res.status(500).json({
+      success:false,
+      message:"Server error"
+    });
+
+  }
+
+                        }

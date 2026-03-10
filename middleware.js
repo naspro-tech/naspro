@@ -2,18 +2,18 @@ import { NextResponse } from "next/server";
 
 export function middleware(req) {
 
-  const token = req.cookies.get("auth");
+  const token = req.cookies.get("auth")?.value;
 
   const { pathname } = req.nextUrl;
 
-  // Protect admin routes
+  // Protect Admin Routes
   if (pathname.startsWith("/admin")) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
-  // Protect merchant routes
+  // Protect Merchant Portal Routes
   if (pathname.startsWith("/portal")) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", req.url));
@@ -21,4 +21,9 @@ export function middleware(req) {
   }
 
   return NextResponse.next();
+
 }
+
+export const config = {
+  matcher: ["/admin/:path*", "/portal/:path*"],
+};

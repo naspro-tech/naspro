@@ -1,43 +1,99 @@
+import { useState } from "react";
 import PortalLayout from "../../components/PortalLayout";
 
 export default function Links() {
 
   const domain = "https://naspropvt.vercel.app";
+  const [copied, setCopied] = useState("");
+
+  const copy = (text, id) => {
+    navigator.clipboard.writeText(text);
+    setCopied(id);
+    setTimeout(() => setCopied(""), 2000);
+  };
+
+  const createEndpoint = `${domain}/api/easypay/create-payment`;
+  const payPage = `${domain}/pay?orderId=NASPRO-XXXX`;
+  const statusEndpoint = `${domain}/api/order/get?orderId=NASPRO-XXXX`;
+
+  const requestBody = `{
+  "amount": 1000,
+  "username": "customer123",
+  "service": "Deposit",
+  "callback": "https://merchant-site.com/api/payment-callback"
+}`;
+
+  const responseExample = `{
+  "status": "success",
+  "msg": "Order created successfully",
+  "data": {
+    "order_id": "NASPRO-1730212345678-a1b2c3",
+    "order_status": "PENDING",
+    "redirect_url": "https://naspropvt.vercel.app/pay?orderId=NASPRO-1730212345678-a1b2c3",
+    "amount": 1000,
+    "currency": "PKR",
+    "created_at": "2026-03-10T19:10:00Z"
+  }
+}`;
+
+  const callbackPayload = `{
+  "status": "SUCCESS",
+  "code": "0000",
+  "order_id": "NASPRO-1730212345678-a1b2c3",
+  "amount": 1000,
+  "username": "customer123",
+  "service": "Deposit",
+  "gateway": "Easypaisa",
+  "timestamp": "2026-03-10T19:15:00Z"
+}`;
 
   return (
     <PortalLayout>
 
       <h1 style={{fontSize:"28px", marginBottom:"30px"}}>
-        API Documentation
+        Payment Gateway API Documentation
       </h1>
+
 
       {/* CREATE PAYMENT */}
       <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
 
         <h2>Create Payment</h2>
 
+        <p>This API creates a payment order and returns a hosted payment page.</p>
+
         <p><b>Endpoint:</b></p>
-        <pre>{domain}/api/create-payment</pre>
 
-        <p><b>Method:</b> POST</p>
+        <pre>{createEndpoint}</pre>
 
-        <p><b>Body Example:</b></p>
+        <button onClick={() => copy(createEndpoint,"endpoint")}>
+          {copied==="endpoint" ? "Copied!" : "Copy Endpoint"}
+        </button>
 
-<pre>
-{`{
-  "amount": 1000,
-  "username": "customer123",
-  "callback_url": "https://merchant-site.com/callback"
-}`}
-</pre>
+        <p style={{marginTop:"20px"}}><b>Method:</b> POST</p>
 
-        <p><b>Response Example:</b></p>
+        <p><b>Headers:</b></p>
 
 <pre>
-{`{
-  "payment_url": "https://naspropvt.vercel.app/pay?orderId=NASPRO-123456"
-}`}
+Content-Type: application/json
+x-api-key: YOUR_API_KEY
 </pre>
+
+        <p><b>Request Body:</b></p>
+
+<pre>{requestBody}</pre>
+
+        <button onClick={() => copy(requestBody,"body")}>
+          {copied==="body" ? "Copied!" : "Copy Body"}
+        </button>
+
+        <p style={{marginTop:"20px"}}><b>Response Example:</b></p>
+
+<pre>{responseExample}</pre>
+
+        <button onClick={() => copy(responseExample,"response")}>
+          {copied==="response" ? "Copied!" : "Copy Response"}
+        </button>
 
       </div>
 
@@ -47,11 +103,13 @@ export default function Links() {
 
         <h2>Hosted Payment Page</h2>
 
-        <p>Customer completes payment on:</p>
+        <p>Redirect your customer to this page to complete payment.</p>
 
-        <pre>
-https://naspropvt.vercel.app/pay?orderId=NASPRO-XXXX
-        </pre>
+        <pre>{payPage}</pre>
+
+        <button onClick={() => copy(payPage,"pay")}>
+          {copied==="pay" ? "Copied!" : "Copy URL"}
+        </button>
 
       </div>
 
@@ -61,20 +119,24 @@ https://naspropvt.vercel.app/pay?orderId=NASPRO-XXXX
 
         <h2>Check Order Status</h2>
 
-        <p><b>Endpoint:</b></p>
+        <p>Use this API to verify payment status.</p>
 
-        <pre>
-https://naspropvt.vercel.app/api/order/get?orderId=NASPRO-XXXX
-        </pre>
+        <pre>{statusEndpoint}</pre>
 
-        <p><b>Method:</b> GET</p>
+        <button onClick={() => copy(statusEndpoint,"status")}>
+          {copied==="status" ? "Copied!" : "Copy Endpoint"}
+        </button>
 
-        <p><b>Response Example:</b></p>
+        <p style={{marginTop:"15px"}}>Method: GET</p>
+
+        <p>Example Response:</p>
 
 <pre>
 {`{
-  "order_id": "NASPRO-123456",
+  "order_id": "NASPRO-1730212345678-a1b2c3",
+  "username": "customer123",
   "amount": 1000,
+  "service": "Deposit",
   "status": "PAID"
 }`}
 </pre>
@@ -87,18 +149,16 @@ https://naspropvt.vercel.app/api/order/get?orderId=NASPRO-XXXX
 
         <h2>Payment Callback</h2>
 
-        <p>After successful payment, we send a callback to merchant:</p>
+        <p>After successful payment, our system sends a POST request to your callback URL.</p>
 
-<pre>
-{`{
-  "order_id": "NASPRO-123456",
-  "amount": 1000,
-  "status": "PAID"
-}`}
-</pre>
+        <pre>{callbackPayload}</pre>
+
+        <button onClick={() => copy(callbackPayload,"callback")}>
+          {copied==="callback" ? "Copied!" : "Copy Payload"}
+        </button>
 
       </div>
 
     </PortalLayout>
   );
-        }
+  }

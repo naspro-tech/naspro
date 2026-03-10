@@ -1,11 +1,47 @@
+import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 
 export default function Merchants() {
 
-  const merchants = [
-    { id: 1, name: "Test Merchant", email: "merchant@test.com", status: "Active" },
-    { id: 2, name: "Demo Store", email: "demo@store.com", status: "Pending" }
-  ];
+  const [merchants, setMerchants] = useState([]);
+
+  useEffect(() => {
+    loadMerchants();
+  }, []);
+
+  const loadMerchants = async () => {
+    try {
+      const res = await fetch("/api/admin/merchants");
+      const data = await res.json();
+
+      if (data.success) {
+        setMerchants(data.merchants);
+      }
+
+    } catch (err) {
+      console.error("Merchant load error:", err);
+    }
+  };
+
+  const updateStatus = async (id, status) => {
+
+    try {
+
+      await fetch("/api/admin/update-merchant-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ id, status })
+      });
+
+      loadMerchants();
+
+    } catch (err) {
+      console.error("Update merchant error:", err);
+    }
+
+  };
 
   return (
     <AdminLayout>
@@ -33,22 +69,42 @@ export default function Merchants() {
         </thead>
 
         <tbody>
+
           {merchants.map((m) => (
+
             <tr key={m.id}>
+
               <td>{m.id}</td>
               <td>{m.name}</td>
               <td>{m.email}</td>
               <td>{m.status}</td>
+
               <td>
-                <button style={{marginRight:"10px"}}>Approve</button>
-                <button>Disable</button>
+
+                <button
+                  style={{marginRight:"10px"}}
+                  onClick={() => updateStatus(m.id,"Active")}
+                >
+                  Approve
+                </button>
+
+                <button
+                  onClick={() => updateStatus(m.id,"Disabled")}
+                >
+                  Disable
+                </button>
+
               </td>
+
             </tr>
+
           ))}
+
         </tbody>
 
       </table>
 
     </AdminLayout>
   );
+
             }

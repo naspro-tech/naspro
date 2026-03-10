@@ -1,11 +1,16 @@
-import supabase from "../../../lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from("merchant_settings")
     .select("*")
-    .eq("id",1)
+    .eq("id", 1)
     .single();
 
   if(error){

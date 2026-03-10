@@ -1,6 +1,22 @@
 import Link from "next/link";
 
 export default function PortalLayout({ children }) {
+
+  const logout = async () => {
+
+    try {
+
+      await fetch("/api/auth/logout", {
+        method: "POST"
+      });
+
+    } catch (err) {}
+
+    // redirect to login page
+    window.location.href = "/login";
+
+  };
+
   return (
     <div style={{ display: "flex" }}>
 
@@ -35,12 +51,12 @@ export default function PortalLayout({ children }) {
               USDT Request
             </Link>
           </li>
-                
-         <li style={{ marginBottom: "9px" }}>
+
+          <li style={{ marginBottom: "9px" }}>
             <Link href="/portal/usdt-history" style={{ color: "#fff", textDecoration: "none" }}>
-              USDT History 
+              USDT History
             </Link>
-          </li>       
+          </li>
 
           <li style={{ marginBottom: "9px" }}>
             <Link href="/portal/transactions" style={{ color: "#fff", textDecoration: "none" }}>
@@ -49,9 +65,9 @@ export default function PortalLayout({ children }) {
           </li>
 
           <li style={{ marginBottom: "9px" }}>
-            <a href="/portal/withdraw" style={{ color: "#fff", textDecoration: "none" }}>
+            <Link href="/portal/withdraw" style={{ color: "#fff", textDecoration: "none" }}>
               Withdraw
-            </a>
+            </Link>
           </li>
 
           <li style={{ marginBottom: "9px" }}>
@@ -85,6 +101,24 @@ export default function PortalLayout({ children }) {
           </li>
 
         </ul>
+
+        {/* Logout Button */}
+
+        <button
+          onClick={logout}
+          style={{
+            marginTop: "40px",
+            width: "100%",
+            padding: "10px",
+            background: "#ef4444",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+        >
+          Logout
+        </button>
 
       </div>
 

@@ -1,25 +1,53 @@
+import { useEffect, useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 
 export default function Withdraws() {
 
-  const withdraws = [
-    {
-      id: "WD1001",
-      merchant: "Test Merchant",
-      amount: "5000 PKR",
-      method: "Bank Transfer",
-      account: "Habib Bank - 12345678",
-      status: "Pending"
-    },
-    {
-      id: "WD1002",
-      merchant: "Demo Store",
-      amount: "2000 PKR",
-      method: "Easypaisa",
-      account: "03001234567",
-      status: "Pending"
+  const [withdraws,setWithdraws] = useState([]);
+  const [loading,setLoading] = useState(true);
+
+  useEffect(()=>{
+    loadWithdraws();
+  },[]);
+
+  const loadWithdraws = async () => {
+
+    try{
+
+      const res = await fetch("/api/withdraw/history");
+      const data = await res.json();
+
+      if(data.success){
+        setWithdraws(data.data);
+      }
+
+    }catch(err){
+      console.error(err);
     }
-  ];
+
+    setLoading(false);
+
+  };
+
+  const updateStatus = async (id,status) => {
+
+    const txn = prompt("Enter TXN ID (optional)");
+
+    await fetch("/api/admin/withdraw/update",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        id,
+        status,
+        txn_id:txn
+      })
+    });
+
+    loadWithdraws();
+
+  };
 
   return (
     <AdminLayout>
@@ -28,47 +56,104 @@ export default function Withdraws() {
         Withdraw Requests
       </h1>
 
-      <table style={{
-        width:"100%",
+      <div style={{
         background:"#0f172a",
-        color:"#fff", 
+        color:"#fff",
         borderRadius:"10px",
-        padding:"15px"
+        padding:"20px"
       }}>
 
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Merchant</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Account</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
+        {loading ? (
 
-        <tbody>
+          <p>Loading withdraw requests...</p>
 
-          {withdraws.map((w) => (
-            <tr key={w.id}>
-              <td>{w.id}</td>
-              <td>{w.merchant}</td>
-              <td>{w.amount}</td>
-              <td>{w.method}</td>
-              <td>{w.account}</td>
-              <td>{w.status}</td>
-              <td>
-                <button style={{marginRight:"10px"}}>Approve</button>
-                <button>Reject</button>
-              </td>
+        ) : (
+
+        <table style={{
+          width:"100%",
+          borderCollapse:"collapse"
+        }}>
+
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Account</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
-          ))}
+          </thead>
 
-        </tbody>
+          <tbody>
 
-      </table>
+            {withdraws.length === 0 && (
+              <tr>
+                <td colSpan="6" style={{padding:"20px",textAlign:"center"}}>
+                  No withdraw requests
+                </td>
+              </tr>
+            )}
+
+            {withdraws.map((w)=>(
+              <tr key={w.id} style={{textAlign:"center"}}>
+
+                <td>{w.player_username}</td>
+
+                <td>{w.amount} PKR</td>
+
+                <td>{w.method}</td>
+
+                <td>{w.account}</td>
+
+                <td>
+
+                  {w.status === "PENDING" && (
+                    <span style={{color:"#facc15"}}>PENDING</span>
+                  )}
+
+                  {w.status === "APPROVED" && (
+                    <span style={{color:"#22c55e"}}>APPROVED</span>
+                  )}
+
+                  {w.status === "REJECTED" && (
+                    <span style={{color:"#ef4444"}}>REJECTED</span>
+                  )}
+
+                </td>
+
+                <td>
+
+                  {w.status === "PENDING" && (
+                    <>
+                      <button
+                        onClick={()=>updateStatus(w.id,"APPROVED")}
+                        style={{marginRight:"10px"}}
+                      >
+                        Approve
+                      </button>
+
+                      <button
+                        onClick={()=>updateStatus(w.id,"REJECTED")}
+                      >
+                        Reject
+                      </button>
+                    </>
+                  )}
+
+                </td>
+
+              </tr>
+            ))}
+
+          </tbody>
+
+        </table>
+
+        )}
+
+      </div>
 
     </AdminLayout>
   );
-          }
+    }

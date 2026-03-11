@@ -29,30 +29,76 @@ export default function Withdraws() {
 
   };
 
-  const updateStatus = async (id,status) => {
 
-    const txn = prompt("Enter TXN ID (optional)");
+  const approveWithdraw = async (id) => {
 
-    await fetch("/api/admin/withdraw/update",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        id,
-        status,
-        txn_id:txn
-      })
-    });
+    const txn = prompt("Enter Transaction ID");
+    if(!txn) return;
 
-    loadWithdraws();
+    const proof = prompt("Paste Screenshot Proof URL");
+    if(!proof) return;
+
+    try{
+
+      const res = await fetch("/api/admin/withdraw/approve",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          id,
+          txn_id:txn,
+          proof
+        })
+      });
+
+      const data = await res.json();
+
+      if(data.success){
+        alert("Withdraw Approved");
+        loadWithdraws();
+      }
+
+    }catch(err){
+      alert("Server error");
+    }
 
   };
 
+
+  const rejectWithdraw = async (id) => {
+
+    if(!confirm("Reject this withdraw request?")) return;
+
+    try{
+
+      const res = await fetch("/api/admin/withdraw/reject",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({ id })
+      });
+
+      const data = await res.json();
+
+      if(data.success){
+        alert("Withdraw Rejected");
+        loadWithdraws();
+      }
+
+    }catch(err){
+      alert("Server error");
+    }
+
+  };
+
+
   return (
+
     <AdminLayout>
 
-      <h1 style={{ fontSize:"26px", marginBottom:"20px" }}>
+      <h1 style={{fontSize:"26px",marginBottom:"20px"}}>
         Withdraw Requests
       </h1>
 
@@ -69,91 +115,105 @@ export default function Withdraws() {
 
         ) : (
 
-        <table style={{
-          width:"100%",
-          borderCollapse:"collapse"
-        }}>
+          <table style={{
+            width:"100%",
+            borderCollapse:"collapse"
+          }}>
 
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Amount</th>
-              <th>Method</th>
-              <th>Account</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+            <thead>
 
-          <tbody>
-
-            {withdraws.length === 0 && (
               <tr>
-                <td colSpan="6" style={{padding:"20px",textAlign:"center"}}>
-                  No withdraw requests
-                </td>
+                <th>Player</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Account</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            )}
 
-            {withdraws.map((w)=>(
-              <tr key={w.id} style={{textAlign:"center"}}>
+            </thead>
 
-                <td>{w.player_username}</td>
+            <tbody>
 
-                <td>{w.amount} PKR</td>
+              {withdraws.length === 0 && (
+                <tr>
+                  <td colSpan="6" style={{textAlign:"center",padding:"20px"}}>
+                    No withdraw requests
+                  </td>
+                </tr>
+              )}
 
-                <td>{w.method}</td>
+              {withdraws.map((w)=>(
+                <tr key={w.id} style={{textAlign:"center"}}>
 
-                <td>{w.account}</td>
+                  <td>{w.player_username}</td>
 
-                <td>
+                  <td>{w.amount}</td>
 
-                  {w.status === "PENDING" && (
-                    <span style={{color:"#facc15"}}>PENDING</span>
-                  )}
+                  <td>{w.method}</td>
 
-                  {w.status === "APPROVED" && (
-                    <span style={{color:"#22c55e"}}>APPROVED</span>
-                  )}
+                  <td>{w.account}</td>
 
-                  {w.status === "REJECTED" && (
-                    <span style={{color:"#ef4444"}}>REJECTED</span>
-                  )}
+                  <td>
 
-                </td>
+                    {w.status === "PENDING" && (
+                      <span style={{color:"#facc15"}}>
+                        PENDING
+                      </span>
+                    )}
 
-                <td>
+                    {w.status === "APPROVED" && (
+                      <span style={{color:"#22c55e"}}>
+                        APPROVED
+                      </span>
+                    )}
 
-                  {w.status === "PENDING" && (
-                    <>
-                      <button
-                        onClick={()=>updateStatus(w.id,"APPROVED")}
-                        style={{marginRight:"10px"}}
-                      >
-                        Approve
-                      </button>
+                    {w.status === "REJECTED" && (
+                      <span style={{color:"#ef4444"}}>
+                        REJECTED
+                      </span>
+                    )}
 
-                      <button
-                        onClick={()=>updateStatus(w.id,"REJECTED")}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+                  </td>
 
-                </td>
+                  <td>
 
-              </tr>
-            ))}
+                    {w.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={()=>approveWithdraw(w.id)}
+                          style={{marginRight:"10px"}}
+                        >
+                          Approve
+                        </button>
 
-          </tbody>
+                        <button
+                          onClick={()=>rejectWithdraw(w.id)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
 
-        </table>
+                    {w.status !== "PENDING" && (
+                      "-"
+                    )}
+
+                  </td>
+
+                </tr>
+              ))}
+
+            </tbody>
+
+          </table>
 
         )}
 
       </div>
 
     </AdminLayout>
+
   );
-    }
+
+}

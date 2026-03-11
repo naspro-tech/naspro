@@ -1,6 +1,20 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 export default function AdminLayout({ children }) {
+
+  const router = useRouter();
+
+  const logout = () => {
+
+    // remove admin session
+    localStorage.removeItem("admin_token");
+
+    // redirect to login
+    router.push("/admin/login");
+
+  };
+
   return (
     <div style={{ display: "flex" }}>
 
@@ -16,7 +30,7 @@ export default function AdminLayout({ children }) {
           Admin Panel
         </h2>
 
-        <ul style={{ listStyle: "none", padding: 0, lineHeight: "6.2" }}>
+        <ul style={{ listStyle: "none", padding: 0, lineHeight: "3.2" }}>
 
           <li>
             <Link href="/admin" style={{ color:"#fff", textDecoration:"none" }}>
@@ -26,7 +40,7 @@ export default function AdminLayout({ children }) {
 
           <li>
             <Link href="/admin/commission" style={{ color:"#fff", textDecoration:"none" }}>
-              Commission 
+              Commission
             </Link>
           </li>
 
@@ -52,6 +66,25 @@ export default function AdminLayout({ children }) {
             <Link href="/admin/settings" style={{ color:"#fff", textDecoration:"none" }}>
               Settings
             </Link>
+          </li>
+
+          {/* Logout Button */}
+
+          <li style={{ marginTop: "25px" }}>
+            <button
+              onClick={logout}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "#ef4444",
+                border: "none",
+                color: "#fff",
+                cursor: "pointer",
+                borderRadius: "5px"
+              }}
+            >
+              Logout
+            </button>
           </li>
 
         </ul>

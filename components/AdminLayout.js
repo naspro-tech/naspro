@@ -30,7 +30,7 @@ export default function AdminLayout({ children }) {
           Admin Panel
         </h2>
 
-        <ul style={{ listStyle: "none", padding: 0, lineHeight: "3.2" }}>
+        <ul style={{ listStyle: "none", padding: 0, lineHeight: "6.2" }}>
 
           <li>
             <Link href="/admin" style={{ color:"#fff", textDecoration:"none" }}>

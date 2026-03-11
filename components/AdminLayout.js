@@ -25,8 +25,8 @@ export default function AdminLayout({ children }) {
           </li>
 
           <li>
-            <Link href="/admin/merchants" style={{ color:"#fff", textDecoration:"none" }}>
-              Merchants
+            <Link href="/admin/commission" style={{ color:"#fff", textDecoration:"none" }}>
+              Commission 
             </Link>
           </li>
 

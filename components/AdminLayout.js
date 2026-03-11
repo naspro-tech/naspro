@@ -1,17 +1,19 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
 
 export default function AdminLayout({ children }) {
 
-  const router = useRouter();
+  const logout = async () => {
 
-  const logout = () => {
+    try {
 
-    // remove admin session
-    localStorage.removeItem("admin_token");
+      await fetch("/api/auth/logout", {
+        method: "POST"
+      });
 
-    // redirect to login
-    router.push("/admin/login");
+    } catch (err) {}
+
+    // redirect to admin login page
+    window.location.href = "/admin/login";
 
   };
 
@@ -68,26 +70,25 @@ export default function AdminLayout({ children }) {
             </Link>
           </li>
 
-          {/* Logout Button */}
-
-          <li style={{ marginTop: "25px" }}>
-            <button
-              onClick={logout}
-              style={{
-                width: "100%",
-                padding: "10px",
-                background: "#ef4444",
-                border: "none",
-                color: "#fff",
-                cursor: "pointer",
-                borderRadius: "5px"
-              }}
-            >
-              Logout
-            </button>
-          </li>
-
         </ul>
+
+        {/* Logout Button */}
+
+        <button
+          onClick={logout}
+          style={{
+            marginTop: "40px",
+            width: "100%",
+            padding: "10px",
+            background: "#ef4444",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer"
+          }}
+        >
+          Logout
+        </button>
 
       </div>
 

@@ -4,14 +4,12 @@ import AdminLayout from "../../components/AdminLayout";
 export default function Commission() {
 
   const [balance, setBalance] = useState(0);
-
   const [depositCommission, setDepositCommission] = useState(0);
 
   const [usdtAmount, setUsdtAmount] = useState(0);
   const [usdtCommission, setUsdtCommission] = useState(0);
 
   const [deduct, setDeduct] = useState(0);
-
   const [totalCommission, setTotalCommission] = useState(0);
 
   useEffect(() => {
@@ -31,7 +29,6 @@ export default function Commission() {
       if (data.success) {
 
         const totalBalance = data.balance;
-
         const commission = totalBalance * 0.04;
 
         setBalance(totalBalance);
@@ -69,18 +66,20 @@ export default function Commission() {
 
   };
 
-  const saveCommission = async (usdt, deductAmount) => {
+  const saveCommission = async () => {
 
-    await fetch("/api/admin/commission",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
+    await fetch("/api/admin/commission", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        usdt_amount: usdt,
-        deduct_amount: deductAmount
+        usdt_amount: usdtAmount,
+        deduct_amount: deduct
       })
     });
+
+    alert("Commission Updated");
 
   };
 
@@ -96,8 +95,6 @@ export default function Commission() {
 
     calculateTotal(depositCommission, fee, deduct);
 
-    saveCommission(amount, deduct);
-
   };
 
   const calculateDeduct = (value) => {
@@ -107,8 +104,6 @@ export default function Commission() {
     setDeduct(amount);
 
     calculateTotal(depositCommission, usdtCommission, amount);
-
-    saveCommission(usdtAmount, amount);
 
   };
 
@@ -184,10 +179,27 @@ export default function Commission() {
 
         <h3>Total Commission: {totalCommission.toFixed(2)} PKR</h3>
 
+        <button
+          onClick={saveCommission}
+          style={{
+            marginTop:"20px",
+            width:"100%",
+            padding:"10px",
+            background:"#22c55e",
+            color:"#fff",
+            border:"none",
+            borderRadius:"6px",
+            cursor:"pointer",
+            fontWeight:"bold"
+          }}
+        >
+          Save Commission
+        </button>
+
       </div>
 
     </AdminLayout>
 
   );
 
-    }
+              }

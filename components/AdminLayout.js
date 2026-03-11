@@ -13,7 +13,7 @@ export default function AdminLayout({ children }) {
     } catch (err) {}
 
     // redirect to admin login page
-    window.location.href = "/admin/login";
+    window.location.href = "/login";
 
   };
 

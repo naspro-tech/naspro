@@ -4,105 +4,136 @@ import PortalLayout from "../../components/PortalLayout";
 export default function Links() {
 
   const domain = "https://naspropvt.vercel.app";
-  const [copied, setCopied] = useState("");
+  const [copied,setCopied] = useState("");
 
-  const copy = (text, id) => {
+  const copy = (text,id)=>{
     navigator.clipboard.writeText(text);
     setCopied(id);
-    setTimeout(() => setCopied(""), 2000);
+    setTimeout(()=>setCopied(""),2000);
   };
 
-  // DOWNLOAD API DOCS
+  // DOWNLOAD MARKDOWN DOCS (PROFESSIONAL)
   const downloadDocs = () => {
 
-    const text = `
-NASPRO PAYMENT GATEWAY API DOCUMENTATION
+    const doc = `# NASPRO Payment Gateway API
 
-Base URL
+## Base URL
 ${domain}
 
-Authentication
-All requests must include header:
+---
+
+## Authentication
+
+All API requests must include header:
+
 x-api-key: YOUR_API_KEY
 
-CREATE PAYMENT
+---
+
+## Create Payment
+
 POST ${domain}/api/easypay/create-payment
 
-STATUS API
+### Request Body
+
+{
+ "amount":1000,
+ "username":"customer123",
+ "service":"Deposit",
+ "callback":"https://merchant-site.com/api/payment-callback"
+}
+
+---
+
+## Hosted Payment Page
+
+${domain}/pay?orderId=NASPRO-XXXX
+
+Redirect your customer to this page to approve payment inside Easypaisa.
+
+---
+
+## Status API
+
 GET ${domain}/api/order/get?orderId=NASPRO-XXXX
 
-WALLET BALANCE
+### Response
+
+{
+ "order_id":"NASPRO-XXXX",
+ "amount":1000,
+ "status":"PAID"
+}
+
+---
+
+## Wallet Balance API
+
 GET ${domain}/api/wallet/balance
 
-Hosted Payment Page
-${domain}/pay?orderId=NASPRO-XXXX
+### Response
+
+{
+ "success":true,
+ "balance":250000
+}
+
+---
+
+## Callback Example
+
+{
+ "status":"SUCCESS",
+ "order_id":"NASPRO-XXXX",
+ "amount":1000,
+ "gateway":"Easypaisa"
+}
+
 `;
 
-    const blob = new Blob([text], { type: "text/plain" });
+    const blob = new Blob([doc],{type:"text/markdown"});
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = "naspro-api-docs.txt";
+    a.download = "naspro-api-docs.md";
     a.click();
   };
 
-  // DOWNLOAD POSTMAN COLLECTION
+  // POSTMAN COLLECTION
   const downloadPostman = () => {
 
     const postman = {
-      info: {
-        name: "NASPRO Payment Gateway",
-        schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+      info:{
+        name:"NASPRO Payment Gateway",
+        schema:"https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
       },
-      item: [
+      item:[
         {
-          name: "Create Payment",
-          request: {
-            method: "POST",
-            header: [
-              { key: "Content-Type", value: "application/json" },
-              { key: "x-api-key", value: "YOUR_API_KEY" }
-            ],
-            body: {
-              mode: "raw",
-              raw: `{
-  "amount": 1000,
-  "username": "customer123",
-  "service": "Deposit",
-  "callback": "https://merchant-site.com/api/payment-callback"
-}`
-            },
-            url: `${domain}/api/easypay/create-payment`
+          name:"Create Payment",
+          request:{
+            method:"POST",
+            url:`${domain}/api/easypay/create-payment`
           }
         },
         {
-          name: "Check Status",
-          request: {
-            method: "GET",
-            header: [
-              { key: "x-api-key", value: "YOUR_API_KEY" }
-            ],
-            url: `${domain}/api/order/get?orderId=NASPRO-XXXX`
+          name:"Check Status",
+          request:{
+            method:"GET",
+            url:`${domain}/api/order/get?orderId=NASPRO-XXXX`
           }
         },
         {
-          name: "Wallet Balance",
-          request: {
-            method: "GET",
-            header: [
-              { key: "x-api-key", value: "YOUR_API_KEY" }
-            ],
-            url: `${domain}/api/wallet/balance`
+          name:"Wallet Balance",
+          request:{
+            method:"GET",
+            url:`${domain}/api/wallet/balance`
           }
         }
       ]
     };
 
-    const blob = new Blob([JSON.stringify(postman,null,2)], {
-      type:"application/json"
-    });
-
+    const blob = new Blob([JSON.stringify(postman,null,2)],{type:"application/json"});
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
@@ -115,43 +146,12 @@ ${domain}/pay?orderId=NASPRO-XXXX
   const payPage = `${domain}/pay?orderId=NASPRO-XXXX`;
   const statusEndpoint = `${domain}/api/order/get?orderId=NASPRO-XXXX`;
   const balanceEndpoint = `${domain}/api/wallet/balance`;
-  const manualInquiry = `${domain}/inquire-easypay`;
-
-  const requestBody = `{
-  "amount": 1000,
-  "username": "customer123",
-  "service": "Deposit",
-  "callback": "https://merchant-site.com/api/payment-callback"
-}`;
-
-  const responseExample = `{
-  "status": "success",
-  "msg": "Order created successfully",
-  "data": {
-    "order_id": "NASPRO-1730212345678-a1b2c3",
-    "order_status": "PENDING",
-    "redirect_url": "https://naspropvt.vercel.app/pay?orderId=NASPRO-1730212345678-a1b2c3",
-    "amount": 1000,
-    "currency": "PKR",
-    "created_at": "2026-03-10T19:10:00Z"
-  }
-}`;
-
-  const callbackPayload = `{
-  "status": "SUCCESS",
-  "code": "0000",
-  "order_id": "NASPRO-1730212345678-a1b2c3",
-  "amount": 1000,
-  "username": "customer123",
-  "service": "Deposit",
-  "gateway": "Easypaisa",
-  "timestamp": "2026-03-10T19:15:00Z"
-}`;
 
   return (
+
     <PortalLayout>
 
-      <h1 style={{fontSize:"28px", marginBottom:"20px"}}>
+      <h1 style={{fontSize:"28px",marginBottom:"20px"}}>
         Payment Gateway API Documentation
       </h1>
 
@@ -163,8 +163,8 @@ ${domain}/pay?orderId=NASPRO-XXXX
           padding:"10px 15px",
           color:"#fff",
           borderRadius:"6px",
-          cursor:"pointer",
-          marginRight:"10px"
+          marginRight:"10px",
+          cursor:"pointer"
         }}
       >
         Download API Docs
@@ -184,113 +184,96 @@ ${domain}/pay?orderId=NASPRO-XXXX
         Download Postman Collection
       </button>
 
-      {/* BASE URL */}
 
-      <div style={{background:"#020617", color:"#fff", padding:"20px", marginTop:"25px", marginBottom:"25px", borderRadius:"10px"}}>
-        <h2>Base URL</h2>
+      {/* INTEGRATION OVERVIEW */}
 
-        <pre>{domain}</pre>
+      <div style={{
+        background:"#020617",
+        color:"#fff",
+        padding:"20px",
+        marginTop:"25px",
+        marginBottom:"25px",
+        borderRadius:"10px"
+      }}>
 
-        <button onClick={() => copy(domain,"base")}>
-          {copied==="base" ? "Copied!" : "Copy"}
-        </button>
+        <h2>Integration Overview</h2>
 
-        <p style={{marginTop:"15px"}}>
-          Every API request must include <b>x-api-key</b> header.
+        <p>
+        This payment gateway allows merchants to accept Easypaisa payments using a hosted payment page.
         </p>
+
+        <ol style={{lineHeight:"1.8"}}>
+          <li>Merchant sends POST request to Create Payment API</li>
+          <li>Gateway generates Order ID</li>
+          <li>Customer redirected to hosted payment page</li>
+          <li>Customer approves payment inside Easypaisa</li>
+          <li>Gateway sends callback to merchant server</li>
+          <li>Merchant updates user balance</li>
+          <li>Status can be verified using Status API</li>
+        </ol>
+
       </div>
+
 
       {/* CREATE PAYMENT */}
 
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
-        <h2>Create Payment</h2>
+      <div style={{background:"#0f172a",color:"#fff",padding:"20px",marginBottom:"20px",borderRadius:"10px"}}>
+
+        <h2>Create Payment API</h2>
 
         <pre>{createEndpoint}</pre>
 
-        <button onClick={() => copy(createEndpoint,"endpoint")}>
-          {copied==="endpoint" ? "Copied!" : "Copy Endpoint"}
+        <button onClick={()=>copy(createEndpoint,"endpoint")}>
+          {copied==="endpoint"?"Copied!":"Copy Endpoint"}
         </button>
 
-<pre style={{marginTop:"10px"}}>
-Content-Type: application/json
-x-api-key: YOUR_API_KEY
-</pre>
-
-        <p><b>Request Body</b></p>
-
-        <pre>{requestBody}</pre>
-
-        <button onClick={() => copy(requestBody,"body")}>
-          {copied==="body" ? "Copied!" : "Copy Body"}
-        </button>
-
-        <p style={{marginTop:"20px"}}><b>Response Example</b></p>
-
-        <pre>{responseExample}</pre>
       </div>
 
-      {/* HOSTED PAYMENT */}
 
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
+      {/* HOSTED PAGE */}
+
+      <div style={{background:"#0f172a",color:"#fff",padding:"20px",marginBottom:"20px",borderRadius:"10px"}}>
+
         <h2>Hosted Payment Page</h2>
 
         <pre>{payPage}</pre>
 
-        <button onClick={() => copy(payPage,"pay")}>
-          {copied==="pay" ? "Copied!" : "Copy URL"}
+        <button onClick={()=>copy(payPage,"pay")}>
+          {copied==="pay"?"Copied!":"Copy URL"}
         </button>
+
       </div>
+
 
       {/* STATUS API */}
 
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
-        <h2>Check Order Status</h2>
+      <div style={{background:"#0f172a",color:"#fff",padding:"20px",marginBottom:"20px",borderRadius:"10px"}}>
+
+        <h2>Status API</h2>
 
         <pre>{statusEndpoint}</pre>
 
-        <button onClick={() => copy(statusEndpoint,"status")}>
-          {copied==="status" ? "Copied!" : "Copy Endpoint"}
+        <button onClick={()=>copy(statusEndpoint,"status")}>
+          {copied==="status"?"Copied!":"Copy Endpoint"}
         </button>
+
       </div>
+
 
       {/* WALLET BALANCE */}
 
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
+      <div style={{background:"#0f172a",color:"#fff",padding:"20px",borderRadius:"10px"}}>
+
         <h2>Wallet Balance API</h2>
 
         <pre>{balanceEndpoint}</pre>
 
-        <button onClick={() => copy(balanceEndpoint,"balance")}>
-          {copied==="balance" ? "Copied!" : "Copy Endpoint"}
+        <button onClick={()=>copy(balanceEndpoint,"balance")}>
+          {copied==="balance"?"Copied!":"Copy Endpoint"}
         </button>
-      </div>
 
-      {/* MANUAL INQUIRY */}
-
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", marginBottom:"20px", borderRadius:"10px"}}>
-        <h2>Manual Status Inquiry</h2>
-
-        <pre>{manualInquiry}</pre>
-
-        <button onClick={() => copy(manualInquiry,"manual")}>
-          {copied==="manual" ? "Copied!" : "Copy URL"}
-        </button>
-      </div>
-
-      {/* CALLBACK */}
-
-      <div style={{background:"#0f172a", color:"#fff", padding:"20px", borderRadius:"10px"}}>
-        <h2>Payment Callback</h2>
-
-        <p>After successful payment our system sends POST request to your callback URL.</p>
-
-        <pre>{callbackPayload}</pre>
-
-        <button onClick={() => copy(callbackPayload,"callback")}>
-          {copied==="callback" ? "Copied!" : "Copy Payload"}
-        </button>
       </div>
 
     </PortalLayout>
   );
-        }
+}

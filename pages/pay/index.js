@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 export default function HostedEasypaisaPortal() {   
   const router = useRouter();   
-  const { orderId, service, amount } = router.query;    
+  const { orderId, service, } = router.query;    
 
   const [order, setOrder] = useState(null);   
   const [mobile, setMobile] = useState("");   
@@ -12,9 +12,29 @@ export default function HostedEasypaisaPortal() {
   const [message, setMessage] = useState("");   
   const [sessionTime, setSessionTime] = useState(600);   
   const [closeCountdown, setCloseCountdown] = useState(5);   
-  const amount = order?.amount || Number(queryAmount || 0);   
+  const amount = order?.amount; 
 
-  const finalService = service || "Easypaisa";    
+  const finalService = service || "Easypaisa";  
+
+  useEffect(() => {
+  if (!orderId) return;
+
+  const loadOrder = async () => {
+    const response = await fetch(`/api/order/get?orderId=${orderId}`);
+    const data = await response.json();
+
+    console.log("Order from DB:", data);
+
+    if (data.status === "PAID") {
+      alert("This payment has already been completed.");
+      return;
+    }
+
+    setOrder(data);
+  };
+
+  loadOrder();
+}, [orderId]);
 
   // session countdown   
   useEffect(() => {     

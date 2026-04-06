@@ -12,7 +12,7 @@ export default function HostedEasypaisaPortal() {
   const [message, setMessage] = useState("");   
   const [sessionTime, setSessionTime] = useState(600);   
   const [closeCountdown, setCloseCountdown] = useState(5);   
-  const amount = order?.amount; || Number(queryAmount || 0);   
+  const amount = order?.amount || Number(queryAmount || 0);   
 
   const finalService = service || "Easypaisa";    
 

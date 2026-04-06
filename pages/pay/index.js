@@ -3,47 +3,29 @@ import { useEffect, useState } from "react";
 
 export default function HostedEasypaisaPortal() {
   const router = useRouter();
-  const { orderId, service, amount, callback } = router.query;
+  const { orderId, service } = router.query;
 
   const [order, setOrder] = useState(null);
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState("input");
+  const [step, setStep] = useState("input"); // input | guide | success | expired
   const [message, setMessage] = useState("");
   const [sessionTime, setSessionTime] = useState(600);
   const [closeCountdown, setCloseCountdown] = useState(5);
 
+  const amount = order?.amount;
   const finalService = service || "Easypaisa";
 
-  // ✅ UPDATED: Supports URL amount + API fallback
   useEffect(() => {
     if (!orderId) return;
 
-    // 🔥 URL MODE
-    if (amount) {
-      const parsedAmount = Number(amount);
-
-      if (!parsedAmount || parsedAmount <= 0) {
-        alert("Invalid amount in URL");
-        return;
-      }
-
-      setOrder({
-        orderId,
-        amount: parsedAmount,
-        status: "UNPAID",
-        username: "guest",
-        service: finalService,
-      });
-
-      return;
-    }
-
-    // 🔁 API MODE (your original)
     const loadOrder = async () => {
       const response = await fetch(`/api/order/get?orderId=${orderId}`);
       const data = await response.json();
 
+      console.log("Order from DB:", data);
+
+      // 🚨 If order already paid
       if (data.status === "PAID") {
         alert("This payment has already been completed.");
         return;
@@ -53,11 +35,12 @@ export default function HostedEasypaisaPortal() {
     };
 
     loadOrder();
-  }, [orderId, amount, finalService]);
+  }, [orderId]);
 
   // session countdown
   useEffect(() => {
     if (step !== "input") return;
+
     const t = setInterval(() => {
       setSessionTime((p) => {
         if (p <= 1) {
@@ -68,12 +51,14 @@ export default function HostedEasypaisaPortal() {
         return p - 1;
       });
     }, 1000);
+
     return () => clearInterval(t);
   }, [step]);
 
   // success auto close countdown
   useEffect(() => {
     if (step !== "success") return;
+
     const interval = setInterval(() => {
       setCloseCountdown((prev) => {
         if (prev <= 1) {
@@ -84,6 +69,7 @@ export default function HostedEasypaisaPortal() {
         return prev - 1;
       });
     }, 1000);
+
     return () => clearInterval(interval);
   }, [step]);
 
@@ -92,7 +78,8 @@ export default function HostedEasypaisaPortal() {
       alert("براہ کرم درست ایزی پیسہ نمبر درج کریں (مثلاً 03XXXXXXXXX)");
       return;
     }
-    if (!order?.amount || Number(order.amount) <= 0) {
+
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
       alert("براہ کرم درست رقم درج کریں۔");
       return;
     }
@@ -101,7 +88,7 @@ export default function HostedEasypaisaPortal() {
     setStep("guide");
 
     setMessage(
-      `براہ کرم اپنی Easypaisa ایپ کھولیں، "My Approvals" پر جائیں، اور رقم PKR ${order.amount} کی ادائیگی کی منظوری دیں۔`
+      `براہ کرم اپنی Easypaisa ایپ کھولیں، "My Approvals" پر جائیں، اور رقم PKR ${amount} کی ادائیگی کی منظوری دیں۔`
     );
 
     try {
@@ -110,7 +97,7 @@ export default function HostedEasypaisaPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId,
-          transactionAmount: Number(order.amount),
+          transactionAmount: Number(order?.amount),
           mobileAccountNo: mobile.trim(),
           emailAddress: "naspropvt@gmail.com",
           optional1: finalService,
@@ -123,10 +110,10 @@ export default function HostedEasypaisaPortal() {
         setStep("success");
         setMessage("✅ آپ کی ادائیگی کامیاب ہوگئی ہے۔");
 
-        // ✅ callback support (NEW)
-        if (callback) {
+        // Step 3: Send callback to merchant automatically
+        if (router.query.callback) {
           try {
-            await fetch(callback, {
+            await fetch(router.query.callback, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -256,10 +243,9 @@ export default function HostedEasypaisaPortal() {
         </div>
       </div>
 
-      {/* ⚡ YOUR ORIGINAL CSS — UNCHANGED */}
       <style jsx>{`
-        /* KEEP YOUR EXISTING CSS HERE (no change needed) */
+        /* your same CSS here (unchanged) */
       `}</style>
     </div>
   );
-    }
+          }

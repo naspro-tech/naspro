@@ -243,18 +243,24 @@ export default function PaymentPage() {
       </div>
 
       {/* Buttons */}
-      <div className="button-group">
-        <button onClick={handleJazzCashPayment} disabled={loading} className="btn jazzcash">
-          {loading ? "Processing..." : "Pay with JazzCash"}
-        </button>
+      <p style={{ color: "#f87171", marginBottom: "15px", textAlign: "center" }}>
+  ⚠️ Online payments via Easypaisa & JazzCash are temporarily unavailable due to limit exhaustion.
+  Please use Bank Transfer for now.
+</p>
 
-        <button onClick={handleEasypaisaPayment} disabled={loading} className="btn easypaisa">
-          {loading ? "Processing..." : "Pay with Easypaisa"}
-        </button>
+<div className="button-group">
+        <button className="btn jazzcash" disabled>
+  JazzCash (Temporarily Unavailable)
+</button>
 
-        <button onClick={() => setMethod("bank")} className="btn bank">
-          Pay via Bank Transfer
-        </button>
+<button className="btn easypaisa" disabled>
+  Easypaisa (Temporarily Unavailable)
+</button>
+
+        
+    <button onClick={() => setMethod("bank")} className="btn bank">
+  ✅ Pay via Bank Transfer (Available)
+</button>
       </div>
 
       {/* Bank Transfer Steps */}
